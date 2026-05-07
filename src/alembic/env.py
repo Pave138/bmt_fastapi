@@ -10,7 +10,8 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from app.models.common import Base
-from app.models.user import User
+from app.models import Category, User
+
 
 load_dotenv('.env')
 
