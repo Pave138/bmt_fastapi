@@ -16,6 +16,8 @@ class Settings(BaseSettings):
 
     APP_TITLE: str = APP_TITLE
     DATABASE_URL: str = DATABASE_URL
+    JWT_SECRET_KEY: str
+    JWT_LIFETIME: int = 60 * 60
 
 
 settings = Settings()
