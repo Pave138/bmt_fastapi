@@ -2,7 +2,9 @@ from typing import Optional
 
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from app.models.common import Base, CommonMixin
+from app.db.base import Base
+from app.db.mixins import CommonMixin
+
 
 ## Slug field in future.
 class Category(CommonMixin, Base):

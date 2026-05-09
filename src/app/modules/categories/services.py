@@ -1,4 +1,4 @@
-from app.repositories.category import CategoryRepository
+from app.modules.categories.repositories import CategoryRepository
 
 
 class CategoryService:

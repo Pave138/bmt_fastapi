@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends
 
-from app.auth.dependencies import current_superuser
-from app.schemas.category import (
+from app.modules.auth.dependencies import current_superuser
+from app.modules.categories.schemas import (
     CategoryCreate, CategoryDB
 )
-from app.services.category import CategoryService
-from app.api.deps import get_category_service
-from app.models.category import Category
+from app.modules.categories.dependencies import CategoryServiceDep
+from app.modules.categories.models import Category
 
 router = APIRouter()
 
@@ -20,7 +19,7 @@ router = APIRouter()
 )
 async def create_category(
         data: CategoryCreate,
-        service: CategoryService = Depends(get_category_service)
+        service: CategoryServiceDep
 ) -> Category:
     return await service.create_category(data.model_dump())
 
@@ -31,7 +30,5 @@ async def create_category(
     summary='Получить все категории',
     description='Получает все категории'
 )
-async def get_categories(
-        service: CategoryService = Depends(get_category_service)
-):
+async def get_categories(service: CategoryServiceDep) -> list[Category]:
     return await service.get_categories()

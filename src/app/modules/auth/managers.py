@@ -1,12 +1,13 @@
-from typing import Optional
+from typing import Annotated, Optional
 from uuid import UUID
 
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, UUIDIDMixin
+from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 
 from app.core.config import settings
-from app.core.user import get_user_db
-from app.models.user import User
+from app.modules.users.models import User
+from .providers import UserDBDep
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
@@ -38,5 +39,5 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
         print(f'Токен верификации: {token}')
 
 
-async def get_user_manager(user_db=Depends(get_user_db)):
+async def get_user_manager(user_db: UserDBDep):
     yield UserManager(user_db)
