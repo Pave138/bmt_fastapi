@@ -20,7 +20,10 @@ class Product(CommonMixin, TimestampMixin, Base):
         nullable=False,
         index=True
     )
-    old_price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    old_price: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        nullable=True
+    )
     ## sku: Mapped[str] = mapped_column(String, index=True)
     stock: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
@@ -28,7 +31,10 @@ class Product(CommonMixin, TimestampMixin, Base):
         ForeignKey('category.id'),
         index=True
     )
-    category: Mapped['Category'] = relationship(back_populates='products')
+    category: Mapped['Category'] = relationship(
+        'Category',
+        back_populates='products'
+    )
 
     __table_args__ = (
         Index(
