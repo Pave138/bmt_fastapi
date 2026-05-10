@@ -30,3 +30,7 @@ class Category(CommonMixin, Base):
         back_populates='parent',
         cascade='all, delete-orphan'
     )
+    products: Mapped[list['Product']] = relationship(
+        'Product',
+        back_populates='category'
+    )

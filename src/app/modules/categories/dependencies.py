@@ -8,10 +8,19 @@ from .repositories import CategoryRepository
 from .services import CategoryService
 
 
+async def get_category_repository(session: SessionDep):
+    return CategoryRepository(session)
+
+
+CategoryRepositoryDep = Annotated[
+    CategoryRepository,
+    Depends(get_category_repository)
+]
+
+
 async def get_category_service(
-    session: SessionDep
+    repository: CategoryRepositoryDep
 ) -> CategoryService:
-    repository = CategoryRepository(session)
     return CategoryService(repository)
 
 

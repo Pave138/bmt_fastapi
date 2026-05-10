@@ -21,7 +21,7 @@ async def create_category(
         data: CategoryCreate,
         service: CategoryServiceDep
 ) -> Category:
-    return await service.create_category(data.model_dump())
+    return await service.create_category(data)
 
 
 @router.get(
