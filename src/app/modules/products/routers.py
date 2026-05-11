@@ -4,9 +4,7 @@ from fastapi import APIRouter
 
 from .dependencies import ProductServiceDep
 from .models import Product
-from .services import ProductService
 from .schemas import ProductRead, ProductCreate, ProductUpdate
-from ..categories.schemas import CategoryCreate
 
 router = APIRouter()
 
@@ -31,8 +29,10 @@ async def create(
     response_model=list[ProductRead]
 )
 async def get_all(
-    limit: Optional[int],
-    offset: Optional[int],
+    limit: Optional[int] = None,
+    offset: Optional[int] = None,
     service: ProductServiceDep
 ) -> list[Product]:
-    return service.get_all()
+    if limit and offset:
+        return await service.get_all(limit=limit, offset=offset)
+    return await service.get_all()

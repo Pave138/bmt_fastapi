@@ -11,8 +11,10 @@ class ProductRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_all(self) -> list[Product]:
-        result = await self.session.execute(select(Product))
+    async def get_all(self, limit: int, offset: int) -> list[Product]:
+        result = await self.session.execute(
+            select(Product).offset(offset).limit(limit)
+        )
         return result.scalars().all()
 
     async def get_by_id(self, product_id: int) -> Optional[Product]:
