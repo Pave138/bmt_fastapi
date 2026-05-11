@@ -2,6 +2,7 @@ from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from .models import Product
 
@@ -26,8 +27,8 @@ class ProductRepository:
     async def get_all_by_category_id(
         self,
         category_id: int,
-        limit: int = 100,
-        offset: int = 0
+        limit: int,
+        offset: int
     ) -> list[Product]:
         result = await self.session.execute(
             select(Product).where(
