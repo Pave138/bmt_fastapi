@@ -29,10 +29,21 @@ async def create(
     response_model=list[ProductRead]
 )
 async def get_all(
-    limit: Optional[int] = None,
-    offset: Optional[int] = None,
-    service: ProductServiceDep
+    service: ProductServiceDep,
+    limit: int = 10,
+    offset: int = 0
 ) -> list[Product]:
-    if limit and offset:
-        return await service.get_all(limit=limit, offset=offset)
-    return await service.get_all()
+    return await service.get_all(limit=limit, offset=offset)
+
+
+@router.get(
+    '/{product_id}',
+    summary='Получить товар по ID.',
+    description='Получает товар по ID.',
+    response_model=ProductRead
+)
+async def get_by_id(service: ProductServiceDep, product_id: int) -> Product:
+    return await service.get_by_id(product_id)
+
+
+
