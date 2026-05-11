@@ -18,8 +18,8 @@ class ProductService:
 
     async def get_all(
         self,
-        limit: int = 100,
-        offset: int = 0
+        limit: int,
+        offset: int
     ) -> list[Product]:
         return await self.repository.get_all(
             limit=limit,
