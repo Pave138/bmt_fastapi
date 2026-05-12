@@ -40,3 +40,10 @@ class CategoryService:
         except Exception:
             await self.repository.session.rollback()
             raise
+
+    async def get_children(
+        self,
+        category_id: int
+    ) -> list[Category]:
+        category = await self.get_by_id(category_id)
+        return category.children
