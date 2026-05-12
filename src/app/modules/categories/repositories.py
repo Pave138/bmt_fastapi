@@ -40,4 +40,3 @@ class CategoryRepository:
 
     async def delete(self, category: Category):
         await self.session.delete(category)
-        await self.session.commit()
