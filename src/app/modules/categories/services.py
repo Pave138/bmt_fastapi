@@ -1,7 +1,7 @@
 from app.modules.categories.repositories import CategoryRepository
 from app.core.exceptions import NotFoundException
 from .models import Category
-from .schemas import CategoryCreate
+from .schemas import CategoryCreate, CategoryUpdate
 
 
 class CategoryService:
@@ -23,3 +23,20 @@ class CategoryService:
                 'Категория не найдена.'
             )
         return category
+
+    async def update(self, category_id: int, data: CategoryUpdate) -> Category:
+        category = await self.get_by_id(category_id)
+        update_data = data.model_dump(exclude_unset=True)
+        if 'parent_id' in update_data:
+            await self.get_by_id(update_data['parent_id'])
+
+        for field, value in update_data.items():
+            setattr(category, field, value)
+
+        try:
+            await self.repository.session.commit()
+            await self.repository.session.refresh(category)
+            return category
+        except Exception:
+            await self.repository.session.rollback()
+            raise
