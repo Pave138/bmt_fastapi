@@ -1,6 +1,4 @@
-from typing import Optional
-
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 
 from .dependencies import ProductServiceDep
 from .models import Product
@@ -55,3 +53,11 @@ async def update_product(
 ) -> Product:
     return await service.update(product_id, data)
 
+
+@router.delete(
+    '/{product_id}',
+    summary='Удалить товар (superuser only)',
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_product(product_id: int, service: ProductServiceDep) -> None:
+    await service.delete(product_id)
