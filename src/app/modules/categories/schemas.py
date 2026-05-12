@@ -17,7 +17,7 @@ class CategoryUpdate(BaseModel):
     parent_id: Optional[int] = None
 
 
-class CategoryDB(CategoryBase):
+class CategoryRead(CategoryBase):
     id: int
     name: str
     parent_id: Optional[int] = None
@@ -28,6 +28,6 @@ class CategoryDB(CategoryBase):
 class CategoryTree(BaseModel):
     id: int
     name: str
-    children: Optional[List[CategoryDB]] = []
+    children: Optional[List[CategoryRead]] = []
 
     model_config = ConfigDict(from_attributes=True)
