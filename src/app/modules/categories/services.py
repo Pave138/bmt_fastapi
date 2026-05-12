@@ -52,3 +52,20 @@ class CategoryService:
     ) -> list[Category]:
         category = await self.get_by_id(category_id)
         return category.children
+
+    async def delete(self, category_id: int) -> None:
+        category = await self.get_by_id(category_id)
+
+        if category.products and len(category.products) > 0:
+            products_count = len(category.products)
+            raise ConflictException(
+                (f'Невозможно удалить категорию {category.name}, так как '
+                 f'у нее есть {products_count} связанных товаров.')
+            )
+
+        try:
+            await self.repository.session.delete(category)
+            await self.repository.session.commit()
+        except Exception:
+            await self.repository.session.rollback()
+            raise
