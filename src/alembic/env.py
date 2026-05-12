@@ -12,7 +12,7 @@ from alembic import context
 from app.db.base import Base
 from app.modules.users.models import User
 from app.modules.categories.models import Category
-from app.modules.products.models import Product
+from app.modules.products.models import Product, ProductImage
 
 
 load_dotenv('.env')

@@ -35,6 +35,11 @@ class Product(CommonMixin, TimestampMixin, Base):
         'Category',
         back_populates='products'
     )
+    images: Mapped[list['ProductImage']] = relationship(
+        'ProductImage',
+        back_populates='product',
+        cascade='all, delete-orphan'
+    )
 
     __table_args__ = (
         Index(
@@ -42,4 +47,21 @@ class Product(CommonMixin, TimestampMixin, Base):
             "price",
             "is_active"
         ),
+    )
+
+
+class ProductImage(CommonMixin, Base):
+    product_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey('product.id', ondelete='CASCADE')
+    )
+    url: Mapped[str] = mapped_column(String, nullable=False)
+    is_main: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+    product: Mapped['Product'] = relationship(
+        'Product',
+        back_populates='images'
     )
