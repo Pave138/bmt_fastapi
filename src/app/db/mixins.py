@@ -16,7 +16,7 @@ def camel_to_snake(name: str) -> str:
 class CommonMixin:
 
     @declared_attr
-    def __tablename__(cls):
+    def __tablename__(cls) -> str:
         return camel_to_snake(cls.__name__)
 
     id: Mapped[int] = mapped_column(
