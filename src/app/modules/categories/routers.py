@@ -14,7 +14,6 @@ router = APIRouter()
     '/',
     response_model=CategoryRead,
     summary='Создать категорию (superuser only)',
-    description='Создает новую категорию',
     dependencies=[Depends(current_superuser)]
 )
 async def create_category(
@@ -28,32 +27,41 @@ async def create_category(
     '/',
     response_model=list[CategoryRead],
     summary='Получить все категории',
-    description='Получает все категории'
 )
-async def get_all(service: CategoryServiceDep) -> list[Category]:
+async def get_categories(service: CategoryServiceDep) -> list[Category]:
     return await service.get_categories()
 
 
 @router.get(
     '/{category_id}',
     response_model=CategoryRead,
-    summary='Получить категорию по ID',
-    description='Получает категорию по ID'
+    summary='Получить категорию по ID'
 )
 async def get_by_id(category_id: int, service: CategoryServiceDep) -> Category:
     return await service.get_by_id(category_id)
 
 
 @router.patch(
-    '/{category_id}/edit',
+    '/{category_id}',
     response_model=CategoryRead,
     summary='Изменить категорию по ID (superuser only)',
-    description='Изменяет категорию по ID',
     dependencies=[Depends(current_superuser)]
 )
-async def update(
+async def update_category(
     category_id: int,
     data: CategoryUpdate,
     service: CategoryServiceDep
 ) -> Category:
     return await service.update(category_id, data)
+
+
+@router.get(
+    '/{category_id}/children',
+    response_model=list[CategoryRead],
+    summary='Получает подкатегории'
+)
+async def get_children(
+    category_id: int,
+    service: CategoryServiceDep
+) -> list[Category]:
+    return await service.get_child_category_by_id(category_id)
