@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 
 from app.modules.auth.dependencies import current_superuser
 from app.modules.categories.schemas import (
@@ -64,4 +64,17 @@ async def get_children(
     category_id: int,
     service: CategoryServiceDep
 ) -> list[Category]:
-    return await service.get_child_category_by_id(category_id)
+    return await service.get_children(category_id)
+
+
+@router.delete(
+    '/{category_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary='Удалить категорию по ID (superuser only)',
+    dependencies=[Depends(current_superuser)]
+)
+async def delete_category(
+    category_id: int,
+    service: CategoryServiceDep
+) -> None:
+    await service.delete(category_id)
