@@ -28,7 +28,7 @@ class Product(CommonMixin, TimestampMixin, Base):
     stock: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     category_id: Mapped[int] = mapped_column(
-        ForeignKey('category.id'),
+        ForeignKey('category.id', ondelete='RESTRICT'),
         index=True
     )
     category: Mapped['Category'] = relationship(
