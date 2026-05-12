@@ -18,7 +18,10 @@ class CategoryRepository:
         result = await self.session.execute(
             select(Category).where(
                 Category.id == category_id
-            ).options(selectinload(Category.children))
+            ).options(
+                selectinload(Category.children),
+                selectinload(Category.products)
+            )
         )
         return result.scalar_one_or_none()
 
