@@ -24,10 +24,8 @@ class CategoryService:
     async def get_by_id(self, category_id: int) -> Category:
         category = await self.repository.get_by_id(category_id)
 
-        if category is None:
-            raise NotFoundException(
-                'Категория не найдена.'
-            )
+        if not category:
+            raise NotFoundException(CATEGORY_NOT_FOUND_MSG)
         return category
 
     async def update(self, category_id: int, data: CategoryUpdate) -> Category:
