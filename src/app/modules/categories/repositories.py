@@ -35,10 +35,7 @@ class CategoryRepository:
         category = Category(**data)
 
         self.session.add(category)
-
-        await self.session.commit()
-        await self.session.refresh(category)
-
+        await self.session.flush()
         return category
 
     async def delete(self, category: Category):
