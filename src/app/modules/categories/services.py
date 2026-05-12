@@ -10,6 +10,11 @@ class CategoryService:
         self.repository = repository
 
     async def create_category(self, data: CategoryCreate) -> Category:
+        if data.parent_id:
+            if not await self.repository.exists(data.parent_id):
+                raise NotFoundException(
+                    f'Подкатегория {data.parent_id} не найдена'
+                )
         return await self.repository.create(data.model_dump())
 
     async def get_categories(self) -> list[Category]:
