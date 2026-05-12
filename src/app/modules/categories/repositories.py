@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.categories.models import Category
@@ -15,7 +16,9 @@ class CategoryRepository:
 
     async def get_by_id(self, category_id: int):
         result = await self.session.execute(
-            select(Category).where(Category.id == category_id)
+            select(Category).where(
+                Category.id == category_id
+            ).options(selectinload(Category.children))
         )
         return result.scalar_one_or_none()
 
