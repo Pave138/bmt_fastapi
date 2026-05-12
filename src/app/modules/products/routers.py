@@ -14,7 +14,7 @@ router = APIRouter()
     summary='Создать товар',
     response_model=ProductRead
 )
-async def create(
+async def create_product(
     data: ProductCreate,
     service: ProductServiceDep
 ) -> Product:
@@ -26,7 +26,7 @@ async def create(
     summary='Получить все товары',
     response_model=list[ProductRead]
 )
-async def get_all(
+async def get_products(
     service: ProductServiceDep,
     limit: int = 10,
     offset: int = 0
