@@ -43,4 +43,15 @@ async def get_by_id(service: ProductServiceDep, product_id: int) -> Product:
     return await service.get_by_id(product_id)
 
 
+@router.patch(
+    '/{product_id}',
+    summary='Изменить товар',
+    response_model=ProductRead
+)
+async def update_product(
+    product_id: int,
+    data: ProductUpdate,
+    service: ProductServiceDep
+) -> Product:
+    return await service.update(product_id, data)
 
