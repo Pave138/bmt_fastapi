@@ -12,7 +12,6 @@ router = APIRouter()
 @router.post(
     '/',
     summary='Создать товар',
-    description='Создает новый товар',
     response_model=ProductRead
 )
 async def create(
@@ -25,7 +24,6 @@ async def create(
 @router.get(
     '/',
     summary='Получить все товары',
-    description='Получает все товары',
     response_model=list[ProductRead]
 )
 async def get_all(
@@ -38,8 +36,7 @@ async def get_all(
 
 @router.get(
     '/{product_id}',
-    summary='Получить товар по ID.',
-    description='Получает товар по ID.',
+    summary='Получить товар по ID',
     response_model=ProductRead
 )
 async def get_by_id(service: ProductServiceDep, product_id: int) -> Product:
