@@ -25,6 +25,12 @@ class CategoryRepository:
         )
         return result.scalar_one_or_none()
 
+    async def exists(self, category_id: int) -> bool:
+        result = await self.session.execute(
+            select(Category).where(Category.id == category_id)
+        )
+        return result.scalar_one_or_none() is not None
+
     async def create(self, data: dict):
         category = Category(**data)
 
