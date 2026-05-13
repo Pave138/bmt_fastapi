@@ -17,19 +17,30 @@ class Product(CommonMixin, TimestampMixin, Base):
         nullable=False,
         index=True
     )
-    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     price: Mapped[Decimal] = mapped_column(
         Numeric(10, 2),
         nullable=False,
         index=True
     )
-    old_price: Mapped[Decimal] = mapped_column(
+    old_price: Mapped[Optional[Decimal]] = mapped_column(
         Numeric(10, 2),
         nullable=True
     )
     ## sku: Mapped[str] = mapped_column(String, index=True)
-    stock: Mapped[int] = mapped_column(Integer, default=0)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    stock: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default='0',
+        nullable=False
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        server_default=true(),
+        nullable=False,
+        index=True
+    )
     category_id: Mapped[int] = mapped_column(
         ForeignKey('category.id', ondelete='RESTRICT'),
         index=True
@@ -46,9 +57,9 @@ class Product(CommonMixin, TimestampMixin, Base):
 
     __table_args__ = (
         Index(
-            "ix_products_price_active",
-            "price",
-            "is_active"
+            'ix_products_price_active',
+            'price',
+            'is_active'
         ),
     )
 
@@ -58,13 +69,26 @@ class ProductImage(CommonMixin, Base):
         Integer,
         ForeignKey('product.id', ondelete='CASCADE')
     )
-    url: Mapped[str] = mapped_column(String, nullable=False)
+    file_key: Mapped[str] = mapped_column(
+        String,
+        nullable=False
+    )
     is_main: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
+        server_default=false(),
         nullable=False
     )
     product: Mapped['Product'] = relationship(
         'Product',
         back_populates='images'
+    )
+
+    __table_args__ = (
+        Index(
+            'ix_product_one_main_image',
+            'product_id',
+            unique=True,
+            postgresql_where=text('is_main = true')
+        ),
     )
