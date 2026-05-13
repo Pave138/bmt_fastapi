@@ -34,3 +34,24 @@ class ProductRead(ProductBase):
     updated_at: dt
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProductImageBase(BaseModel):
+    product_id: int
+    url: str
+    is_main: bool = False
+
+
+class ProductImageCreate(ProductImageBase):
+    pass
+
+
+class ProductImageUpdate(BaseModel):
+    url: Optional[str] = None
+    is_main: Optional[bool] = None
+
+
+class ProductImageRead(ProductImageBase):
+    id: int
+
+    model_config = ConfigDict(from_attributes=True)
