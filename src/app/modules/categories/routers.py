@@ -80,3 +80,15 @@ async def delete_category(
     service: CategoryServiceDep
 ) -> None:
     await service.delete(category_id)
+
+
+@router.get(
+    '/{category_id}/products',
+    summary='Получить товары по категории',
+    response_model=list[ProductRead]
+)
+async def get_products_by_category(
+    category_id: int,
+    service: CategoryServiceDep
+) -> list[Product]:
+    return await service.get_product_by_category(category_id)
