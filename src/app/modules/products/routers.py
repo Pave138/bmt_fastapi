@@ -10,8 +10,9 @@ router = APIRouter()
 
 @router.post(
     '/',
-    summary='Создать товар',
-    response_model=ProductRead
+    summary='Создать товар (superuser only)',
+    response_model=ProductRead,
+    dependencies=[Depends(current_superuser)]
 )
 async def create_product(
     data: ProductCreate,
@@ -44,8 +45,9 @@ async def get_by_id(service: ProductServiceDep, product_id: int) -> Product:
 
 @router.patch(
     '/{product_id}',
-    summary='Изменить товар',
-    response_model=ProductRead
+    summary='Изменить товар (superuser only)',
+    response_model=ProductRead,
+    dependencies=[Depends(current_superuser)]
 )
 async def update_product(
     product_id: int,
@@ -58,7 +60,8 @@ async def update_product(
 @router.delete(
     '/{product_id}',
     summary='Удалить товар (superuser only)',
-    status_code=status.HTTP_204_NO_CONTENT
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(current_superuser)]
 )
 async def delete_product(product_id: int, service: ProductServiceDep) -> None:
     await service.delete(product_id)
