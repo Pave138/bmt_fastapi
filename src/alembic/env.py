@@ -13,6 +13,7 @@ from app.db.base import Base
 from app.modules.users.models import User
 from app.modules.categories.models import Category
 from app.modules.products.models import Product, ProductImage
+from app.modules.carts.models import Cart
 
 
 load_dotenv('.env')
