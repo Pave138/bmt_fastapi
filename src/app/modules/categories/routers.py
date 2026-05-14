@@ -6,6 +6,8 @@ from app.modules.categories.schemas import (
 )
 from app.modules.categories.dependencies import CategoryServiceDep
 from app.modules.categories.models import Category
+from app.modules.products.models import Product
+from app.modules.products.schemas import ProductRead
 
 router = APIRouter()
 
