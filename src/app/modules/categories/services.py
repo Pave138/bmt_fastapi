@@ -1,4 +1,5 @@
 from app.modules.categories.repositories import CategoryRepository
+from app.modules.products.models import Product
 from app.core.exceptions import NotFoundException, ConflictException
 from app.core.constants import CATEGORY_NOT_FOUND_MSG
 from .models import Category
@@ -68,3 +69,10 @@ class CategoryService:
         except Exception:
             await self.repository.session.rollback()
             raise
+
+    async def get_product_by_category(
+        self,
+        category_id: int
+    ) -> list[Product]:
+        category = await self.get_by_id(category_id)
+        return category.products
