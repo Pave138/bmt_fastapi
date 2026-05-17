@@ -14,6 +14,7 @@ from app.modules.users.models import User
 from app.modules.categories.models import Category
 from app.modules.products.models import Product, ProductImage
 from app.modules.carts.models import Cart
+from app.modules.cart_items.models import CartItem
 
 
 load_dotenv('.env')
