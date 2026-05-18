@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, status
 
 from app.modules.auth.dependencies import current_superuser
-from app.modules.categories.schemas import (
-    CategoryCreate, CategoryRead, CategoryUpdate
-)
 from app.modules.categories.dependencies import CategoryServiceDep
 from app.modules.categories.models import Category
+from app.modules.categories.schemas import (
+    CategoryCreate,
+    CategoryRead,
+    CategoryUpdate,
+)
 from app.modules.products.models import Product
 from app.modules.products.schemas import ProductRead
 

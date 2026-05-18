@@ -2,8 +2,16 @@ from decimal import Decimal
 from typing import Optional
 
 from sqlalchemy import (
-    Boolean, Integer, Numeric, String, Text, ForeignKey, Index, false, text,
-    true
+    Boolean,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    false,
+    text,
+    true,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

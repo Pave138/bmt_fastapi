@@ -1,12 +1,12 @@
-from typing import Annotated, Optional
+from typing import Optional
 from uuid import UUID
 
-from fastapi import Depends, Request
+from fastapi import Request
 from fastapi_users import BaseUserManager, UUIDIDMixin
-from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 
 from app.core.config import settings
 from app.modules.users.models import User
+
 from .providers import UserDBDep
 
 

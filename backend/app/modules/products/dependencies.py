@@ -4,6 +4,7 @@ from fastapi import Depends
 
 from app.db.session import SessionDep
 from app.modules.categories.dependencies import CategoryServiceDep
+
 from .repositories import ProductRepository
 from .services import ProductService
 

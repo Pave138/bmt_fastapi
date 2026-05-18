@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.modules.auth.dependencies import fastapi_users
+
 from .schemas import UserRead, UserUpdate
 
 router = APIRouter()

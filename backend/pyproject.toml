@@ -43,3 +43,8 @@ dependencies = [
     "typing-inspection==0.4.2",
     "uvicorn==0.44.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.13",
+]

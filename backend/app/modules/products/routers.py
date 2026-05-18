@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, status
 
+from app.modules.auth.dependencies import current_superuser
+
 from .dependencies import ProductServiceDep
 from .models import Product
-from .schemas import ProductRead, ProductCreate, ProductUpdate
-from app.modules.auth.dependencies import current_superuser
+from .schemas import ProductCreate, ProductRead, ProductUpdate
 
 router = APIRouter()
 

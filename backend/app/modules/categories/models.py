@@ -1,7 +1,8 @@
 from typing import Optional
 
 from sqlalchemy import ForeignKey, Integer, String
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
 from app.db.mixins import CommonMixin
 

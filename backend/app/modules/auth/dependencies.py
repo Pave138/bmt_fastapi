@@ -4,10 +4,10 @@ from uuid import UUID
 from fastapi import Depends
 from fastapi_users import FastAPIUsers
 
-from .backends import auth_backend
-from .managers import get_user_manager
 from app.modules.users.models import User
 
+from .backends import auth_backend
+from .managers import get_user_manager
 
 fastapi_users = FastAPIUsers[User, UUID](
     get_user_manager, [auth_backend]

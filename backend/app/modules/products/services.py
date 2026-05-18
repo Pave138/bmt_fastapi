@@ -1,9 +1,10 @@
+from app.core.constants import CATEGORY_NOT_FOUND_MSG, PRODUCT_NOT_FOUND_MSG
+from app.core.exceptions import NotFoundException, ValidationException
+from app.modules.categories.dependencies import CategoryServiceDep
+
 from .models import Product
 from .repositories import ProductRepository
 from .schemas import ProductCreate, ProductUpdate
-from app.modules.categories.dependencies import CategoryServiceDep
-from app.core.exceptions import NotFoundException, ValidationException
-from app.core.constants import CATEGORY_NOT_FOUND_MSG, PRODUCT_NOT_FOUND_MSG
 
 
 class ProductService:

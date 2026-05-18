@@ -1,8 +1,8 @@
-from datetime import datetime as dt
 import re
+from datetime import datetime as dt
 
 from sqlalchemy import DateTime, Integer, func
-from sqlalchemy.orm import declared_attr, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column
 
 
 def camel_to_snake(name: str) -> str:

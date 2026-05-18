@@ -1,9 +1,11 @@
 from fastapi_users.authentication import (
-    AuthenticationBackend, BearerTransport, JWTStrategy
+    AuthenticationBackend,
+    BearerTransport,
+    JWTStrategy,
 )
 
 from app.core.config import settings
-from app.core.constants import TOKEN_URL, NAME_AUTH_BACKEND
+from app.core.constants import NAME_AUTH_BACKEND, TOKEN_URL
 
 bearer_transport_strategy = BearerTransport(tokenUrl=TOKEN_URL)
 

@@ -1,7 +1,8 @@
+from app.core.constants import CATEGORY_NOT_FOUND_MSG
+from app.core.exceptions import ConflictException, NotFoundException
 from app.modules.categories.repositories import CategoryRepository
 from app.modules.products.models import Product
-from app.core.exceptions import NotFoundException, ConflictException
-from app.core.constants import CATEGORY_NOT_FOUND_MSG
+
 from .models import Category
 from .schemas import CategoryCreate, CategoryUpdate
 
