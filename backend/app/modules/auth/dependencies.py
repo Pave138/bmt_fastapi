@@ -18,7 +18,7 @@ current_superuser = fastapi_users.current_user(superuser=True)
 current_verified_user = fastapi_users.current_user(verified=True)
 current_active_user = fastapi_users.current_user(active=True)
 
-CurrentUser = Annotated[User, Depends(current_user)]
-CurrentSuperuser = Annotated[User, Depends(current_superuser)]
-CurrentVerifiedUser = Annotated[User, Depends(current_verified_user)]
-CurrentActiveUser = Annotated[User, Depends(current_active_user)]
+CurrentUserDep = Annotated[User, Depends(current_user)]
+CurrentSuperuserDep = Annotated[User, Depends(current_superuser)]
+CurrentVerifiedUserDep = Annotated[User, Depends(current_verified_user)]
+CurrentActiveUserDep = Annotated[User, Depends(current_active_user)]
