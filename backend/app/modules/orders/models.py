@@ -1,5 +1,6 @@
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
+from uuid import UUID
 
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import ForeignKey, Numeric
@@ -9,24 +10,26 @@ from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
 
 
-class OrderStatus(str, Enum):
-    PENDING = ('pending', 'в ожидании')
-    PAID = ('paid', 'оплачен')
-    SHIPPED = ('shipped', 'отправлен')
-    DELIVERED = ('delivered', 'доставлен')
-    CANCELED = ('canceled', 'отменен')
+class OrderStatus(StrEnum):
+    PENDING = 'pending'
+    PAID = 'paid'
+    SHIPPED = 'shipped'
+    DELIVERED = 'delivered'
+    CANCELED = 'canceled'
 
-    label: str
-
-    def __new__(cls, value: str, label: str):
-        obj = str.__new__(cls, value)
-        obj._value_ = value
-        obj.label = label
-        return obj
+    @property
+    def label(self) -> str:
+        return {
+            OrderStatus.PENDING: 'В ожидании',
+            OrderStatus.PAID: 'Оплачен',
+            OrderStatus.SHIPPED: 'Отправлен',
+            OrderStatus.DELIVERED: 'Доставлен',
+            OrderStatus.CANCELED: 'Отменен'
+        }[self]
 
 
 class Order(CommonMixin, TimestampMixin, Base):
-    user_id: Mapped[int] = mapped_column(
+    user_id: Mapped[UUID] = mapped_column(
         ForeignKey('user.id', ondelete='CASCADE'),
         nullable=False,
         index=True

@@ -1,3 +1,4 @@
+from uuid import UUID
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -6,7 +7,7 @@ from app.db.mixins import CommonMixin
 
 
 class Cart(CommonMixin, Base):
-    user_id: Mapped[int] = mapped_column(
+    user_id: Mapped[UUID] = mapped_column(
         ForeignKey('user.id', ondelete='CASCADE'),
         unique=True,
         nullable=False

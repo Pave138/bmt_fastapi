@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 
 from sqlalchemy import (
     CheckConstraint,
@@ -15,7 +16,7 @@ from app.db.mixins import CommonMixin, TimestampMixin
 
 
 class Review(CommonMixin, TimestampMixin, Base):
-    user_id: Mapped[int] = mapped_column(
+    user_id: Mapped[UUID] = mapped_column(
         ForeignKey('user.id', ondelete='CASCADE'),
         nullable=False
     )
