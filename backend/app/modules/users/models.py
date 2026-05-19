@@ -15,11 +15,6 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
         unique=True,
         nullable=True
     )
-    role: Mapped[str] = mapped_column(
-        String,
-        default='user',
-        index=True
-    )
     cart: Mapped[Optional['Cart']] = relationship(
         'Cart',
         back_populates='user',
@@ -28,6 +23,12 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     )
     reviews: Mapped[list['Review']] = relationship(
         'Review',
+        back_populates='user',
+        cascade='all, delete-orphan',
+        passive_deletes=True
+    )
+    orders: Mapped[list['Order']] = relationship(
+        'Order',
         back_populates='user',
         cascade='all, delete-orphan',
         passive_deletes=True
