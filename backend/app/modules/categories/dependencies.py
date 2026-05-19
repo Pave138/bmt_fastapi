@@ -8,7 +8,9 @@ from .repositories import CategoryRepository
 from .services import CategoryService
 
 
-async def get_category_repository(session: SessionDep):
+async def get_category_repository(
+        session: SessionDep
+) -> CategoryRepository:
     return CategoryRepository(session)
 
 
