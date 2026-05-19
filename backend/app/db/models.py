@@ -5,3 +5,4 @@ from app.modules.products.models import Product, ProductImage  # noqa
 from app.modules.carts.models import Cart  # noqa
 from app.modules.cart_items.models import CartItem  # noqa
 from app.modules.reviews.models import Review  # noqa
+from app.modules.orders.models import Order  # noqa
