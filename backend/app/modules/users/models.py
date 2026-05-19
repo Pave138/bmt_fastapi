@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
+
 class User(SQLAlchemyBaseUserTableUUID, Base):
     __tablename__ = "user"
 
@@ -24,4 +25,10 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
         back_populates='user',
         uselist=False,
         cascade='all, delete-orphan'
+    )
+    reviews: Mapped[list['Review']] = relationship(
+        'Review',
+        back_populates='user',
+        cascade='all, delete-orphan',
+        passive_deletes=True
     )
