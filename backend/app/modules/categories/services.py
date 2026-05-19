@@ -18,7 +18,14 @@ class CategoryService:
                 raise NotFoundException(
                     f'Подкатегория {data.parent_id} не найдена'
                 )
-        return await self.repository.create(data.model_dump())
+        try:
+            category = await self.repository.create(data.model_dump())
+            await self.repository.session.commit()
+            await self.repository.session.refresh(category)
+            return category
+        except Exception:
+            await self.repository.session.rollback()
+            raise
 
     async def get_categories(self) -> list[Category]:
         return await self.repository.get_all()
