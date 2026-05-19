@@ -1,10 +1,18 @@
-from typing import Optional
 from datetime import datetime as dt
-from enum import StrEnum
 from decimal import Decimal
+from enum import StrEnum
+from typing import Optional
 
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Integer,
+    Numeric,
+    String,
+    text,
+)
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import Integer, DateTime, String, Boolean, Numeric, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -24,7 +32,11 @@ class Coupon(CommonMixin, Base):
         index=True
     )
     discount_type: Mapped[DiscountType] = mapped_column(
-        SQLEnum(DiscountType),
+        SQLEnum(
+            DiscountType,
+            native_enum=False,
+            values_callable=lambda enum: [item.value for item in enum]
+        ),
         nullable=False
     )
     value: Mapped[Decimal] = mapped_column(
@@ -34,7 +46,7 @@ class Coupon(CommonMixin, Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
-        server_default='true',
+        server_default=text('true'),
         nullable=False
     )
     expires_at: Mapped[Optional[dt]] = mapped_column(
@@ -48,7 +60,7 @@ class Coupon(CommonMixin, Base):
     used_count: Mapped[int] = mapped_column(
         Integer,
         default=0,
-        server_default='0',
+        server_default=text('0'),
         nullable=False
     )
     min_order_amount: Mapped[Optional[Decimal]] = mapped_column(
