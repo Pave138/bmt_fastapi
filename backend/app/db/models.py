@@ -7,4 +7,4 @@ from app.modules.cart_items.models import CartItem  # noqa
 from app.modules.reviews.models import Review  # noqa
 from app.modules.orders.models import Order  # noqa
 from app.modules.order_items.models import OrderItem  # noqa
-from app.modules.coupons.models import Coupon
+from app.modules.coupons.models import Coupon  # noqa
