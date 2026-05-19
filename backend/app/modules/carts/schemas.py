@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
+from app.modules.cart_items.schemas import CartItemResponse
+
 
 class CartBase(BaseModel):
     user_id: int
