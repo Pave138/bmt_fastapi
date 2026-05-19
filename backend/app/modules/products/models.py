@@ -62,6 +62,12 @@ class Product(CommonMixin, TimestampMixin, Base):
         back_populates='product',
         cascade='all, delete-orphan'
     )
+    reviews: Mapped[list['Review']] = relationship(
+        'Review',
+        back_populates='product',
+        cascade='all, delete-orphan',
+        passive_deletes=True
+    )
 
     __table_args__ = (
         Index(
