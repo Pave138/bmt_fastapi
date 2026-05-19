@@ -2,7 +2,7 @@ from decimal import Decimal
 from enum import Enum
 
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import String, ForeignKey, Index, Numeric
+from sqlalchemy import ForeignKey, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -45,4 +45,10 @@ class Order(CommonMixin, TimestampMixin, Base):
     user: Mapped['User'] = relationship(
         'User',
         back_populates='orders'
+    )
+    items: Mapped[list['OrderItem']] = relationship(
+        'OrderItem',
+        back_populates='order',
+        cascade='all, delete-orphan',
+        passive_deletes=True
     )
