@@ -4,7 +4,7 @@ from app.modules.auth.dependencies import current_superuser
 
 from .dependencies import ProductServiceDep
 from .models import Product
-from .schemas import ProductCreate, ProductRead, ProductUpdate
+from .schemas import ProductCreate, ProductResponse, ProductUpdate
 
 router = APIRouter()
 
@@ -12,7 +12,7 @@ router = APIRouter()
 @router.post(
     '/',
     summary='Создать товар (superuser only)',
-    response_model=ProductRead,
+    response_model=ProductResponse,
     dependencies=[Depends(current_superuser)]
 )
 async def create_product(
@@ -25,7 +25,7 @@ async def create_product(
 @router.get(
     '/',
     summary='Получить все товары',
-    response_model=list[ProductRead]
+    response_model=list[ProductResponse]
 )
 async def get_products(
     service: ProductServiceDep,
@@ -38,7 +38,7 @@ async def get_products(
 @router.get(
     '/{product_id}',
     summary='Получить товар по ID',
-    response_model=ProductRead
+    response_model=ProductResponse
 )
 async def get_by_id(service: ProductServiceDep, product_id: int) -> Product:
     return await service.get_by_id(product_id)
@@ -47,7 +47,7 @@ async def get_by_id(service: ProductServiceDep, product_id: int) -> Product:
 @router.patch(
     '/{product_id}',
     summary='Изменить товар (superuser only)',
-    response_model=ProductRead,
+    response_model=ProductResponse,
     dependencies=[Depends(current_superuser)]
 )
 async def update_product(

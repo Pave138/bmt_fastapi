@@ -1,10 +1,15 @@
-from app.core.constants import CATEGORY_NOT_FOUND_MSG, PRODUCT_NOT_FOUND_MSG
+from redis.asyncio import Redis
+import structlog
+
+from app.core.constants import CATEGORY_NOT_FOUND_MSG, PRODUCT_NOT_FOUND_MSG, CACHE_TTL
 from app.core.exceptions import NotFoundException, ValidationException
 from app.modules.categories.dependencies import CategoryServiceDep
 
 from .models import Product
 from .repositories import ProductRepository
-from .schemas import ProductCreate, ProductUpdate
+from .schemas import ProductCreate, ProductUpdate, ProductResponse
+
+logger = structlog.get_logger()
 
 
 class ProductService:
@@ -12,10 +17,12 @@ class ProductService:
     def __init__(
         self,
         repository: ProductRepository,
-        category_service: CategoryServiceDep
+        category_service: CategoryServiceDep,
+        redis: Redis
     ):
         self.repository = repository
         self.category_service = category_service
+        self.redis = redis
 
     async def get_all(
         self,
@@ -59,11 +66,42 @@ class ProductService:
             await self.repository.session.rollback()
             raise
 
-    async def get_by_id(self, product_id: int) -> Product:
+    async def get_by_id(self, product_id: int) -> ProductResponse:
+        cache_key = f'product:{product_id}'
+
+        cached_product = await self.redis.get(cache_key)
+
+        if cached_product:
+            try:
+                logger.debug(
+                    'product.loaded',
+                    product_id=product_id,
+                    source='redis'
+                )
+                return ProductResponse.model_validate_json(cached_product)
+
+            except Exception:
+                logger.exception(
+                    f'Invalid cache for product{product_id}'
+                )
+                await self.redis.delete(cache_key)
+
         product = await self.repository.get_by_id(product_id)
         if not product:
+            logger.warning(
+                f'Product {product_id} not found'
+            )
             raise NotFoundException(PRODUCT_NOT_FOUND_MSG)
-        return product
+
+        response = ProductResponse.model_validate(product)
+
+        await self.redis.set(
+            cache_key,
+            response.model_dump_json(),
+            ex=CACHE_TTL
+        )
+        logger.debug(f'Product {product_id} loaded from DB')
+        return response
 
     async def get_by_category_id(
         self,

@@ -9,7 +9,7 @@ from app.modules.categories.schemas import (
     CategoryUpdate,
 )
 from app.modules.products.models import Product
-from app.modules.products.schemas import ProductRead
+from app.modules.products.schemas import ProductResponse
 
 router = APIRouter()
 
@@ -87,7 +87,7 @@ async def delete_category(
 @router.get(
     '/{category_id}/products',
     summary='Получить товары по категории',
-    response_model=list[ProductRead]
+    response_model=list[ProductResponse]
 )
 async def get_products_by_category(
     category_id: int,

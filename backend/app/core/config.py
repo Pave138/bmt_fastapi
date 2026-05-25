@@ -2,7 +2,7 @@
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.core.constants import APP_TITLE, DATABASE_URL
+from app.core.constants import APP_TITLE
 
 
 class Settings(BaseSettings):
@@ -15,9 +15,11 @@ class Settings(BaseSettings):
     )
 
     APP_TITLE: str = APP_TITLE
-    DATABASE_URL: str = DATABASE_URL
+    DATABASE_URL: str
     JWT_SECRET_KEY: str
     JWT_LIFETIME: int = 60 * 60
+
+    REDIS_URL: str
 
 
 settings = Settings()

@@ -28,7 +28,7 @@ class ProductUpdate(BaseModel):
     category_id: Optional[int] = None
 
 
-class ProductRead(ProductBase):
+class ProductResponse(ProductBase):
     id: int
     created_at: dt
     updated_at: dt
