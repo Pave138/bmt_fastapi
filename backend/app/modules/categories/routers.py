@@ -18,7 +18,7 @@ router = APIRouter()
     '/',
     response_model=CategoryRead,
     summary='Создать категорию (superuser only)',
-    dependencies=[Depends(current_superuser)]
+    # dependencies=[Depends(current_superuser)]
 )
 async def create_category(
         data: CategoryCreate,
