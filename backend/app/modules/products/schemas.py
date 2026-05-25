@@ -2,7 +2,7 @@ from datetime import datetime as dt
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 
 class ProductBase(BaseModel):
@@ -34,6 +34,11 @@ class ProductResponse(ProductBase):
     updated_at: dt
 
     model_config = ConfigDict(from_attributes=True)
+
+
+products_list_adapter = TypeAdapter(
+    list[ProductResponse]
+)
 
 
 class ProductImageBase(BaseModel):

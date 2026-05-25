@@ -1,8 +1,7 @@
 from typing import Type
 
-from redis.asyncio import Redis
 from pydantic import BaseModel
-import structlog
+from redis.asyncio import Redis
 
 from app.core.constants import CACHE_TTL
 

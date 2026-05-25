@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from redis.asyncio import Redis
 
@@ -6,8 +7,8 @@ from app.api.v1.routers import main_router
 from app.core.config import settings
 from app.core.logger import setup_logging
 from app.db import models  # noqa
-from app.middlewares.request_id import RequestIDMiddleware
 from app.middlewares.latency import LatencyMiddleware
+from app.middlewares.request_id import RequestIDMiddleware
 
 setup_logging()
 

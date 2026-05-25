@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.services.cache.dependencies import RedisDep
 from app.db.session import SessionDep
 from app.modules.categories.dependencies import CategoryServiceDep
+from app.services.cache.dependencies import RedisDep
 
 from .repositories import ProductRepository
 from .services import ProductService

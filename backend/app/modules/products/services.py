@@ -1,13 +1,23 @@
-from redis.asyncio import Redis
 import structlog
+from redis.asyncio import Redis
 
-from app.core.constants import CATEGORY_NOT_FOUND_MSG, PRODUCT_NOT_FOUND_MSG, CACHE_TTL
+from app.core.constants import (
+    CACHE_TTL,
+    CATEGORY_NOT_FOUND_MSG,
+    PRODUCT_NOT_FOUND_MSG,
+)
 from app.core.exceptions import NotFoundException, ValidationException
 from app.modules.categories.dependencies import CategoryServiceDep
+from app.services.cache.keys import get_product_key
 
 from .models import Product
 from .repositories import ProductRepository
-from .schemas import ProductCreate, ProductUpdate, ProductResponse
+from .schemas import (
+    ProductCreate,
+    ProductResponse,
+    ProductUpdate,
+    products_list_adapter,
+)
 
 logger = structlog.get_logger()
 
@@ -28,11 +38,49 @@ class ProductService:
         self,
         limit: int,
         offset: int
-    ) -> list[Product]:
-        return await self.repository.get_all(
+    ) -> list[ProductResponse]:
+        cache_key = f'products:{limit}:{offset}'
+
+        cached_products = await self.redis.get(cache_key)
+
+        if cached_products:
+            logger.info(
+                'products.loaded_from_cache',
+                source='redis',
+                limit=limit,
+                offset=offset
+            )
+
+            return products_list_adapter.validate_json(
+                cached_products
+            )
+
+        products = await self.repository.get_all(
             limit=limit,
             offset=offset
         )
+
+        response = [
+            ProductResponse.model_validate(product)
+            for product in products
+        ]
+
+        await self.redis.set(
+            cache_key,
+            products_list_adapter.dump_json(response),
+            ex=CACHE_TTL
+        )
+
+        logger.info(
+            'products.loaded_from_db',
+            source='db',
+            limit=limit,
+            offset=offset
+        )
+        return [
+            ProductResponse.model_validate(product)
+            for product in response
+        ]
 
     async def create(self, data: ProductCreate) -> Product:
         if data.price <= 0:
@@ -67,7 +115,7 @@ class ProductService:
             raise
 
     async def get_by_id(self, product_id: int) -> ProductResponse:
-        cache_key = f'product:{product_id}'
+        cache_key = get_product_key(product_id)
 
         cached_product = await self.redis.get(cache_key)
 
@@ -82,14 +130,16 @@ class ProductService:
 
             except Exception:
                 logger.exception(
-                    f'Invalid cache for product{product_id}'
+                    'Invalid cache for product',
+                    product_id=product_id
                 )
                 await self.redis.delete(cache_key)
 
         product = await self.repository.get_by_id(product_id)
         if not product:
             logger.warning(
-                f'Product {product_id} not found'
+                'product.not_found',
+                product_id=product_id
             )
             raise NotFoundException(PRODUCT_NOT_FOUND_MSG)
 
@@ -100,7 +150,11 @@ class ProductService:
             response.model_dump_json(),
             ex=CACHE_TTL
         )
-        logger.debug(f'Product {product_id} loaded from DB')
+        logger.debug(
+            'product.loaded',
+            product_id=product_id,
+            source='db'
+        )
         return response
 
     async def get_by_category_id(
@@ -116,6 +170,23 @@ class ProductService:
             category_id=category_id,
             limit=limit,
             offset=offset
+        )
+
+    async def invalidate_product_cache(
+            self,
+            product_id: int
+    ):
+        await self.redis.delete(
+            get_product_key(product_id)
+        )
+        keys = await self.redis.keys('products:*')
+
+        if keys:
+            await self.redis.delete(*keys)
+
+        logger.info(
+            'product_cache_invalidated',
+            product_id=product_id
         )
 
     async def update(
@@ -174,15 +245,33 @@ class ProductService:
             await self.repository.session.rollback()
             raise
 
-    async def delete(self, product_id: int) -> Product:
-        product = await self.get_by_id(product_id)
+    async def delete(self, product_id: int) -> ProductResponse:
+        product = await self.repository.get_by_id(product_id)
+
+        if not product:
+            raise NotFoundException(
+                PRODUCT_NOT_FOUND_MSG
+            )
+        response = ProductResponse.model_validate(product)
 
         try:
             await self.repository.delete(product)
             await self.repository.session.commit()
-            return product
+            await self.invalidate_product_cache(product_id)
+
+            logger.info(
+                'product.deleted',
+                product_id=product_id
+            )
+            return response
+
         except Exception:
             await self.repository.session.rollback()
+
+            logger.exception(
+                'product.delete_failed',
+                product_id=product_id
+            )
             raise
 
     async def activate(self, product_id: int) -> Product:
@@ -249,5 +338,3 @@ class ProductService:
         except Exception:
             await self.repository.session.rollback()
             raise
-
-

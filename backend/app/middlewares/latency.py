@@ -1,6 +1,6 @@
 import time
-import structlog
 
+import structlog
 from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = structlog.get_logger()
