@@ -8,7 +8,11 @@ from app.core.constants import (
 )
 from app.core.exceptions import NotFoundException, ValidationException
 from app.modules.categories.dependencies import CategoryServiceDep
-from app.services.cache.keys import get_product_key
+from app.services.cache.keys import (
+    get_product_key,
+    get_products_key,
+    get_category_key
+)
 
 from .models import Product
 from .repositories import ProductRepository
@@ -39,7 +43,7 @@ class ProductService:
         limit: int,
         offset: int
     ) -> list[ProductResponse]:
-        cache_key = f'products:{limit}:{offset}'
+        cache_key = get_products_key(limit, offset)
 
         cached_products = await self.redis.get(cache_key)
 
@@ -163,6 +167,10 @@ class ProductService:
         limit: int = 100,
         offset: int = 0
     ) -> list[Product]:
+        cache_key = get_category_key(category_id)
+
+        cached_category = await self.redis.get(cache_key)
+        
         category = await self.category_service.get_by_id(category_id)
         if not category:
             raise NotFoundException(CATEGORY_NOT_FOUND_MSG)
