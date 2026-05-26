@@ -4,14 +4,15 @@ from redis.asyncio import Redis
 from app.core.constants import (
     CACHE_TTL,
     CATEGORY_NOT_FOUND_MSG,
+    CATEGORY_PRODUCTS_CACHE_PATTERN,
     PRODUCT_NOT_FOUND_MSG,
 )
 from app.core.exceptions import NotFoundException, ValidationException
 from app.modules.categories.dependencies import CategoryServiceDep
 from app.services.cache.keys import (
+    get_category_key,
     get_product_key,
     get_products_key,
-    get_category_key
 )
 
 from .models import Product
@@ -166,42 +167,73 @@ class ProductService:
         category_id: int,
         limit: int = 100,
         offset: int = 0
-    ) -> list[Product]:
-        cache_key = get_category_key(category_id)
+    ) -> list[ProductResponse]:
+        cache_key = get_category_key(category_id, limit, offset)
 
-        cached_category = await self.redis.get(cache_key)
+        cached_products = await self.redis.get(cache_key)
+
+        if cached_products:
+            logger.debug(
+                'products.category.cache_hit',
+                category_id=category_id
+            )
+            return products_list_adapter.validate_json(
+                cached_products
+            )
         
         category = await self.category_service.get_by_id(category_id)
+
         if not category:
             raise NotFoundException(CATEGORY_NOT_FOUND_MSG)
-        return await self.repository.get_all_by_category_id(
+
+        products = await self.repository.get_all_by_category_id(
             category_id=category_id,
             limit=limit,
             offset=offset
         )
 
+        response = [
+            ProductResponse.model_validate(product)
+            for product in products
+        ]
+        await self.redis.set(
+            cache_key,
+            products_list_adapter.dump_json(response),
+            ex=CACHE_TTL
+        )
+        logger.debug(
+            'products.category.cached',
+            category_id=category_id,
+            count=len(response)
+        )
+        return response
+
     async def invalidate_product_cache(
             self,
             product_id: int
     ):
-        await self.redis.delete(
+        keys_to_delete = [
             get_product_key(product_id)
-        )
-        keys = await self.redis.keys('products:*')
+        ]
+        async for key in self.redis.scan_iter(
+            CATEGORY_PRODUCTS_CACHE_PATTERN
+        ):
+            keys_to_delete.append(key)
 
-        if keys:
-            await self.redis.delete(*keys)
+        if keys_to_delete:
+            await self.redis.delete(*keys_to_delete)
 
         logger.info(
             'product_cache_invalidated',
-            product_id=product_id
+            product_id=product_id,
+            deleted_keys=len(keys_to_delete)
         )
 
     async def update(
         self,
         product_id: int,
         data: ProductUpdate
-    ) -> Product:
+    ) -> ProductResponse:
         product = await self.get_by_id(product_id)
         update_data = data.model_dump(exclude_unset=True)
 
