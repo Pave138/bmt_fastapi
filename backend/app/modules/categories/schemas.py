@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 
 class CategoryBase(BaseModel):
@@ -17,7 +17,7 @@ class CategoryUpdate(BaseModel):
     parent_id: Optional[int] = None
 
 
-class CategoryRead(CategoryBase):
+class CategoryResponse(CategoryBase):
     id: int
     name: str
     parent_id: Optional[int] = None
@@ -25,9 +25,13 @@ class CategoryRead(CategoryBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+categories_list_adapter = TypeAdapter(
+    list[CategoryResponse]
+)
+
 class CategoryTree(BaseModel):
     id: int
     name: str
-    children: Optional[List[CategoryRead]] = []
+    children: Optional[List[CategoryResponse]] = []
 
     model_config = ConfigDict(from_attributes=True)

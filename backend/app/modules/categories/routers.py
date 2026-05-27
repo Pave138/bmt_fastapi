@@ -5,7 +5,7 @@ from app.modules.categories.dependencies import CategoryServiceDep
 from app.modules.categories.models import Category
 from app.modules.categories.schemas import (
     CategoryCreate,
-    CategoryRead,
+    CategoryResponse,
     CategoryUpdate,
 )
 from app.modules.products.models import Product
@@ -16,7 +16,7 @@ router = APIRouter()
 
 @router.post(
     '/',
-    response_model=CategoryRead,
+    response_model=CategoryResponse,
     summary='Создать категорию (superuser only)',
     # dependencies=[Depends(current_superuser)]
 )
@@ -29,7 +29,7 @@ async def create_category(
 
 @router.get(
     '/',
-    response_model=list[CategoryRead],
+    response_model=list[CategoryResponse],
     summary='Получить все категории',
 )
 async def get_categories(service: CategoryServiceDep) -> list[Category]:
@@ -38,7 +38,7 @@ async def get_categories(service: CategoryServiceDep) -> list[Category]:
 
 @router.get(
     '/{category_id}',
-    response_model=CategoryRead,
+    response_model=CategoryResponse,
     summary='Получить категорию по ID'
 )
 async def get_by_id(category_id: int, service: CategoryServiceDep) -> Category:
@@ -47,7 +47,7 @@ async def get_by_id(category_id: int, service: CategoryServiceDep) -> Category:
 
 @router.patch(
     '/{category_id}',
-    response_model=CategoryRead,
+    response_model=CategoryResponse,
     summary='Изменить категорию по ID (superuser only)',
     dependencies=[Depends(current_superuser)]
 )
@@ -61,7 +61,7 @@ async def update_category(
 
 @router.get(
     '/{category_id}/children',
-    response_model=list[CategoryRead],
+    response_model=list[CategoryResponse],
     summary='Получает подкатегории'
 )
 async def get_children(

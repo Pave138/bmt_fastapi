@@ -15,7 +15,6 @@ from app.services.cache.keys import (
     get_products_key,
 )
 
-from .models import Product
 from .repositories import ProductRepository
 from .schemas import (
     ProductCreate,
@@ -49,8 +48,8 @@ class ProductService:
         cached_products = await self.redis.get(cache_key)
 
         if cached_products:
-            logger.info(
-                'products.loaded_from_cache',
+            logger.debug(
+                'products.loaded',
                 source='redis',
                 limit=limit,
                 offset=offset
@@ -77,7 +76,7 @@ class ProductService:
         )
 
         logger.info(
-            'products.loaded_from_db',
+            'products.loaded',
             source='db',
             limit=limit,
             offset=offset
@@ -87,7 +86,7 @@ class ProductService:
             for product in response
         ]
 
-    async def create(self, data: ProductCreate) -> Product:
+    async def create(self, data: ProductCreate) -> ProductResponse:
         if data.price <= 0:
             raise ValidationException(
                 'Цена должна быть положительной.'
@@ -114,9 +113,17 @@ class ProductService:
             )
             await self.repository.session.commit()
             await self.repository.session.refresh(product)
-            return product
+            logger.debug(
+                'product.create',
+                product_id=product.id
+            )
+            return ProductResponse.model_validate(product)
+
         except Exception:
             await self.repository.session.rollback()
+            logger.exception(
+                'product.create_failed'
+            )
             raise
 
     async def get_by_id(self, product_id: int) -> ProductResponse:

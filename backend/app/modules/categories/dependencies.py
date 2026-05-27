@@ -6,6 +6,7 @@ from app.db.session import SessionDep
 
 from .repositories import CategoryRepository
 from .services import CategoryService
+from app.services.cache.dependencies import RedisDep
 
 
 async def get_category_repository(
@@ -21,9 +22,13 @@ CategoryRepositoryDep = Annotated[
 
 
 async def get_category_service(
-    repository: CategoryRepositoryDep
+    repository: CategoryRepositoryDep,
+    redis: RedisDep
 ) -> CategoryService:
-    return CategoryService(repository)
+    return CategoryService(
+        repository=repository,
+        redis=redis
+    )
 
 
 CategoryServiceDep = Annotated[
