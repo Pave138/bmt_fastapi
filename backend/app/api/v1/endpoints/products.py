@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, status
 
 from app.modules.auth.dependencies import current_superuser
-
-from .dependencies import ProductServiceDep
-from .models import Product
-from .schemas import ProductCreate, ProductResponse, ProductUpdate
+from app.modules.products.dependencies import ProductServiceDep
+from app.modules.products.schemas import (
+    ProductCreate,
+    ProductResponse,
+    ProductUpdate,
+)
 
 router = APIRouter()
 
@@ -18,7 +20,7 @@ router = APIRouter()
 async def create_product(
     data: ProductCreate,
     service: ProductServiceDep
-) -> Product:
+) -> ProductResponse:
     return await service.create(data)
 
 
@@ -31,7 +33,7 @@ async def get_products(
     service: ProductServiceDep,
     limit: int = 10,
     offset: int = 0
-) -> list[Product]:
+) -> list[ProductResponse]:
     return await service.get_all(limit=limit, offset=offset)
 
 
@@ -40,7 +42,10 @@ async def get_products(
     summary='Получить товар по ID',
     response_model=ProductResponse
 )
-async def get_by_id(service: ProductServiceDep, product_id: int) -> Product:
+async def get_by_id(
+    service: ProductServiceDep,
+    product_id: int
+) -> ProductResponse:
     return await service.get_by_id(product_id)
 
 
@@ -54,7 +59,7 @@ async def update_product(
     product_id: int,
     data: ProductUpdate,
     service: ProductServiceDep
-) -> Product:
+) -> ProductResponse:
     return await service.update(product_id, data)
 
 

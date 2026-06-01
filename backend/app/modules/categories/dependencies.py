@@ -3,10 +3,10 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.db.session import SessionDep
+from app.services.cache.dependencies import RedisDep
 
 from .repositories import CategoryRepository
 from .services import CategoryService
-from app.services.cache.dependencies import RedisDep
 
 
 async def get_category_repository(

@@ -8,9 +8,10 @@ from app.core.constants import (
     PRODUCT_NOT_FOUND_MSG,
 )
 from app.core.exceptions import NotFoundException, ValidationException
-from app.modules.categories.dependencies import CategoryServiceDep
+from app.modules.categories.services import CategoryService
+from app.services.base_service import BaseService
 from app.services.cache.keys import (
-    get_category_key,
+    get_category_products_key,
     get_product_key,
     get_products_key,
 )
@@ -26,12 +27,12 @@ from .schemas import (
 logger = structlog.get_logger()
 
 
-class ProductService:
+class ProductService(BaseService):
 
     def __init__(
         self,
         repository: ProductRepository,
-        category_service: CategoryServiceDep,
+        category_service: CategoryService,
         redis: Redis
     ):
         self.repository = repository
@@ -47,7 +48,7 @@ class ProductService:
 
         cached_products = await self.redis.get(cache_key)
 
-        if cached_products:
+        if cached_products is not None:
             logger.debug(
                 'products.loaded',
                 source='redis',
@@ -64,10 +65,9 @@ class ProductService:
             offset=offset
         )
 
-        response = [
-            ProductResponse.model_validate(product)
-            for product in products
-        ]
+        response = products_list_adapter.validate_python(
+            products
+        )
 
         await self.redis.set(
             cache_key,
@@ -81,10 +81,7 @@ class ProductService:
             limit=limit,
             offset=offset
         )
-        return [
-            ProductResponse.model_validate(product)
-            for product in response
-        ]
+        return response
 
     async def create(self, data: ProductCreate) -> ProductResponse:
         if data.price <= 0:
@@ -102,11 +99,8 @@ class ProductService:
                 'Количество товара не может быть отрицательным.'
             )
 
-        category = await self.category_service.get_by_id(data.category_id)
-        if category is None:
-            raise NotFoundException(
-                'Категория не найдена'
-            )
+        await self.category_service.get_by_id(data.category_id)
+
         try:
             product = await self.repository.create(
                 data.model_dump()
@@ -175,7 +169,7 @@ class ProductService:
         limit: int = 100,
         offset: int = 0
     ) -> list[ProductResponse]:
-        cache_key = get_category_key(category_id, limit, offset)
+        cache_key = get_category_products_key(category_id, limit, offset)
 
         cached_products = await self.redis.get(cache_key)
 
@@ -277,20 +271,11 @@ class ProductService:
                     CATEGORY_NOT_FOUND_MSG
                 )
 
-        ## Update fields.
-
-        for field, value in update_data.items():
-            setattr(product, field, value)
-
-        ## Save.
-
-        try:
-            await self.repository.session.commit()
-            await self.repository.session.refresh(product)
-            return product
-        except Exception:
-            await self.repository.session.rollback()
-            raise
+        return await self.update_model(
+            product,
+            update_data,
+            self.repository.session
+        )
 
     async def delete(self, product_id: int) -> ProductResponse:
         product = await self.repository.get_by_id(product_id)

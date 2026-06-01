@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, status
 
 from app.modules.auth.dependencies import CurrentUserDep, current_superuser
-
-from .dependencies import CartServiceDep
-from .models import Cart
-from .schemas import CartCreate, CartResponse
+from app.modules.carts.dependencies import CartServiceDep
+from app.modules.carts.models import Cart
+from app.modules.carts.schemas import CartCreate, CartResponse
 
 router = APIRouter()
 

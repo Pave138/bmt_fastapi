@@ -11,6 +11,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.constants import REVIEW_RATING_GE, REVIEW_RATING_LE
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
 
@@ -43,7 +44,7 @@ class Review(CommonMixin, TimestampMixin, Base):
 
     __table_args__ = (
         CheckConstraint(
-            'rating BETWEEN 1 AND 5',
+            f'rating BETWEEN {REVIEW_RATING_GE} AND {REVIEW_RATING_LE}',
             name='check_review_rating_range'
         ),
         UniqueConstraint(

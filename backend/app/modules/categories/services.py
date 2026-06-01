@@ -1,19 +1,25 @@
 import structlog
 from redis.asyncio import Redis
 
-from app.core.constants import CATEGORY_NOT_FOUND_MSG, CACHE_TTL
+from app.core.constants import CACHE_TTL, CATEGORY_NOT_FOUND_MSG
 from app.core.exceptions import ConflictException, NotFoundException
 from app.modules.categories.repositories import CategoryRepository
 from app.modules.products.models import Product
+from app.services.cache.keys import get_categories_key, get_category_key
 
 from .models import Category
-from .schemas import CategoryCreate, CategoryUpdate, CategoryResponse, categories_list_adapter
-from app.services.cache.keys import get_categories_key, get_category_key
+from .schemas import (
+    CategoryCreate,
+    CategoryResponse,
+    CategoryUpdate,
+    categories_list_adapter,
+)
+from app.services.base_service import BaseService
 
 logger = structlog.get_logger()
 
 
-class CategoryService:
+class CategoryService(BaseService):
 
     def __init__(
         self,
@@ -103,8 +109,10 @@ class CategoryService:
 
         category = await self.repository.get_by_id(category_id)
 
-        # if not category:
-
+        if not category:
+            raise NotFoundException(
+                CATEGORY_NOT_FOUND_MSG
+            )
 
         response = CategoryResponse.model_validate(category)
         await self.redis.set(
@@ -119,26 +127,22 @@ class CategoryService:
         )
         return response
 
-        if not category:
-            raise NotFoundException(CATEGORY_NOT_FOUND_MSG)
-        return category
+    async def update(
+        self,
+        category_id: int,
+        data: CategoryUpdate
+    ) -> CategoryResponse:
 
-    async def update(self, category_id: int, data: CategoryUpdate) -> Category:
         category = await self.get_by_id(category_id)
         update_data = data.model_dump(exclude_unset=True)
         if 'parent_id' in update_data:
             await self.get_by_id(update_data['parent_id'])
 
-        for field, value in update_data.items():
-            setattr(category, field, value)
-
-        try:
-            await self.repository.session.commit()
-            await self.repository.session.refresh(category)
-            return category
-        except Exception:
-            await self.repository.session.rollback()
-            raise
+        return await self.update_model(
+            category,
+            update_data,
+            self.repository.session
+        )
 
     async def get_children(
         self,

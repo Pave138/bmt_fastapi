@@ -14,7 +14,10 @@ class ProductRepository:
 
     async def get_all(self, limit: int, offset: int) -> list[Product]:
         result = await self.session.execute(
-            select(Product).offset(offset).limit(limit)
+            select(Product)
+            .order_by(Product.id)
+            .offset(offset)
+            .limit(limit)
         )
         return result.scalars().all()
 
