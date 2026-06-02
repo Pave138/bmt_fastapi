@@ -19,10 +19,8 @@ class CategoryUpdate(BaseModel):
     parent_id: Optional[int] = None
 
 
-class CategoryResponse(BaseModel):
+class CategoryResponse(CategoryBase):
     id: int
-    name: str
-    parent_id: Optional[int] = None
     children: List['CategoryResponse'] = Field(
         default_factory=list
     )
