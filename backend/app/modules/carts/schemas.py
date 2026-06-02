@@ -1,10 +1,12 @@
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict
 
 from app.modules.cart_items.schemas import CartItemResponse
 
 
 class CartBase(BaseModel):
-    user_id: int
+    user_id: UUID
 
 
 class CartCreate(CartBase):

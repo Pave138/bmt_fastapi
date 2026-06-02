@@ -18,12 +18,12 @@ router = APIRouter()
     '/',
     response_model=CategoryResponse,
     summary='Создать категорию (superuser only)',
-    # dependencies=[Depends(current_superuser)]
+    dependencies=[Depends(current_superuser)]
 )
 async def create_category(
         data: CategoryCreate,
         service: CategoryServiceDep
-) -> Category:
+) -> CategoryResponse:
     return await service.create_category(data)
 
 
@@ -32,7 +32,9 @@ async def create_category(
     response_model=list[CategoryResponse],
     summary='Получить все категории',
 )
-async def get_categories(service: CategoryServiceDep) -> list[Category]:
+async def get_categories(
+    service: CategoryServiceDep
+) -> list[CategoryResponse]:
     return await service.get_categories()
 
 
@@ -41,7 +43,10 @@ async def get_categories(service: CategoryServiceDep) -> list[Category]:
     response_model=CategoryResponse,
     summary='Получить категорию по ID'
 )
-async def get_by_id(category_id: int, service: CategoryServiceDep) -> Category:
+async def get_by_id(
+    category_id: int,
+    service: CategoryServiceDep
+) -> CategoryResponse:
     return await service.get_by_id(category_id)
 
 
@@ -55,7 +60,7 @@ async def update_category(
     category_id: int,
     data: CategoryUpdate,
     service: CategoryServiceDep
-) -> Category:
+) -> CategoryResponse:
     return await service.update(category_id, data)
 
 

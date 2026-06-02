@@ -1,11 +1,11 @@
 import structlog
 from redis.asyncio import Redis
 
-from app.core.constants import CACHE_TTL, REVIEW_NOT_FOUND_MSG, REVIEW_RATING_ERR_MSG
-from app.core.exceptions import NotFoundException, ValidationException
+from app.core.constants import CACHE_TTL, REVIEW_NOT_FOUND_MSG, REVIEW_RATING_ERR_MSG, REVIEW_CACHE_PATTERN
+from app.core.exceptions import NotFoundException, ValidationException, ForbiddenException
 from app.modules.products.services import ProductService
-from app.modules.reviews.repositories import ReviewRepository
-from app.modules.reviews.schemas import (
+from .repositories import ReviewRepository
+from .schemas import (
     ReviewResponse,
     ReviewUpdate,
     reviews_list_adapter, ReviewCreate,
@@ -140,6 +140,7 @@ class ReviewService(BaseService):
                 'review.create',
                 review_id=review.id
             )
+            await self.invalidate_review_cache(product_id)
             return ReviewResponse.model_validate(review)
         except Exception:
             await self.repository.session.rollback()
@@ -149,6 +150,28 @@ class ReviewService(BaseService):
             raise ValidationException(
                 'Вы уже оставляли отзыв на этот товар'
             )
+
+    async def invalidate_review_cache(
+            self,
+            review_id: int
+    ):
+        keys_to_delete = [
+            get_review_key(review_id)
+        ]
+
+        async for key in self.redis.scan_iter(
+            REVIEW_CACHE_PATTERN
+        ):
+            keys_to_delete.append(key)
+
+        if keys_to_delete:
+            await self.redis.delete(*keys_to_delete)
+
+        logger.info(
+            'review_cache_invalidated',
+            review_id=review_id,
+            deleted_keys=len(keys_to_delete)
+        )
 
     async def update(
         self,
@@ -165,7 +188,46 @@ class ReviewService(BaseService):
             self.repository.session
         )
 
+    async def delete(
+        self,
+        review_id: int,
+        user: User
+    ) -> ReviewResponse:
+        review = await self.repository.get_by_id(review_id)
 
+        if not review:
+            logger.warning(
+                'review.not_found',
+                review_id=review_id
+            )
+            raise NotFoundException(REVIEW_NOT_FOUND_MSG)
 
+        if review.user_id != user.id:
+            logger.warning(
+                'review.delete_forbidden',
+                review_user_id=review.user_id,
+                user_id=user.id
+            )
+            raise ForbiddenException(
+                'Удалять чужие комментарии запрещено'
+            )
 
+        try:
+            await self.repository.delete(review)
+            await self.repository.session.commit()
+            await self.invalidate_review_cache(review_id)
 
+            logger.debug(
+                'review.delete',
+                review_id=review_id
+            )
+            return ReviewResponse.model_validate(review)
+
+        except Exception:
+            await self.repository.session.rollback()
+
+            logger.exception(
+                'review.delete_failed',
+                review_id=review_id
+            )
+            raise

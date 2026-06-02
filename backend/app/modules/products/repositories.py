@@ -15,6 +15,9 @@ class ProductRepository:
     async def get_all(self, limit: int, offset: int) -> list[Product]:
         result = await self.session.execute(
             select(Product)
+            .options(
+                selectinload(Product.reviews)
+            )
             .order_by(Product.id)
             .offset(offset)
             .limit(limit)
@@ -23,7 +26,11 @@ class ProductRepository:
 
     async def get_by_id(self, product_id: int) -> Optional[Product]:
         result = await self.session.execute(
-            select(Product).where(Product.id == product_id)
+            select(Product)
+            .where(Product.id == product_id)
+            .options(
+                selectinload(Product.reviews)
+            )
         )
         return result.scalar_one_or_none()
 

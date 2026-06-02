@@ -11,6 +11,7 @@ CATEGORY_NOT_FOUND_MSG = 'Категория не найдена.'
 PRODUCT_NOT_FOUND_MSG = 'Товар не найден.'
 
 CATEGORY_PRODUCTS_CACHE_PATTERN = 'products:category:*'
+REVIEW_CACHE_PATTERN = 'reviews:product:*'
 
 REVIEW_RATING_GE = 1
 REVIEW_RATING_LE = 5

@@ -36,3 +36,19 @@ async def create_review(
         user=user,
         data=data
     )
+
+
+@router.delete(
+    '/',
+    response_model=ReviewResponse,
+    summary='Удалить отзыв'
+)
+async def delete_review(
+    review_id: int,
+    user: CurrentUserDep,
+    service: ReviewServiceDep
+):
+    return await service.delete(
+        review_id=review_id,
+        user=user
+    )

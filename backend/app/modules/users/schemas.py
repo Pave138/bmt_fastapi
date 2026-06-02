@@ -5,11 +5,11 @@ from fastapi_users import schemas
 
 
 class UserRead(schemas.BaseUser[UUID]):
-    username: Optional[str]
+    username: Optional[str] = None
 
 
 class UserCreate(schemas.BaseUserCreate):
-    username: str
+    username: Optional[str] = None
 
 
 class UserUpdate(schemas.BaseUserUpdate):

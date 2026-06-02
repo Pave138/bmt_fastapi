@@ -4,6 +4,8 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
+from app.modules.reviews.schemas import ReviewResponse
+
 
 class ProductBase(BaseModel):
     name: str
@@ -32,6 +34,7 @@ class ProductResponse(ProductBase):
     id: int
     created_at: dt
     updated_at: dt
+    reviews: list[ReviewResponse]
 
     model_config = ConfigDict(from_attributes=True)
 

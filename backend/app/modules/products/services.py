@@ -284,7 +284,6 @@ class ProductService(BaseService):
             raise NotFoundException(
                 PRODUCT_NOT_FOUND_MSG
             )
-        response = ProductResponse.model_validate(product)
 
         try:
             await self.repository.delete(product)
@@ -295,7 +294,7 @@ class ProductService(BaseService):
                 'product.deleted',
                 product_id=product_id
             )
-            return response
+            return ProductResponse.model_validate(product)
 
         except Exception:
             await self.repository.session.rollback()

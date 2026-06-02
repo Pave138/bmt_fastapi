@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from app.modules.auth.backends import auth_backend
 from app.modules.auth.dependencies import fastapi_users
-from app.modules.auth.schemas import UserCreate, UserRead
+from app.modules.users.schemas import UserCreate, UserRead
 
 router = APIRouter()
 

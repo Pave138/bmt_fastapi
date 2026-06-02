@@ -15,7 +15,7 @@ router = APIRouter()
     '/',
     summary='Создать товар (superuser only)',
     response_model=ProductResponse,
-    # dependencies=[Depends(current_superuser)]
+    dependencies=[Depends(current_superuser)]
 )
 async def create_product(
     data: ProductCreate,
@@ -53,7 +53,7 @@ async def get_by_id(
     '/{product_id}',
     summary='Изменить товар (superuser only)',
     response_model=ProductResponse,
-    # dependencies=[Depends(current_superuser)]
+    dependencies=[Depends(current_superuser)]
 )
 async def update_product(
     product_id: int,
@@ -65,7 +65,7 @@ async def update_product(
 
 @router.delete(
     '/{product_id}',
-    # summary='Удалить товар (superuser only)',
+    summary='Удалить товар (superuser only)',
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(current_superuser)]
 )
