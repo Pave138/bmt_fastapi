@@ -64,18 +64,6 @@ async def update_category(
     return await service.update(category_id, data)
 
 
-@router.get(
-    '/{category_id}/children',
-    response_model=list[CategoryResponse],
-    summary='Получает подкатегории'
-)
-async def get_children(
-    category_id: int,
-    service: CategoryServiceDep
-) -> list[Category]:
-    return await service.get_children(category_id)
-
-
 @router.delete(
     '/{category_id}',
     status_code=status.HTTP_204_NO_CONTENT,

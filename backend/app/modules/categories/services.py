@@ -12,7 +12,7 @@ from .schemas import (
     CategoryCreate,
     CategoryResponse,
     CategoryUpdate,
-    categories_list_adapter,
+    categories_list_adapter, to_response
 )
 from app.services.base_service import BaseService
 
@@ -62,7 +62,7 @@ class CategoryService(BaseService):
                 source='redis'
             )
 
-            return categories_list_adapter.dump_json(
+            return categories_list_adapter.validate_json(
                 cached_categories
             )
 
@@ -79,14 +79,11 @@ class CategoryService(BaseService):
             ex=CACHE_TTL
         )
 
-        logger.info(
+        logger.debug(
             'categories.loaded_from_cache',
             source='db'
         )
-        return [
-            CategoryResponse.model_validate(category)
-            for category in response
-        ]
+        return response
 
     async def get_by_id(self, category_id: int) -> CategoryResponse:
         cache_key = get_category_key(category_id)
@@ -114,7 +111,7 @@ class CategoryService(BaseService):
                 CATEGORY_NOT_FOUND_MSG
             )
 
-        response = CategoryResponse.model_validate(category)
+        response = to_response(category)
         await self.redis.set(
             cache_key,
             response.model_dump_json(),

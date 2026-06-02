@@ -13,7 +13,11 @@ class CategoryRepository:
         self.session = session
 
     async def get_all(self) -> list[Category]:
-        result = await self.session.execute(select(Category))
+        result = await self.session.execute(
+            select(Category).options(
+                selectinload(Category.children)
+            )
+        )
         return result.scalars().all()
 
     async def get_by_id(self, category_id: int) -> Optional[Category]:

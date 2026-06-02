@@ -24,12 +24,14 @@ class Category(CommonMixin, Base):
     parent: Mapped[Optional['Category']] = relationship(
         'Category',
         remote_side='Category.id',
-        back_populates='children'
+        back_populates='children',
+        lazy="selectin"
     )
     children: Mapped[list['Category']] = relationship(
         'Category',
         back_populates='parent',
-        cascade='all, delete-orphan'
+        cascade='all, delete-orphan',
+        lazy="selectin"
     )
     products: Mapped[list['Product']] = relationship(
         'Product',

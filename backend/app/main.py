@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
 
 from app.api.v1.routers import main_router
@@ -35,7 +36,21 @@ app = FastAPI(
     title=settings.APP_TITLE,
     lifespan=lifespan
 )
+
+origins = [
+    "http://localhost:3000",      # React dev server
+    "http://localhost:5173",      # Vite dev server
+    "https://yourfrontend.com",   # Production domain
+]
+
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(LatencyMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,           # Allowed domains
+    allow_credentials=True,          # Allow cookies and auth headers
+    allow_methods=["*"],             # Allow all standard HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],             # Allow all HTTP headers
+)
 
 app.include_router(main_router)
