@@ -18,10 +18,11 @@ router = APIRouter()
     dependencies=[Depends(current_superuser)]
 )
 async def create_product(
+    category_id: int,
     data: ProductCreate,
     service: ProductServiceDep
 ) -> ProductResponse:
-    return await service.create(data)
+    return await service.create(category_id, data)
 
 
 @router.get(

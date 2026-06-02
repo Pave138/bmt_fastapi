@@ -12,20 +12,39 @@ class CategoryRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_all(self) -> list[Category]:
+    async def get_all_for_tree(
+        self,
+    ) -> list[dict]:
+
         result = await self.session.execute(
-            select(Category).options(
-                selectinload(Category.children)
+
+            select(
+                Category.id,
+                Category.name,
+                Category.parent_id
             )
+
         )
-        return result.scalars().all()
+
+        rows = result.all()
+
+        return [
+
+            {
+                "id": row.id,
+                "name": row.name,
+                "parent_id": row.parent_id
+            }
+
+            for row in rows
+        ]
 
     async def get_by_id(self, category_id: int) -> Optional[Category]:
         result = await self.session.execute(
             select(Category).where(
                 Category.id == category_id
-            ).options(
-                selectinload(Category.children),
+            )
+            .options(
                 selectinload(Category.products)
             )
         )

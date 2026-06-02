@@ -15,12 +15,8 @@ def get_category_products_key(
             f'limit:{limit}:offset:{offset}')
 
 
-def get_category_key(category_id) -> str:
-    return f'category:{category_id}'
-
-
 def get_categories_key() -> str:
-    return'categories'
+    return'categories_tree'
 
 
 def get_review_key(review_id) -> str:

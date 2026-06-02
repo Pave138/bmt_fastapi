@@ -1,18 +1,20 @@
+from typing import Optional
+
 import structlog
 from redis.asyncio import Redis
 
-from app.core.constants import CACHE_TTL, CATEGORY_NOT_FOUND_MSG
+from app.core.constants import CACHE_TTL, CATEGORY_NOT_FOUND_MSG, CATEGORY_PRODUCTS_CACHE_PATTERN
 from app.core.exceptions import ConflictException, NotFoundException
 from app.modules.categories.repositories import CategoryRepository
 from app.modules.products.models import Product
-from app.services.cache.keys import get_categories_key, get_category_key
+from app.services.cache.keys import get_categories_key
 
 from .models import Category
 from .schemas import (
     CategoryCreate,
     CategoryResponse,
     CategoryUpdate,
-    categories_list_adapter, to_response
+    categories_list_adapter, build_category_tree
 )
 from app.services.base_service import BaseService
 
@@ -43,6 +45,9 @@ class CategoryService(BaseService):
                 'category.create',
                 category_id=category.id
             )
+
+            await self.invalidate_category_cache()
+
             return CategoryResponse.model_validate(category)
         except Exception:
             await self.repository.session.rollback()
@@ -51,58 +56,61 @@ class CategoryService(BaseService):
             )
             raise
 
-    async def get_categories(self) -> list[CategoryResponse]:
+    async def get_categories(
+        self
+    ) -> list[CategoryResponse]:
         cache_key = get_categories_key()
+        cached = await self.redis.get(
+            cache_key
+        )
 
-        cached_categories = await self.redis.get(cache_key)
-
-        if cached_categories:
+        if cached:
             logger.debug(
-                'categories.loaded_from_cache',
-                source='redis'
+                'categories.loaded',
+                source='cache'
             )
-
             return categories_list_adapter.validate_json(
-                cached_categories
+                cached
             )
 
-        categories = await self.repository.get_all()
+        rows = await self.repository.get_all_for_tree()
+        nodes = {}
 
-        response = [
-            CategoryResponse.model_validate(category)
-            for category in categories
-        ]
+        for row in rows:
+            nodes[row["id"]] = CategoryResponse(
+                **row
+            )
+
+        roots = []
+
+        for node in nodes.values():
+            if node.parent_id is None:
+                roots.append(
+                    node
+                )
+            else:
+                parent = nodes.get(
+                    node.parent_id
+                )
+                if parent:
+                    parent.children.append(
+                        node
+                    )
 
         await self.redis.set(
             cache_key,
-            categories_list_adapter.dump_json(response),
+            categories_list_adapter.dump_json(
+                roots
+            ),
             ex=CACHE_TTL
         )
-
         logger.debug(
-            'categories.loaded_from_cache',
+            'categories.loaded',
             source='db'
         )
-        return response
+        return roots
 
     async def get_by_id(self, category_id: int) -> CategoryResponse:
-        cache_key = get_category_key(category_id)
-
-        cached_category = await self.redis.get(cache_key)
-
-        if cached_category:
-            try:
-                logger.debug(
-                    'category.loaded_from_cache',
-                    category_id=category_id
-                )
-                return CategoryResponse.model_validate_json(cached_category)
-            except Exception:
-                logger.info(
-                    'Invalid cache for category',
-                    category_id=category_id
-                )
-                await self.redis.delete(cache_key)
 
         category = await self.repository.get_by_id(category_id)
 
@@ -111,18 +119,23 @@ class CategoryService(BaseService):
                 CATEGORY_NOT_FOUND_MSG
             )
 
-        response = to_response(category)
-        await self.redis.set(
-            cache_key,
-            response.model_dump_json(),
-            ex=CACHE_TTL
-        )
+        response = build_category_tree(category)
+
         logger.debug(
             'category.loaded',
             source='db',
             category_id=category_id
         )
         return response
+
+    async def invalidate_category_cache(
+            self
+    ):
+        await self.redis.delete(get_categories_key())
+
+        logger.info(
+            'category_cache_invalidated'
+        )
 
     async def update(
         self,
@@ -135,18 +148,18 @@ class CategoryService(BaseService):
         if 'parent_id' in update_data:
             await self.get_by_id(update_data['parent_id'])
 
+        await self.invalidate_category_cache()
+
+        logger.debug(
+            'category.update',
+            category_id=category_id
+        )
+
         return await self.update_model(
             category,
             update_data,
             self.repository.session
         )
-
-    async def get_children(
-        self,
-        category_id: int
-    ) -> list[Category]:
-        category = await self.get_by_id(category_id)
-        return category.children
 
     async def delete(self, category_id: int) -> None:
         category = await self.get_by_id(category_id)

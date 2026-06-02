@@ -13,7 +13,6 @@ class ProductBase(BaseModel):
     price: Decimal
     old_price: Optional[Decimal] = None
     stock: int
-    category_id: int
 
 
 class ProductCreate(ProductBase):
@@ -27,7 +26,6 @@ class ProductUpdate(BaseModel):
     old_price: Optional[Decimal] = None
     stock: Optional[int] = None
     is_active: Optional[bool] = None
-    category_id: Optional[int] = None
 
 
 class ProductResponse(ProductBase):

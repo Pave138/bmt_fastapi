@@ -38,18 +38,6 @@ async def get_categories(
     return await service.get_categories()
 
 
-@router.get(
-    '/{category_id}',
-    response_model=CategoryResponse,
-    summary='Получить категорию по ID'
-)
-async def get_by_id(
-    category_id: int,
-    service: CategoryServiceDep
-) -> CategoryResponse:
-    return await service.get_by_id(category_id)
-
-
 @router.patch(
     '/{category_id}',
     response_model=CategoryResponse,

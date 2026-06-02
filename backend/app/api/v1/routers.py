@@ -23,7 +23,7 @@ main_router.include_router(
 
 main_router.include_router(
     product_router,
-    prefix='/products',
+    prefix='/categories/{category_id}/products',
     tags=['Товары']
 )
 

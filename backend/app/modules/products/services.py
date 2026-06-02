@@ -83,7 +83,12 @@ class ProductService(BaseService):
         )
         return response
 
-    async def create(self, data: ProductCreate) -> ProductResponse:
+    async def create(
+        self,
+        category_id: int,
+        data: ProductCreate
+    ) -> ProductResponse:
+
         if data.price <= 0:
             raise ValidationException(
                 'Цена должна быть положительной.'
@@ -99,12 +104,13 @@ class ProductService(BaseService):
                 'Количество товара не может быть отрицательным.'
             )
 
-        await self.category_service.get_by_id(data.category_id)
+        await self.category_service.get_by_id(category_id)
 
         try:
-            product = await self.repository.create(
-                data.model_dump()
-            )
+            product = await self.repository.create({
+                'category_id': category_id,
+                **data.model_dump()
+            })
             await self.repository.session.commit()
             await self.repository.session.refresh(product)
             logger.debug(
