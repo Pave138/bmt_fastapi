@@ -1,3 +1,5 @@
+from typing import Optional
+
 import structlog
 from redis.asyncio import Redis
 
@@ -112,7 +114,13 @@ class ProductService(BaseService):
                 **data.model_dump()
             })
             await self.repository.session.commit()
-            await self.repository.session.refresh(product)
+            await self.invalidate_product_cache()
+            await self.repository.session.refresh(
+                product,
+                attribute_names=[
+                    'reviews'
+                ]
+            )
             logger.debug(
                 'product.create',
                 product_id=product.id
@@ -217,11 +225,15 @@ class ProductService(BaseService):
 
     async def invalidate_product_cache(
             self,
-            product_id: int
+            product_id: Optional[int] = None
     ):
-        keys_to_delete = [
-            get_product_key(product_id)
-        ]
+        if product_id:
+            keys_to_delete = [
+                get_product_key(product_id)
+            ]
+        else:
+            keys_to_delete = []
+
         async for key in self.redis.scan_iter(
             CATEGORY_PRODUCTS_CACHE_PATTERN
         ):
@@ -241,7 +253,15 @@ class ProductService(BaseService):
         product_id: int,
         data: ProductUpdate
     ) -> ProductResponse:
-        product = await self.get_by_id(product_id)
+        product = await self.repository.get_by_id(product_id)
+
+        if not product:
+            logger.warning(
+                'product.not_found',
+                product_id=product_id
+            )
+            raise NotFoundException(PRODUCT_NOT_FOUND_MSG)
+
         update_data = data.model_dump(exclude_unset=True)
 
         ## Validation.
@@ -276,6 +296,8 @@ class ProductService(BaseService):
                 raise NotFoundException(
                     CATEGORY_NOT_FOUND_MSG
                 )
+
+        await self.invalidate_product_cache(product_id)
 
         return await self.update_model(
             product,

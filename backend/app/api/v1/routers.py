@@ -23,7 +23,6 @@ main_router.include_router(
 
 main_router.include_router(
     product_router,
-    prefix='/categories/{category_id}/products',
     tags=['Товары']
 )
 
@@ -35,6 +34,5 @@ main_router.include_router(
 
 main_router.include_router(
     review_router,
-    prefix='/products/{product_id}/reviews',
     tags=['Отзывы']
 )

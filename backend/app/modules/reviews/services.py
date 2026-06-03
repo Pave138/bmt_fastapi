@@ -1,19 +1,28 @@
 import structlog
 from redis.asyncio import Redis
 
-from app.core.constants import CACHE_TTL, REVIEW_NOT_FOUND_MSG, REVIEW_RATING_ERR_MSG, REVIEW_CACHE_PATTERN
-from app.core.exceptions import NotFoundException, ValidationException, ForbiddenException
-from app.modules.products.services import ProductService
-from .repositories import ReviewRepository
-from .schemas import (
-    ReviewResponse,
-    ReviewUpdate,
-    reviews_list_adapter, ReviewCreate,
+from app.core.constants import (
+    CACHE_TTL,
+    REVIEW_NOT_FOUND_MSG,
 )
+from app.core.exceptions import (
+    ForbiddenException,
+    NotFoundException,
+    ValidationException,
+)
+from app.modules.products.services import ProductService
 from app.modules.users.models import User
 from app.services.base_service import BaseService
-from app.services.cache.keys import get_product_reviews_key, get_review_key
-from app.core.constants import REVIEW_RATING_GE, REVIEW_RATING_LE
+from app.services.cache.keys import get_product_reviews_key
+
+from .models import Review
+from .repositories import ReviewRepository
+from .schemas import (
+    ReviewCreate,
+    ReviewResponse,
+    ReviewUpdate,
+    reviews_list_adapter,
+)
 
 logger = structlog.get_logger()
 
@@ -30,26 +39,7 @@ class ReviewService(BaseService):
         self.product_service = product_service
         self.redis = redis
 
-    async def get_by_id(self, review_id: int) -> ReviewResponse:
-        cache_key = get_review_key(review_id)
-
-        cached_review = await self.redis.get(cache_key)
-
-        if cached_review:
-            try:
-                logger.debug(
-                    'review.loaded',
-                    source='redis',
-                    review_id=review_id
-                )
-                return ReviewResponse.model_validate_json(cached_review)
-
-            except Exception:
-                logger.exception(
-                    'Invalid cache for review',
-                    review_id=review_id
-                )
-                await self.redis.delete(cache_key)
+    async def get_by_id(self, review_id: int) -> Review:
 
         review = await self.repository.get_by_id(review_id)
 
@@ -60,19 +50,12 @@ class ReviewService(BaseService):
             )
             raise NotFoundException(REVIEW_NOT_FOUND_MSG)
 
-        response = ReviewResponse.model_validate(review)
-
-        await self.redis.set(
-            cache_key,
-            response.model_dump_json(),
-            ex=CACHE_TTL
-        )
         logger.debug(
             'review.loaded',
             source='db',
             review_id=review_id
         )
-        return response
+        return review
 
     async def get_all_by_product_id(
         self,
@@ -120,11 +103,6 @@ class ReviewService(BaseService):
         data: ReviewCreate
     ) -> ReviewResponse:
 
-        if REVIEW_RATING_LE <= data.rating <= REVIEW_RATING_GE:
-            raise ValidationException(
-                REVIEW_RATING_ERR_MSG
-            )
-
         await self.product_service.get_by_id(product_id)
 
         try:
@@ -140,7 +118,7 @@ class ReviewService(BaseService):
                 'review.create',
                 review_id=review.id
             )
-            await self.invalidate_review_cache(product_id)
+            await self.product_service.invalidate_product_cache(product_id)
             return ReviewResponse.model_validate(review)
         except Exception:
             await self.repository.session.rollback()
@@ -151,36 +129,26 @@ class ReviewService(BaseService):
                 'Вы уже оставляли отзыв на этот товар'
             )
 
-    async def invalidate_review_cache(
-            self,
-            review_id: int
-    ):
-        keys_to_delete = [
-            get_review_key(review_id)
-        ]
-
-        async for key in self.redis.scan_iter(
-            REVIEW_CACHE_PATTERN
-        ):
-            keys_to_delete.append(key)
-
-        if keys_to_delete:
-            await self.redis.delete(*keys_to_delete)
-
-        logger.info(
-            'review_cache_invalidated',
-            review_id=review_id,
-            deleted_keys=len(keys_to_delete)
-        )
-
     async def update(
         self,
         review_id: int,
+        user: User,
         data: ReviewUpdate
     ) -> ReviewResponse:
-        review = self.get_by_id(review_id)
+        review = await self.get_by_id(review_id)
+
+        if user.id != review.user_id:
+            logger.debug(
+                'review.update_failed_user_not_owner',
+                review_id=review_id,
+                user_id=user.id
+            )
+            raise ValidationException(
+                'Изменять чужие комментарии запрещено'
+            )
 
         update_data = data.model_dump(exclude_unset=True)
+        await self.product_service.invalidate_product_cache()
 
         return await self.update_model(
             review,
@@ -192,7 +160,7 @@ class ReviewService(BaseService):
         self,
         review_id: int,
         user: User
-    ) -> ReviewResponse:
+    ) -> None:
         review = await self.repository.get_by_id(review_id)
 
         if not review:
@@ -215,13 +183,12 @@ class ReviewService(BaseService):
         try:
             await self.repository.delete(review)
             await self.repository.session.commit()
-            await self.invalidate_review_cache(review_id)
+            await self.product_service.invalidate_product_cache()
 
             logger.debug(
                 'review.delete',
                 review_id=review_id
             )
-            return ReviewResponse.model_validate(review)
 
         except Exception:
             await self.repository.session.rollback()

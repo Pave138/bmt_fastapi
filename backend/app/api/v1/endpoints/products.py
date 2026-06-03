@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.post(
-    '/',
+    '/categories/{category_id}/products',
     summary='Создать товар (superuser only)',
     response_model=ProductResponse,
     dependencies=[Depends(current_superuser)]
@@ -26,7 +26,7 @@ async def create_product(
 
 
 @router.get(
-    '/',
+    '/products',
     summary='Получить все товары',
     response_model=list[ProductResponse]
 )
@@ -39,7 +39,7 @@ async def get_products(
 
 
 @router.get(
-    '/{product_id}',
+    '/products/{product_id}',
     summary='Получить товар по ID',
     response_model=ProductResponse
 )
@@ -51,7 +51,7 @@ async def get_by_id(
 
 
 @router.patch(
-    '/{product_id}',
+    '/products/{product_id}',
     summary='Изменить товар (superuser only)',
     response_model=ProductResponse,
     dependencies=[Depends(current_superuser)]
@@ -65,7 +65,7 @@ async def update_product(
 
 
 @router.delete(
-    '/{product_id}',
+    '/products/{product_id}',
     summary='Удалить товар (superuser only)',
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(current_superuser)]

@@ -16,5 +16,3 @@ REVIEW_CACHE_PATTERN = 'reviews:product:*'
 REVIEW_RATING_GE = 1
 REVIEW_RATING_LE = 5
 REVIEW_NOT_FOUND_MSG = 'Отзыв не найден.'
-REVIEW_RATING_ERR_MSG = (f'Рейтинг должен быть от {REVIEW_RATING_GE} до'
-                         f'{REVIEW_RATING_LE}')

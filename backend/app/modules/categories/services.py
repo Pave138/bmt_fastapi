@@ -1,22 +1,20 @@
-from typing import Optional
-
 import structlog
 from redis.asyncio import Redis
 
-from app.core.constants import CACHE_TTL, CATEGORY_NOT_FOUND_MSG, CATEGORY_PRODUCTS_CACHE_PATTERN
+from app.core.constants import CACHE_TTL, CATEGORY_NOT_FOUND_MSG
 from app.core.exceptions import ConflictException, NotFoundException
 from app.modules.categories.repositories import CategoryRepository
-from app.modules.products.models import Product
+from app.services.base_service import BaseService
 from app.services.cache.keys import get_categories_key
 
 from .models import Category
 from .schemas import (
     CategoryCreate,
+    CategoryDB,
     CategoryResponse,
     CategoryUpdate,
-    categories_list_adapter, build_category_tree
+    categories_list_adapter,
 )
-from app.services.base_service import BaseService
 
 logger = structlog.get_logger()
 
@@ -31,7 +29,7 @@ class CategoryService(BaseService):
         self.repository = repository
         self.redis = redis
 
-    async def create_category(self, data: CategoryCreate) -> CategoryResponse:
+    async def create_category(self, data: CategoryCreate) -> CategoryDB:
         if data.parent_id:
             if not await self.repository.exists(data.parent_id):
                 raise NotFoundException(
@@ -48,7 +46,7 @@ class CategoryService(BaseService):
 
             await self.invalidate_category_cache()
 
-            return CategoryResponse.model_validate(category)
+            return CategoryDB.model_validate(category)
         except Exception:
             await self.repository.session.rollback()
             logger.exception(
@@ -56,9 +54,7 @@ class CategoryService(BaseService):
             )
             raise
 
-    async def get_categories(
-        self
-    ) -> list[CategoryResponse]:
+    async def get_categories(self) -> list[CategoryResponse]:
         cache_key = get_categories_key()
         cached = await self.redis.get(
             cache_key
@@ -110,7 +106,7 @@ class CategoryService(BaseService):
         )
         return roots
 
-    async def get_by_id(self, category_id: int) -> CategoryResponse:
+    async def get_by_id(self, category_id: int) -> Category:
 
         category = await self.repository.get_by_id(category_id)
 
@@ -119,23 +115,12 @@ class CategoryService(BaseService):
                 CATEGORY_NOT_FOUND_MSG
             )
 
-        response = build_category_tree(category)
-
         logger.debug(
             'category.loaded',
             source='db',
             category_id=category_id
         )
-        return response
-
-    async def invalidate_category_cache(
-            self
-    ):
-        await self.redis.delete(get_categories_key())
-
-        logger.info(
-            'category_cache_invalidated'
-        )
+        return category
 
     async def update(
         self,
@@ -164,8 +149,10 @@ class CategoryService(BaseService):
     async def delete(self, category_id: int) -> None:
         category = await self.get_by_id(category_id)
 
-        if category.products and len(category.products) > 0:
-            products_count = len(category.products)
+        products_count = len(category.products)
+
+        if category.products and products_count > 0:
+
             raise ConflictException(
                 (f'Невозможно удалить категорию {category.name}, так как '
                  f'у нее есть {products_count} связанных товаров.')
@@ -174,13 +161,14 @@ class CategoryService(BaseService):
         try:
             await self.repository.session.delete(category)
             await self.repository.session.commit()
+            await self.invalidate_category_cache()
         except Exception:
             await self.repository.session.rollback()
             raise
 
-    async def get_product_by_category(
-        self,
-        category_id: int
-    ) -> list[Product]:
-        category = await self.get_by_id(category_id)
-        return category.products
+    async def invalidate_category_cache(self):
+        await self.redis.delete(get_categories_key())
+
+        logger.info(
+            'category_cache_invalidated'
+        )

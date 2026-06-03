@@ -1,7 +1,8 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, TypeAdapter, Field
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
+from ..products.schemas import ProductResponse
 from .models import Category
 
 
@@ -17,6 +18,15 @@ class CategoryCreate(CategoryBase):
 class CategoryUpdate(BaseModel):
     name: Optional[str] = None
     parent_id: Optional[int] = None
+
+
+class CategoryDB(BaseModel):
+    id: int
+    name: str
+    parent_id: Optional[int] = None
+    products: List[ProductResponse]
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CategoryResponse(CategoryBase):

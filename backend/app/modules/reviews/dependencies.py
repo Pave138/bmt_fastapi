@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.db.session import SessionDep
-from app.services.cache.dependencies import RedisDep
 from app.modules.products.dependencies import ProductServiceDep
+from app.services.cache.dependencies import RedisDep
 
 from .repositories import ReviewRepository
 from .services import ReviewService

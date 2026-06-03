@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from ..products.models import Product
 from .models import Category
 
 
@@ -29,13 +30,11 @@ class CategoryRepository:
         rows = result.all()
 
         return [
-
             {
                 "id": row.id,
                 "name": row.name,
                 "parent_id": row.parent_id
             }
-
             for row in rows
         ]
 
@@ -46,6 +45,7 @@ class CategoryRepository:
             )
             .options(
                 selectinload(Category.products)
+                .selectinload(Product.reviews)
             )
         )
         return result.scalar_one_or_none()

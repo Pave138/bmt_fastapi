@@ -30,6 +30,7 @@ class ProductUpdate(BaseModel):
 
 class ProductResponse(ProductBase):
     id: int
+    category_id: int
     created_at: dt
     updated_at: dt
     reviews: list[ReviewResponse]
