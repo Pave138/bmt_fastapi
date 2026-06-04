@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from .endpoints import *
 
-main_router = APIRouter()
+main_router = APIRouter(prefix='/api/v1')
 
 main_router.include_router(
     auth_router,

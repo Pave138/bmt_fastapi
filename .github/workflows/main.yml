@@ -24,7 +24,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           platforms: linux/amd64,linux/arm64
-          context: ../backend
+          context: ./backend
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/bmt-shop_backend:${{ github.sha }}
@@ -48,7 +48,7 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
           context: ./infra
-          file: nginx/Dockerfile
+          file: ./infra/nginx/Dockerfile
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/bmt-shop_proxy:${{ github.sha }}
