@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     JWT_LIFETIME: int = 60 * 60
 
+    ORIGINS: str
+
     REDIS_URL: str
 
 

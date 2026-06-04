@@ -37,17 +37,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-origins = [
-    "http://localhost:3000",      # React dev server
-    "http://localhost:5173",      # Vite dev server
-    "https://yourfrontend.com",   # Production domain
-]
-
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(LatencyMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,           # Allowed domains
+    allow_origins=settings.ORIGINS.split(', '),           # Allowed domains
     allow_credentials=True,          # Allow cookies and auth headers
     allow_methods=["*"],             # Allow all standard HTTP methods (GET, POST, etc.)
     allow_headers=["*"],             # Allow all HTTP headers

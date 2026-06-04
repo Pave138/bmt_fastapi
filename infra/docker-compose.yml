@@ -1,0 +1,89 @@
+services:
+  db:
+    container_name: bmt-shop_db
+    image: postgres:17-alpine
+    restart: always
+    env_file:
+     - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/pgsql/data
+
+  redis:
+    container_name: bmt-shop_redis
+    restart: always
+    image: redis:7
+    depends_on:
+      - db
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: bmt-shop_backend
+
+    env_file:
+      - .env
+
+    depends_on:
+      - redis
+
+  gateway:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: bmt-shop_proxy
+    restart: always
+    ports:
+      - "222:80"
+    depends_on:
+      - backend
+
+  loki:
+    image: grafana/loki:latest
+
+    container_name: loki
+
+    ports:
+      - "3100:3100"
+
+    command: -config.file=/etc/loki/local-config.yaml
+
+    volumes:
+      - ./observability/loki-config.yml:/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:latest
+
+    container_name: promtail
+
+    command: -config.file=/etc/promtail/config.yml
+
+    volumes:
+      - ./observability/promtail-config.yml:/etc/promtail/config.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:latest
+
+    container_name: grafana
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+    depends_on:
+      - loki
+
+volumes:
+  pg_data:
