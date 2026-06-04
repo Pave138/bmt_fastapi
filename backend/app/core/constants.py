@@ -1,7 +1,7 @@
 """Константы приложения."""
 
 APP_TITLE = 'BMT - Интернет магазин бензоинструмента.'
-TOKEN_URL = 'auth/jwt/login'
+TOKEN_URL = '/api/v1/auth/jwt/login'
 NAME_AUTH_BACKEND = 'jwt'
 
 REDIS_INIT_ERR_MSG = 'Redis client is not initialized'
