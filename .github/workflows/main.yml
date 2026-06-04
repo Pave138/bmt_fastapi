@@ -71,8 +71,9 @@ jobs:
         key: ${{ secrets.DEPLOY_SERVER_SSH_KEY }}
         port: ${{ secrets.DEPLOY_SERVER_PORT }}
         passphrase: ${{ secrets.DEPLOY_SERVER_SSH_PASSPHRASE }}
-        source: "docker-compose.production.yml"
+        source: "infra/docker-compose.production.yml"
         target: "${{ secrets.DEPLOY_SERVER_TARGET }}"
+        strip_components: 1
     - name: Executing remoute ssh commands to deploy
       uses: appleboy/ssh-action@master
       with:
