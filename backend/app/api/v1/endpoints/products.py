@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, status
 
+from app.core.constants import LIMIT_PRODUCTS, OFFSET_PRODUCTS
 from app.modules.auth.dependencies import current_superuser
 from app.modules.products.dependencies import ProductServiceDep
 from app.modules.products.schemas import (
@@ -31,8 +32,8 @@ async def create_product(
 )
 async def get_products(
     service: ProductServiceDep,
-    limit: int = 10,
-    offset: int = 0
+    limit: int = LIMIT_PRODUCTS,
+    offset: int = OFFSET_PRODUCTS
 ) -> list[ProductResponse]:
     return await service.get_all(limit=limit, offset=offset)
 

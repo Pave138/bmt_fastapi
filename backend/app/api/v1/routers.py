@@ -1,8 +1,10 @@
 from fastapi import APIRouter
 
+from app.core.constants import API_V1_PREFIX
+
 from .endpoints import *
 
-main_router = APIRouter(prefix='/api/v1')
+main_router = APIRouter(prefix=API_V1_PREFIX)
 
 main_router.include_router(
     auth_router,

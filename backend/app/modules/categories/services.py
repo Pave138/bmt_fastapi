@@ -4,8 +4,12 @@ from redis.asyncio import Redis
 from app.core.constants import CACHE_TTL, CATEGORY_NOT_FOUND_MSG
 from app.core.exceptions import ConflictException, NotFoundException
 from app.modules.categories.repositories import CategoryRepository
+from app.modules.products.schemas import ProductResponse, products_list_adapter
 from app.services.base_service import BaseService
-from app.services.cache.keys import get_categories_key
+from app.services.cache.keys import (
+    get_categories_key,
+    get_category_products_key,
+)
 
 from .models import Category
 from .schemas import (
@@ -172,3 +176,42 @@ class CategoryService(BaseService):
         logger.info(
             'category_cache_invalidated'
         )
+
+    async def get_category_products_by_id(
+            self,
+            category_id: int,
+            limit: int,
+            offset: int
+    ) -> list[ProductResponse]:
+        cache_key = get_category_products_key(category_id, limit, offset)
+
+        cached = await self.redis.get(cache_key)
+
+        if cached:
+            logger.debug(
+                'category_products.loaded',
+                source='cache',
+                category_id=category_id,
+                limit=limit,
+                offset=offset
+            )
+            return products_list_adapter.validate_json(cached)
+
+        products = await self.repository.get_category_products_by_id(
+            category_id=category_id,
+            limit=limit,
+            offset=offset
+        )
+        logger.debug(
+            'category_products.loaded',
+            source='db',
+            category_id=category_id,
+            limit=limit,
+            offset=offset
+        )
+        await self.redis.set(
+            cache_key,
+            products_list_adapter.dump_json(products),
+            ex=CACHE_TTL
+        )
+        return products_list_adapter.validate_python(products)

@@ -18,7 +18,7 @@ class ProductRepository:
             .options(
                 selectinload(Product.reviews)
             )
-            .order_by(Product.id)
+            .order_by(Product.created_at)
             .offset(offset)
             .limit(limit)
         )
@@ -69,20 +69,6 @@ class ProductRepository:
         )
         return result.scalar_one_or_none() is not None
 
-    async def update_stock(
-        self,
-        product: Product,
-        quantity: int
-    ) -> Product:
-        product.stock = quantity
-        await self.session.flush()
-        return product
-
-    async def activate(self, product: Product) -> Product:
-        product.is_active = True
-        await self.session.flush()
-        return product
-
     async def get_by_id_for_update(self, product_id: int) -> Optional[Product]:
         result = self.session.execute(
             select(Product).where(
@@ -90,8 +76,3 @@ class ProductRepository:
             ).with_for_update()
         )
         return result.scalar_one_or_none()
-
-    async def deactivate(self, product: Product) -> Product:
-        product.is_active = False
-        await self.session.flush()
-        return product

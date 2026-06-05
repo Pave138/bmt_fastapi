@@ -19,9 +19,6 @@ def get_categories_key() -> str:
     return'categories_tree'
 
 
-def get_review_key(review_id) -> str:
-    return f'review:{review_id}'
 
-
-def get_product_reviews_key(product_id) -> str:
+def get_product_reviews_key(product_id: int) -> str:
     return f'reviews:product:{product_id}'
