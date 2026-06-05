@@ -87,7 +87,6 @@ class ProductService(BaseService):
 
     async def create(
         self,
-        category_id: int,
         data: ProductCreate
     ) -> ProductResponse:
 
@@ -106,11 +105,10 @@ class ProductService(BaseService):
                 'Количество товара не может быть отрицательным.'
             )
 
-        await self.category_service.get_by_id(category_id)
+        await self.category_service.get_by_id(data.category_id)
 
         try:
             product = await self.repository.create({
-                'category_id': category_id,
                 **data.model_dump()
             })
             await self.repository.session.commit()
