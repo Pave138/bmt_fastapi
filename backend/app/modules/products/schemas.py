@@ -32,10 +32,9 @@ class ProductBase(BaseModel):
     old_price: Optional[Decimal] = Field(
         None,
         gt=PRODUCT_PRICE_GT,
-        title='Старая цена',
-        alias='old-price'
+        title='Старая цена'
     )
-    category_id: int = Field(alias='category-id')
+    category_id: int
     stock: int = Field(gt=PRODUCT_STOCK_GT, default=DEFAULT_PRODUCT_STOCK)
 
     @model_validator(mode='after')
