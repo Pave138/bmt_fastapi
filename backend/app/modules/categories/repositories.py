@@ -65,3 +65,18 @@ class CategoryRepository:
 
     async def delete(self, category: Category) -> None:
         await self.session.delete(category)
+
+    async def get_category_products_by_id(
+            self,
+            category_id: int,
+            limit: int,
+            offset: int
+    ) -> list[Product]:
+        result = await self.session.execute(
+            select(Product)
+            .where(Product.category_id == category_id)
+            .options(selectinload(Product.reviews))
+            .order_by(Product.created_at)
+            .limit(limit).offset(offset)
+        )
+        return result.scalars().all()
