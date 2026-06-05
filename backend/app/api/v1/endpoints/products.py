@@ -6,8 +6,9 @@ from app.modules.products.dependencies import ProductServiceDep
 from app.modules.products.schemas import (
     ProductCreate,
     ProductDB,
+    ProductListResponse,
     ProductResponse,
-    ProductUpdate, ProductListResponse,
+    ProductUpdate,
 )
 
 router = APIRouter()

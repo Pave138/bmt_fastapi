@@ -15,31 +15,37 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.constants import (
+    DEFAULT_PRODUCT_STOCK,
+    PRODUCT_NAME_MAX_LENGTH,
+    PRODUCT_PRICE_PRECISION,
+    PRODUCT_PRICE_SCALE,
+)
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
 
 
 class Product(CommonMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(
-        String(length=255),
+        String(length=PRODUCT_NAME_MAX_LENGTH),
         nullable=False,
         index=True
     )
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     price: Mapped[Decimal] = mapped_column(
-        Numeric(10, 2),
+        Numeric(PRODUCT_PRICE_PRECISION, PRODUCT_PRICE_SCALE),
         nullable=False,
         index=True
     )
     old_price: Mapped[Optional[Decimal]] = mapped_column(
-        Numeric(10, 2),
+        Numeric(PRODUCT_PRICE_PRECISION, PRODUCT_PRICE_SCALE),
         nullable=True
     )
     ## sku: Mapped[str] = mapped_column(String, index=True)
     stock: Mapped[int] = mapped_column(
         Integer,
-        default=0,
-        server_default='0',
+        default=DEFAULT_PRODUCT_STOCK,
+        server_default=text(f'{DEFAULT_PRODUCT_STOCK}'),
         nullable=False
     )
     is_active: Mapped[bool] = mapped_column(

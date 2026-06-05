@@ -9,7 +9,7 @@ from app.modules.categories.schemas import (
     CategoryResponse,
     CategoryUpdate,
 )
-from app.modules.products.schemas import ProductResponse
+from app.modules.products.schemas import ProductListResponse
 
 router = APIRouter()
 
@@ -67,7 +67,7 @@ async def delete_category(
 
 @router.get(
     '/{category_id}/products',
-    response_model=list[ProductResponse],
+    response_model=list[ProductListResponse],
     summary='Получить список товаров категории'
 )
 async def get_category_products(
@@ -75,7 +75,7 @@ async def get_category_products(
     service: CategoryServiceDep,
     limit: int = LIMIT_PRODUCTS,
     offset: int = OFFSET_PRODUCTS
-) -> list[ProductResponse]:
+) -> list[ProductListResponse]:
     return await service.get_category_products_by_id(
         category_id=category_id,
         limit=limit,

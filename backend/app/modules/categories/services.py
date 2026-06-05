@@ -4,7 +4,10 @@ from redis.asyncio import Redis
 from app.core.constants import CACHE_TTL, CATEGORY_NOT_FOUND_MSG
 from app.core.exceptions import ConflictException, NotFoundException
 from app.modules.categories.repositories import CategoryRepository
-from app.modules.products.schemas import ProductResponse, products_list_adapter
+from app.modules.products.schemas import (
+    ProductListResponse,
+    products_list_adapter,
+)
 from app.services.base_service import BaseService
 from app.services.cache.keys import (
     get_categories_key,
@@ -182,7 +185,7 @@ class CategoryService(BaseService):
             category_id: int,
             limit: int,
             offset: int
-    ) -> list[ProductResponse]:
+    ) -> list[ProductListResponse]:
         cache_key = get_category_products_key(category_id, limit, offset)
 
         cached = await self.redis.get(cache_key)
@@ -209,9 +212,24 @@ class CategoryService(BaseService):
             limit=limit,
             offset=offset
         )
+        response = [
+            ProductListResponse(
+                id=product.id,
+                name=product.name,
+                description=product.description,
+                price=product.price,
+                old_price=product.old_price,
+                stock=product.stock,
+                category_id=product.category_id,
+
+                avg_rating=float(avg_rating),
+                reviews_count=reviews_count
+            )
+            for product, avg_rating, reviews_count in products
+        ]
         await self.redis.set(
             cache_key,
-            products_list_adapter.dump_json(products),
+            products_list_adapter.dump_json(response),
             ex=CACHE_TTL
         )
-        return products_list_adapter.validate_python(products)
+        return response

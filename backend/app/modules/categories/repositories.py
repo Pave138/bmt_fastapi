@@ -1,10 +1,12 @@
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..products.models import Product
+from app.modules.products.models import Product
+
+from ..reviews.models import Review
 from .models import Category
 
 
@@ -71,12 +73,24 @@ class CategoryRepository:
             category_id: int,
             limit: int,
             offset: int
-    ) -> list[Product]:
+    ) -> list[tuple[Product, float, int]]:
         result = await self.session.execute(
-            select(Product)
+            select(
+                Product,
+                func.coalesce(
+                    func.avg(Review.rating),
+                    0
+                ).label('avg_rating'),
+                func.count(Review.id).label('reviews_count')
+            )
+            .outerjoin(
+                Review,
+                Product.id == Review.product_id
+            )
             .where(Product.category_id == category_id)
-            .options(selectinload(Product.reviews))
+            .group_by(Product.id)
             .order_by(Product.created_at)
-            .limit(limit).offset(offset)
+            .offset(offset)
+            .limit(limit)
         )
-        return result.scalars().all()
+        return result.all()

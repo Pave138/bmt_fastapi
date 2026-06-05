@@ -1,11 +1,11 @@
 from typing import Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from .models import Product
 from ..reviews.models import Review
+from .models import Product
 
 
 class ProductRepository:

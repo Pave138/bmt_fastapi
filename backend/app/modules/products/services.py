@@ -22,9 +22,10 @@ from .repositories import ProductRepository
 from .schemas import (
     ProductCreate,
     ProductDB,
+    ProductListResponse,
     ProductResponse,
     ProductUpdate,
-    products_list_adapter, ProductListResponse,
+    products_list_adapter,
 )
 
 logger = structlog.get_logger()
@@ -85,7 +86,6 @@ class ProductService(BaseService):
                 price=product.price,
                 old_price=product.old_price,
                 stock=product.stock,
-                is_active=product.is_active,
                 category_id=product.category_id,
 
                 avg_rating=float(avg_rating),
