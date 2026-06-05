@@ -2,7 +2,7 @@ services:
   db:
     container_name: bmt-shop_db
     image: postgres:17-alpine
-    restart: always
+    restart: unless-stopped
     env_file:
      - .env
     environment:
@@ -14,7 +14,7 @@ services:
 
   redis:
     container_name: bmt-shop_redis
-    restart: always
+    restart: unless-stopped
     image: redis:7
     depends_on:
       - db
@@ -24,6 +24,7 @@ services:
       context: ../backend
       dockerfile: Dockerfile
     container_name: bmt-shop_backend
+    restart: unless-stopped
 
     env_file:
       - .env
@@ -36,7 +37,7 @@ services:
       context: .
       dockerfile: nginx/Dockerfile
     container_name: bmt-shop_proxy
-    restart: always
+    restart: unless-stopped
     ports:
       - "222:80"
     depends_on:

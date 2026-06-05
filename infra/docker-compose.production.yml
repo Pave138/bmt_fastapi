@@ -22,6 +22,7 @@ services:
   backend:
     image: pave138/bmt-shop_backend
     container_name: bmt-shop_backend
+    restart: always
 
     env_file:
       - .env
