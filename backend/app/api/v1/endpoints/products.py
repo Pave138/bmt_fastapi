@@ -5,8 +5,9 @@ from app.modules.auth.dependencies import current_superuser
 from app.modules.products.dependencies import ProductServiceDep
 from app.modules.products.schemas import (
     ProductCreate,
+    ProductDB,
     ProductResponse,
-    ProductUpdate,
+    ProductUpdate, ProductListResponse,
 )
 
 router = APIRouter()
@@ -15,7 +16,7 @@ router = APIRouter()
 @router.post(
     '/',
     summary='Создать товар (superuser only)',
-    response_model=ProductResponse,
+    response_model=ProductDB,
     dependencies=[Depends(current_superuser)]
 )
 async def create_product(
@@ -28,13 +29,13 @@ async def create_product(
 @router.get(
     '/',
     summary='Получить все товары',
-    response_model=list[ProductResponse]
+    response_model=list[ProductListResponse]
 )
 async def get_products(
     service: ProductServiceDep,
     limit: int = LIMIT_PRODUCTS,
     offset: int = OFFSET_PRODUCTS
-) -> list[ProductResponse]:
+) -> list[ProductListResponse]:
     return await service.get_all(limit=limit, offset=offset)
 
 

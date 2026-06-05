@@ -37,5 +37,6 @@ main_router.include_router(
 
 main_router.include_router(
     review_router,
+    prefix='/reviews',
     tags=['Отзывы']
 )

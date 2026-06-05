@@ -1,5 +1,6 @@
 import structlog
 from redis.asyncio import Redis
+from sqlalchemy.exc import IntegrityError
 
 from app.core.constants import (
     CACHE_TTL,
@@ -98,17 +99,15 @@ class ReviewService(BaseService):
 
     async def create(
         self,
-        product_id: int,
         user: User,
         data: ReviewCreate
     ) -> ReviewResponse:
 
-        await self.product_service.get_by_id(product_id)
+        await self.product_service.get_by_id(data.product_id)
 
         try:
             review = await self.repository.create({
                 **data.model_dump(),
-                'product_id': product_id,
                 'user_id': user.id
             })
 
@@ -118,9 +117,11 @@ class ReviewService(BaseService):
                 'review.create',
                 review_id=review.id
             )
-            await self.product_service.invalidate_product_cache(product_id)
+            await self.product_service.invalidate_product_cache(
+                data.product_id
+            )
             return ReviewResponse.model_validate(review)
-        except Exception:
+        except IntegrityError:
             await self.repository.session.rollback()
             logger.exception(
                 'review.create_failed'

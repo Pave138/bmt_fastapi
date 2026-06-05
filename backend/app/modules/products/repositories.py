@@ -1,10 +1,11 @@
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from .models import Product
+from ..reviews.models import Review
 
 
 class ProductRepository:
@@ -12,27 +13,60 @@ class ProductRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_all(self, limit: int, offset: int) -> list[Product]:
+    async def get_all(
+        self,
+        limit: int,
+        offset: int
+    ) -> list[tuple[Product, float, int]]:
         result = await self.session.execute(
-            select(Product)
-            .options(
-                selectinload(Product.reviews)
+            select(
+                Product,
+                func.coalesce(
+                    func.avg(Review.rating),
+                    0
+                ).label('avg_rating'),
+                func.count(Review.id).label('reviews_count')
             )
+            .outerjoin(
+                Review,
+                Product.id == Review.product_id
+            )
+            .group_by(Product.id)
             .order_by(Product.created_at)
             .offset(offset)
             .limit(limit)
         )
-        return result.scalars().all()
+        return result.all()
 
-    async def get_by_id(self, product_id: int) -> Optional[Product]:
+    async def get_by_id(
+            self,
+            product_id: int
+    ) -> Optional[tuple[Product, float, int]]:
         result = await self.session.execute(
-            select(Product)
-            .where(Product.id == product_id)
+            select(
+                Product,
+
+                func.coalesce(
+                    func.avg(Review.rating),
+                    0
+                ).label('avg_rating'),
+
+                func.count(
+                    Review.id
+                ).label('reviews_count')
+            )
             .options(
                 selectinload(Product.reviews)
             )
+            .outerjoin(
+                Review,
+                Product.id == Review.product_id
+            )
+            .where(Product.id == product_id)
+            .group_by(Product.id)
         )
-        return result.scalar_one_or_none()
+
+        return result.one_or_none()
 
     async def get_all_by_category_id(
         self,

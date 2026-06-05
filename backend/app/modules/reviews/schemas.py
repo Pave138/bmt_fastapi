@@ -7,6 +7,7 @@ from app.core.constants import REVIEW_RATING_GE, REVIEW_RATING_LE
 
 
 class ReviewBase(BaseModel):
+    product_id: int
     rating: int = Field(ge=REVIEW_RATING_GE, le=REVIEW_RATING_LE)
     comment: Optional[str] = None
 

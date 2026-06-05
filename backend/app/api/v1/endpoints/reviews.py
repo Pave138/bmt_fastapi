@@ -12,25 +12,23 @@ router = APIRouter()
 
 
 @router.post(
-    '/products/{product_id}/reviews',
+    '/',
     response_model=ReviewResponse,
     summary='Создать отзыв'
 )
 async def create_review(
-    product_id: int,
     data: ReviewCreate,
     user: CurrentUserDep,
     service: ReviewServiceDep
 ) -> ReviewResponse:
     return await service.create(
-        product_id=product_id,
         user=user,
         data=data
     )
 
 
 @router.patch(
-    '/review/{review_id}',
+    '/{review_id}',
     response_model=ReviewResponse,
     summary='Изменить отзыв'
 )
@@ -48,7 +46,7 @@ async def update_review(
 
 
 @router.delete(
-    '/review/{review_id}',
+    '/{review_id}',
     status_code=status.HTTP_204_NO_CONTENT,
     summary='Удалить отзыв'
 )

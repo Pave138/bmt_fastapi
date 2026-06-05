@@ -29,17 +29,25 @@ class ProductUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
-class ProductResponse(ProductBase):
+class ProductDB(ProductBase):
     id: int
-    created_at: dt
-    updated_at: dt
-    reviews: list[ReviewResponse]
 
     model_config = ConfigDict(from_attributes=True)
 
 
+class ProductListResponse(ProductDB):
+    reviews_count: int
+    avg_rating: float
+
+
+class ProductResponse(ProductListResponse):
+    created_at: dt
+    updated_at: dt
+    reviews: list[ReviewResponse]
+
+
 products_list_adapter = TypeAdapter(
-    list[ProductResponse]
+    list[ProductListResponse]
 )
 
 
