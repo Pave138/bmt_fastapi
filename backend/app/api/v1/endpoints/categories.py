@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, status
 
+from app.core.constants import LIMIT_PRODUCTS, OFFSET_PRODUCTS
 from app.modules.auth.dependencies import current_superuser
 from app.modules.categories.dependencies import CategoryServiceDep
 from app.modules.categories.schemas import (
@@ -8,6 +9,7 @@ from app.modules.categories.schemas import (
     CategoryResponse,
     CategoryUpdate,
 )
+from app.modules.products.schemas import ProductResponse
 
 router = APIRouter()
 
@@ -61,3 +63,21 @@ async def delete_category(
     service: CategoryServiceDep
 ) -> None:
     await service.delete(category_id)
+
+
+@router.get(
+    '/{category_id}/products',
+    response_model=list[ProductResponse],
+    summary='Получить список товаров категории'
+)
+async def get_category_products(
+    category_id: int,
+    service: CategoryServiceDep,
+    limit: int = LIMIT_PRODUCTS,
+    offset: int = OFFSET_PRODUCTS
+) -> list[ProductResponse]:
+    return await service.get_category_products_by_id(
+        category_id=category_id,
+        limit=limit,
+        offset=offset
+    )
