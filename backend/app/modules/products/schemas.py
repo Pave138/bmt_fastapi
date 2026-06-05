@@ -12,6 +12,7 @@ class ProductBase(BaseModel):
     description: Optional[str] = None
     price: Decimal
     old_price: Optional[Decimal] = None
+    category_id: int
     stock: int
 
 
@@ -30,7 +31,6 @@ class ProductUpdate(BaseModel):
 
 class ProductResponse(ProductBase):
     id: int
-    category_id: int
     created_at: dt
     updated_at: dt
     reviews: list[ReviewResponse]
