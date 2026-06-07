@@ -41,6 +41,31 @@ class ProductRepository:
     async def get_by_id(
             self,
             product_id: int
+    ) -> Optional[Product]:
+        result = await self.session.execute(
+            select(Product)
+            .where(
+                Product.id == product_id
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_id_with_reviews(
+        self,
+        product_id: int
+    ) -> Optional[Product]:
+        result = await self.session.execute(
+            select(Product)
+            .where(Product.id == product_id)
+            .options(
+                selectinload(Product.reviews)
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_id_with_stats(
+            self,
+            product_id: int
     ) -> Optional[tuple[Product, float, int]]:
         result = await self.session.execute(
             select(
@@ -54,9 +79,6 @@ class ProductRepository:
                 func.count(
                     Review.id
                 ).label('reviews_count')
-            )
-            .options(
-                selectinload(Product.reviews)
             )
             .outerjoin(
                 Review,
@@ -92,19 +114,18 @@ class ProductRepository:
 
         return product
 
-    async def delete(self, product: Product):
+    async def delete(self, product: Product) -> None:
         await self.session.delete(product)
         await self.session.flush()
-        return product
 
-    async def exists(self, product_id: int) -> bool:
+    async def exists_by_id(self, product_id: int) -> bool:
         result = await self.session.execute(
             select(Product).where(Product.id == product_id)
         )
         return result.scalar_one_or_none() is not None
 
     async def get_by_id_for_update(self, product_id: int) -> Optional[Product]:
-        result = self.session.execute(
+        result = await self.session.execute(
             select(Product).where(
                 Product.id == product_id
             ).with_for_update()

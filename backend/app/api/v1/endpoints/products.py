@@ -23,7 +23,7 @@ router = APIRouter()
 async def create_product(
     data: ProductCreate,
     service: ProductServiceDep
-) -> ProductResponse:
+) -> ProductDB:
     return await service.create(data)
 
 
@@ -55,14 +55,14 @@ async def get_by_id(
 @router.patch(
     '/{product_id}',
     summary='Изменить товар (superuser only)',
-    response_model=ProductResponse,
+    response_model=ProductDB,
     dependencies=[Depends(current_superuser)]
 )
 async def update_product(
     product_id: int,
     data: ProductUpdate,
     service: ProductServiceDep
-) -> ProductResponse:
+) -> ProductDB:
     return await service.update(product_id, data)
 
 

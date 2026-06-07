@@ -1,21 +1,29 @@
 from datetime import datetime as dt
 from decimal import Decimal
-from typing import Optional, Self
+from typing import Optional, Self, Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 from app.core.constants import (
-    DEFAULT_PRODUCT_PRICE,
     DEFAULT_PRODUCT_STOCK,
     PRODUCT_NAME_MAX_LENGTH,
     PRODUCT_PRICE_GT,
-    PRODUCT_STOCK_GT,
+    PRODUCT_STOCK_GE, PRODUCT_PRICE_SCALE, PRODUCT_PRICE_PRECISION, PRODUCT_OLD_PRICE_INVALID_MSG,
 )
 from app.core.exceptions import ValidationException
 from app.modules.reviews.schemas import ReviewResponse
 
+PriceDecimal = Annotated[
+    Decimal,
+    Field(
+        gt=PRODUCT_PRICE_GT,
+        decimal_places=PRODUCT_PRICE_SCALE,
+        max_digits=PRODUCT_PRICE_PRECISION
+    )
+]
 
-class ProductBase(BaseModel):
+
+class ProductFields(BaseModel):
     name: str = Field(
         max_length=PRODUCT_NAME_MAX_LENGTH,
         title='Название'
@@ -24,35 +32,37 @@ class ProductBase(BaseModel):
         None,
         title='Описание'
     )
-    price: Decimal = Field(
-        gt=PRODUCT_PRICE_GT,
-        default=DEFAULT_PRODUCT_PRICE,
-        title='Цена'
-    )
-    old_price: Optional[Decimal] = Field(
-        None,
-        gt=PRODUCT_PRICE_GT,
-        title='Старая цена'
-    )
+    price: PriceDecimal
+    old_price: Optional[PriceDecimal]
     category_id: int
-    stock: int = Field(gt=PRODUCT_STOCK_GT, default=DEFAULT_PRODUCT_STOCK)
+    stock: int = Field(ge=PRODUCT_STOCK_GE, default=DEFAULT_PRODUCT_STOCK)
+
+
+class ProductCreate(ProductFields):
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'name': 'STIHL MS 462',
+                'description': 'Бензопила',
+                'price': '149999.99',
+                'old_price': '164999.99',
+                'category_id': 1,
+                'stock': 10
+            }
+        }
+    )
 
     @model_validator(mode='after')
-    def old_price_is_higher_price(self) -> Self:
+    def validate_prices(self) -> Self:
         if (
-            self.old_price
+            self.old_price is not None
             and self.old_price <= self.price
         ):
             raise ValidationException(
-                'Старая цена должна быть больше текущей'
+                PRODUCT_OLD_PRICE_INVALID_MSG
             )
         return self
-
-
-
-
-class ProductCreate(ProductBase):
-    pass
 
 
 class ProductUpdate(BaseModel):
@@ -61,30 +71,31 @@ class ProductUpdate(BaseModel):
         max_length=PRODUCT_NAME_MAX_LENGTH
     )
     description: Optional[str] = None
-    price: Optional[Decimal] = Field(
+    price: Optional[PriceDecimal]
+    old_price: Optional[PriceDecimal]
+    category_id: Optional[int] = None
+    stock: Optional[int] = Field(
         None,
-        gt=PRODUCT_PRICE_GT,
+        ge=PRODUCT_STOCK_GE
     )
-    old_price: Optional[Decimal] = None
-    stock: Optional[int] = None
     is_active: Optional[bool] = None
 
 
-class ProductDB(ProductBase):
+class ProductDB(ProductFields):
     id: int
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ProductListResponse(ProductDB):
-    reviews_count: int
     avg_rating: float
+    reviews_count: int
 
 
 class ProductResponse(ProductListResponse):
     created_at: dt
     updated_at: dt
-    reviews: list[ReviewResponse]
+    reviews: list[ReviewResponse] = Field(default_factory=list)
 
 
 products_list_adapter = TypeAdapter(

@@ -2,15 +2,18 @@ from typing import Optional
 
 import structlog
 from redis.asyncio import Redis
+from sqlalchemy.exc import IntegrityError
 
 from app.core.constants import (
     CACHE_TTL,
     CATEGORY_NOT_FOUND_MSG,
     CATEGORY_PRODUCTS_CACHE_PATTERN,
-    PRODUCT_NOT_FOUND_MSG,
+    PRODUCT_CACHE_VERSION_KEY,
+    PRODUCT_NOT_FOUND_MSG, PRODUCT_OLD_PRICE_INVALID_MSG, PRODUCTS_CACHE_PATTERN, PRODUCTS_CACHE_VERSION_KEY,
+    CATEGORY_PRODUCTS_CACHE_VERSION_KEY
 )
-from app.core.exceptions import NotFoundException, ValidationException
-from app.modules.categories.services import CategoryService
+from app.core.exceptions import NotFoundException, ValidationException, ConflictException
+from app.modules.categories.repositories import CategoryRepository
 from app.services.base_service import BaseService
 from app.services.cache.keys import (
     get_category_products_key,
@@ -36,11 +39,11 @@ class ProductService(BaseService):
     def __init__(
         self,
         repository: ProductRepository,
-        category_service: CategoryService,
+        category_repository: CategoryRepository,
         redis: Redis
     ):
         self.repository = repository
-        self.category_service = category_service
+        self.category_repository = category_repository
         self.redis = redis
 
     async def get_all(
@@ -48,7 +51,7 @@ class ProductService(BaseService):
         limit: int,
         offset: int
     ) -> list[ProductListResponse]:
-        cache_key = get_products_key(limit, offset)
+        cache_key = await get_products_key(self.redis, limit, offset)
 
         cached_products = await self.redis.get(cache_key)
 
@@ -113,59 +116,57 @@ class ProductService(BaseService):
         data: ProductCreate
     ) -> ProductDB:
 
-        if data.price <= 0:
-            raise ValidationException(
-                'Цена должна быть положительной.'
+        if not await self.category_repository.exists(data.category_id):
+            logger.warning(
+                'category.not_found',
+                category_id=data.category_id
             )
-        if (data.old_price is not None
-            and data.old_price <= data.price
-        ):
-                raise ValidationException(
-                    'Старая цена должна быть больше текущей.'
-                )
-        if data.stock < 0:
-            raise ValidationException(
-                'Количество товара не может быть отрицательным.'
+            raise NotFoundException(
+                CATEGORY_NOT_FOUND_MSG
             )
-
-        await self.category_service.get_by_id(data.category_id)
 
         try:
             product = await self.repository.create({
                 **data.model_dump()
             })
             await self.repository.session.commit()
-            await self.invalidate_product_cache()
+            await self.redis.incr(PRODUCT_CACHE_VERSION_KEY)
+            await self.redis.incr(CATEGORY_PRODUCTS_CACHE_VERSION_KEY)
             await self.repository.session.refresh(
-                product,
-                attribute_names=[
-                    'reviews'
-                ]
+                product
             )
             logger.debug(
                 'product.create',
-                product_id=product.id
+                product_id=product.id,
+                category_id=product.category_id
             )
             return ProductDB.model_validate(product)
 
-        except Exception:
+        except IntegrityError:
             await self.repository.session.rollback()
             logger.exception(
-                'product.create_failed'
+                'product.duplicate',
+                name=data.name,
+                category_id=data.category_id
             )
-            raise
+            raise ConflictException(
+                (
+                    f'Товар с именем {data.name} уже существует '
+                    f'в {data.category_id} категории.'
+                )
+            )
 
     async def get_by_id(
             self,
             product_id: int
     ) -> ProductResponse:
-        cache_key = get_product_key(product_id)
+        cache_key = get_product_key(product_id, version='1')
         cached_product = await self.redis.get(
             cache_key
         )
         if cached_product:
             try:
-                logger.debug(
+                logger.info(
                     'product.loaded',
                     product_id=product_id,
                     source='redis'
@@ -224,7 +225,7 @@ class ProductService(BaseService):
             response.model_dump_json(),
             ex=CACHE_TTL
         )
-        logger.debug(
+        logger.info(
             'product.loaded',
             product_id=product_id,
             source='db'
@@ -237,12 +238,17 @@ class ProductService(BaseService):
         limit: int = 100,
         offset: int = 0
     ) -> list[ProductResponse]:
-        cache_key = get_category_products_key(category_id, limit, offset)
+        cache_key = await get_category_products_key(
+            self.redis,
+            category_id,
+            limit,
+            offset
+        )
 
         cached_products = await self.redis.get(cache_key)
 
         if cached_products:
-            logger.debug(
+            logger.info(
                 'products.category.cache_hit',
                 category_id=category_id
             )
@@ -250,10 +256,14 @@ class ProductService(BaseService):
                 cached_products
             )
         
-        category = await self.category_service.get_by_id(category_id)
-
-        if not category:
-            raise NotFoundException(CATEGORY_NOT_FOUND_MSG)
+        if not await self.category_repository.exists(category_id):
+            logger.warning(
+                'category.not_found',
+                category_id=category_id
+            )
+            raise NotFoundException(
+                CATEGORY_NOT_FOUND_MSG
+            )
 
         products = await self.repository.get_all_by_category_id(
             category_id=category_id,
@@ -270,44 +280,20 @@ class ProductService(BaseService):
             products_list_adapter.dump_json(response),
             ex=CACHE_TTL
         )
-        logger.debug(
+        logger.info(
             'products.category.cached',
             category_id=category_id,
             count=len(response)
         )
         return response
 
-    async def invalidate_product_cache(
-            self,
-            product_id: Optional[int] = None
-    ):
-        if product_id:
-            keys_to_delete = [
-                get_product_key(product_id)
-            ]
-        else:
-            keys_to_delete = []
-
-        async for key in self.redis.scan_iter(
-            CATEGORY_PRODUCTS_CACHE_PATTERN
-        ):
-            keys_to_delete.append(key)
-
-        if keys_to_delete:
-            await self.redis.delete(*keys_to_delete)
-
-        logger.info(
-            'product_cache_invalidated',
-            product_id=product_id,
-            deleted_keys=len(keys_to_delete)
-        )
-
     async def update(
         self,
         product_id: int,
         data: ProductUpdate
-    ) -> ProductResponse:
-        product = await self.repository.get_by_id(product_id)
+    ) -> ProductDB:
+        product = await self.repository.get_by_id_for_update(product_id)
+
 
         if not product:
             logger.warning(
@@ -318,13 +304,6 @@ class ProductService(BaseService):
 
         update_data = data.model_dump(exclude_unset=True)
 
-        ## Validation.
-
-        if 'price' in update_data:
-            if update_data['price'] <= 0:
-                raise ValidationException(
-                    'Цена должна быть положительной.'
-                )
         new_price = update_data.get('price', product.price)
         new_old_price = update_data.get('old_price', product.old_price)
 
@@ -333,33 +312,33 @@ class ProductService(BaseService):
             and new_old_price <= new_price
         ):
             raise ValidationException(
-                'Старая цена должна быть больше текущей.'
+                PRODUCT_OLD_PRICE_INVALID_MSG
             )
 
-        if 'stock' in update_data:
-            if update_data['stock'] < 0:
-                raise ValidationException(
-                    'Количество товара не может быть отрицательным.'
-                )
+        category_id = update_data.get('category_id')
 
-        if 'category_id' in update_data:
-            category = await self.category_service.get_by_id(
-                update_data['category_id']
+        if category_id is not None:
+            exists = await self.category_repository.exists(
+                category_id
             )
-            if category is None:
+
+            if not exists:
                 raise NotFoundException(
                     CATEGORY_NOT_FOUND_MSG
                 )
 
-        await self.invalidate_product_cache(product_id)
-
-        return await self.update_model(
+        result = await self.update_model(
             product,
             update_data,
             self.repository.session
         )
+        await self.redis.incr(PRODUCTS_CACHE_VERSION_KEY)
+        await self.redis.incr(CATEGORY_PRODUCTS_CACHE_VERSION_KEY)
+        await self.redis.incr(PRODUCT_CACHE_VERSION_KEY)
 
-    async def delete(self, product_id: int) -> ProductResponse:
+        return result
+
+    async def delete(self, product_id: int) -> None:
         product = await self.repository.get_by_id(product_id)
 
         if not product:
@@ -370,13 +349,14 @@ class ProductService(BaseService):
         try:
             await self.repository.delete(product)
             await self.repository.session.commit()
-            await self.invalidate_product_cache(product_id)
+            await self.redis.incr(PRODUCTS_CACHE_VERSION_KEY)
+            await self.redis.incr(CATEGORY_PRODUCTS_CACHE_VERSION_KEY)
+            await self.redis.incr(PRODUCT_CACHE_VERSION_KEY)
 
             logger.info(
                 'product.deleted',
                 product_id=product_id
             )
-            return ProductResponse.model_validate(product)
 
         except Exception:
             await self.repository.session.rollback()

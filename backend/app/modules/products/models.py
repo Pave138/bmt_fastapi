@@ -11,7 +11,7 @@ from sqlalchemy import (
     Text,
     false,
     text,
-    true,
+    true, UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -81,6 +81,11 @@ class Product(CommonMixin, TimestampMixin, Base):
             'price',
             'is_active'
         ),
+        UniqueConstraint(
+            'name',
+            'category_id',
+            name='uq_product_name_category'
+        )
     )
 
 

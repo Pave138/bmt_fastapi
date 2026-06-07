@@ -38,7 +38,7 @@ class CategoryService(BaseService):
 
     async def create_category(self, data: CategoryCreate) -> CategoryDB:
         if data.parent_id:
-            if not await self.repository.exists(data.parent_id):
+            if not await self.repository.exists_by_id(data.parent_id):
                 raise NotFoundException(
                     f'Подкатегория {data.parent_id} не найдена'
                 )
