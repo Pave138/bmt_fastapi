@@ -57,6 +57,10 @@ class ProductService(BaseService):
         await self.redis.incr(CATEGORIES_CACHE_VERSION_KEY)
         await self.redis.incr(CATEGORY_PRODUCTS_CACHE_VERSION_KEY)
 
+        logger.info(
+            'product_cache.invalidate'
+        )
+
     async def get_all(
         self,
         limit: int,

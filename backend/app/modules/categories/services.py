@@ -18,7 +18,7 @@ from app.services.cache.keys import (
     get_category_products_key,
 )
 
-from ..products.repositories import ProductRepository
+from app.modules.products.repositories import ProductRepository
 from .models import Category
 from .schemas import (
     CategoryCreate,

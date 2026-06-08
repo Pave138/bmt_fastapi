@@ -20,6 +20,3 @@ class Cart(CommonMixin, Base):
         lazy='selectin',
         cascade='all, delete-orphan'
     )
-
-
-

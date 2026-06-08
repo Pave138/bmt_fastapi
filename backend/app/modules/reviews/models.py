@@ -11,7 +11,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.constants import REVIEW_RATING_GE, REVIEW_RATING_LE
+from app.core.constants import (
+    REVIEW_COMMENT_MAX_LENGTH,
+    REVIEW_RATING_GE,
+    REVIEW_RATING_LE,
+)
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
 
@@ -26,10 +30,11 @@ class Review(CommonMixin, TimestampMixin, Base):
         nullable=False
     )
     rating: Mapped[int] = mapped_column(
-        Integer, nullable=False
+        Integer,
+        nullable=False
     )
     comment: Mapped[Optional[str]] = mapped_column(
-        String,
+        String(length=REVIEW_COMMENT_MAX_LENGTH),
         nullable=True
     )
 

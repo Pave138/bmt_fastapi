@@ -5,6 +5,7 @@ from app.modules.carts.repositories import CartRepository
 
 from .models import Cart
 from .schemas import CartCreate
+from app.core.constants import CART_NOT_FOUND_MSG, CART_ALREADY_EXISTS_MSG
 
 
 class CartService:
@@ -16,19 +17,19 @@ class CartService:
         cart = await self.repository.get_by_id(cart_id)
 
         if not cart:
-            raise NotFoundException('Корзина не найдена')
+            raise NotFoundException(CART_NOT_FOUND_MSG)
         return cart
 
     async def get_user_cart(self, user_id: UUID) -> Cart:
         cart = await self.repository.get_by_user_id(user_id)
 
         if not cart:
-            raise NotFoundException('Корзина не найдена')
+            raise NotFoundException(CART_NOT_FOUND_MSG)
         return cart
 
     async def create_cart(self, data: CartCreate):
         if await self.repository.get_by_user_id(data.user_id):
-            raise BadRequestException('Корзина существует')
+            raise BadRequestException(CART_ALREADY_EXISTS_MSG)
 
         try:
             cart = await self.repository.create(data.model_dump())

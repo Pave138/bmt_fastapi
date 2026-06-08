@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-from app.core.constants import CATEGORY_NAME_MAX_LENGTH
+from app.core.constants import CATEGORY_NAME_MAX_LENGTH, CATEGORY_EXAMPLE_NAME
 from app.modules.products.schemas import ProductResponse
 
 from .models import Category
@@ -14,7 +14,15 @@ class CategoryFields(BaseModel):
 
 
 class CategoryCreate(CategoryFields):
-    pass
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'name': CATEGORY_EXAMPLE_NAME,
+                'parent_id': 1
+            }
+        }
+    )
 
 
 class CategoryUpdate(BaseModel):
@@ -23,6 +31,15 @@ class CategoryUpdate(BaseModel):
         max_length=CATEGORY_NAME_MAX_LENGTH
     )
     parent_id: Optional[int] = None
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'name': CATEGORY_EXAMPLE_NAME,
+                'parent_id': 1
+            }
+        }
+    )
 
 
 class CategoryDB(CategoryFields):

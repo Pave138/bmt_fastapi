@@ -3,25 +3,58 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-from app.core.constants import REVIEW_RATING_GE, REVIEW_RATING_LE
+from app.core.constants import (
+    REVIEW_COMMENT_MAX_LENGTH,
+    REVIEW_EXAMPLE_COMMENT,
+    REVIEW_RATING_GE,
+    REVIEW_RATING_LE,
+)
 
 
-class ReviewBase(BaseModel):
+class ReviewFields(BaseModel):
     product_id: int
     rating: int = Field(ge=REVIEW_RATING_GE, le=REVIEW_RATING_LE)
-    comment: Optional[str] = None
+    comment: Optional[str] = Field(
+        None,
+        max_length=REVIEW_COMMENT_MAX_LENGTH
+    )
 
 
-class ReviewCreate(ReviewBase):
-    pass
+class ReviewCreate(ReviewFields):
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'product_id': 1,
+                'rating': REVIEW_RATING_LE,
+                'comment': REVIEW_EXAMPLE_COMMENT
+            }
+        }
+    )
 
 
 class ReviewUpdate(BaseModel):
-    rating: Optional[int] = None
-    comment: Optional[str] = None
+    rating: Optional[int] = Field(
+        None,
+        ge=REVIEW_RATING_GE,
+        le=REVIEW_RATING_LE
+    )
+    comment: Optional[str] = Field(
+        None,
+        max_length=REVIEW_COMMENT_MAX_LENGTH
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'rating': REVIEW_RATING_LE,
+                'comment': REVIEW_EXAMPLE_COMMENT
+            }
+        }
+    )
 
 
-class ReviewResponse(ReviewBase):
+class ReviewResponse(ReviewFields):
     id: int
     user_id: UUID
     rating: int

@@ -20,7 +20,7 @@ from app.core.constants import (
     DEFAULT_PRODUCT_STOCK,
     PRODUCT_NAME_MAX_LENGTH,
     PRODUCT_PRICE_PRECISION,
-    PRODUCT_PRICE_SCALE,
+    PRODUCT_PRICE_SCALE, PRODUCT_IMAGE_FILE_KEY_MAX_LENGTH,
 )
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
@@ -96,7 +96,7 @@ class ProductImage(CommonMixin, Base):
         ForeignKey('product.id', ondelete='CASCADE')
     )
     file_key: Mapped[str] = mapped_column(
-        String,
+        String(PRODUCT_IMAGE_FILE_KEY_MAX_LENGTH),
         nullable=False
     )
     is_main: Mapped[bool] = mapped_column(
