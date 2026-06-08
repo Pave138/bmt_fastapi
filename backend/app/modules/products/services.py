@@ -1,4 +1,3 @@
-from typing import Optional
 
 import structlog
 from redis.asyncio import Redis
@@ -6,13 +5,19 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.constants import (
     CACHE_TTL,
+    CATEGORIES_CACHE_VERSION_KEY,
     CATEGORY_NOT_FOUND_MSG,
-    CATEGORY_PRODUCTS_CACHE_PATTERN,
+    CATEGORY_PRODUCTS_CACHE_VERSION_KEY,
     PRODUCT_CACHE_VERSION_KEY,
-    PRODUCT_NOT_FOUND_MSG, PRODUCT_OLD_PRICE_INVALID_MSG, PRODUCTS_CACHE_PATTERN, PRODUCTS_CACHE_VERSION_KEY,
-    CATEGORY_PRODUCTS_CACHE_VERSION_KEY
+    PRODUCT_NOT_FOUND_MSG,
+    PRODUCT_OLD_PRICE_INVALID_MSG,
+    PRODUCTS_CACHE_VERSION_KEY,
 )
-from app.core.exceptions import NotFoundException, ValidationException, ConflictException
+from app.core.exceptions import (
+    ConflictException,
+    NotFoundException,
+    ValidationException,
+)
 from app.modules.categories.repositories import CategoryRepository
 from app.services.base_service import BaseService
 from app.services.cache.keys import (
@@ -45,6 +50,12 @@ class ProductService(BaseService):
         self.repository = repository
         self.category_repository = category_repository
         self.redis = redis
+
+    async def invalidate_product_cache(self) -> None:
+        await self.redis.incr(PRODUCT_CACHE_VERSION_KEY)
+        await self.redis.incr(PRODUCTS_CACHE_VERSION_KEY)
+        await self.redis.incr(CATEGORIES_CACHE_VERSION_KEY)
+        await self.redis.incr(CATEGORY_PRODUCTS_CACHE_VERSION_KEY)
 
     async def get_all(
         self,
@@ -130,8 +141,9 @@ class ProductService(BaseService):
                 **data.model_dump()
             })
             await self.repository.session.commit()
-            await self.redis.incr(PRODUCT_CACHE_VERSION_KEY)
-            await self.redis.incr(CATEGORY_PRODUCTS_CACHE_VERSION_KEY)
+
+            await self.invalidate_product_cache()
+
             await self.repository.session.refresh(
                 product
             )
@@ -160,7 +172,7 @@ class ProductService(BaseService):
             self,
             product_id: int
     ) -> ProductResponse:
-        cache_key = get_product_key(product_id, version='1')
+        cache_key = await get_product_key(self.redis, product_id)
         cached_product = await self.redis.get(
             cache_key
         )
@@ -184,7 +196,7 @@ class ProductService(BaseService):
                     cache_key
                 )
 
-        row = await self.repository.get_by_id(
+        row = await self.repository.get_by_id_with_reviews_and_stats(
             product_id
         )
         if row is None:
@@ -332,9 +344,8 @@ class ProductService(BaseService):
             update_data,
             self.repository.session
         )
-        await self.redis.incr(PRODUCTS_CACHE_VERSION_KEY)
-        await self.redis.incr(CATEGORY_PRODUCTS_CACHE_VERSION_KEY)
-        await self.redis.incr(PRODUCT_CACHE_VERSION_KEY)
+
+        await self.invalidate_product_cache()
 
         return result
 
@@ -349,9 +360,8 @@ class ProductService(BaseService):
         try:
             await self.repository.delete(product)
             await self.repository.session.commit()
-            await self.redis.incr(PRODUCTS_CACHE_VERSION_KEY)
-            await self.redis.incr(CATEGORY_PRODUCTS_CACHE_VERSION_KEY)
-            await self.redis.incr(PRODUCT_CACHE_VERSION_KEY)
+
+            await self.invalidate_product_cache()
 
             logger.info(
                 'product.deleted',

@@ -117,9 +117,9 @@ class ReviewService(BaseService):
                 'review.create',
                 review_id=review.id
             )
-            await self.product_service.invalidate_product_cache(
-                data.product_id
-            )
+
+            await self.product_service.invalidate_product_cache()
+
             return ReviewResponse.model_validate(review)
         except IntegrityError:
             await self.repository.session.rollback()
@@ -149,6 +149,7 @@ class ReviewService(BaseService):
             )
 
         update_data = data.model_dump(exclude_unset=True)
+
         await self.product_service.invalidate_product_cache()
 
         return await self.update_model(
@@ -184,6 +185,7 @@ class ReviewService(BaseService):
         try:
             await self.repository.delete(review)
             await self.repository.session.commit()
+
             await self.product_service.invalidate_product_cache()
 
             logger.debug(

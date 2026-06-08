@@ -1,14 +1,17 @@
 from datetime import datetime as dt
 from decimal import Decimal
-from typing import Optional, Self, Annotated
+from typing import Annotated, Optional, Self
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 from app.core.constants import (
     DEFAULT_PRODUCT_STOCK,
     PRODUCT_NAME_MAX_LENGTH,
+    PRODUCT_OLD_PRICE_INVALID_MSG,
     PRODUCT_PRICE_GT,
-    PRODUCT_STOCK_GE, PRODUCT_PRICE_SCALE, PRODUCT_PRICE_PRECISION, PRODUCT_OLD_PRICE_INVALID_MSG,
+    PRODUCT_PRICE_PRECISION,
+    PRODUCT_PRICE_SCALE,
+    PRODUCT_STOCK_GE,
 )
 from app.core.exceptions import ValidationException
 from app.modules.reviews.schemas import ReviewResponse
@@ -25,13 +28,9 @@ PriceDecimal = Annotated[
 
 class ProductFields(BaseModel):
     name: str = Field(
-        max_length=PRODUCT_NAME_MAX_LENGTH,
-        title='Название'
+        max_length=PRODUCT_NAME_MAX_LENGTH
     )
-    description: Optional[str] = Field(
-        None,
-        title='Описание'
-    )
+    description: Optional[str] = None
     price: PriceDecimal
     old_price: Optional[PriceDecimal]
     category_id: int
@@ -71,8 +70,8 @@ class ProductUpdate(BaseModel):
         max_length=PRODUCT_NAME_MAX_LENGTH
     )
     description: Optional[str] = None
-    price: Optional[PriceDecimal]
-    old_price: Optional[PriceDecimal]
+    price: Optional[PriceDecimal] = None
+    old_price: Optional[PriceDecimal] = None
     category_id: Optional[int] = None
     stock: Optional[int] = Field(
         None,

@@ -13,6 +13,8 @@ CACHE_TTL = 60 * 60
 CATEGORY_NOT_FOUND_MSG = 'Категория не найдена.'
 PRODUCT_NOT_FOUND_MSG = 'Товар не найден.'
 
+CATEGORY_NAME_MAX_LENGTH = 255
+
 PRODUCT_NAME_MAX_LENGTH = 255
 PRODUCT_PRICE_PRECISION = 10
 PRODUCT_PRICE_SCALE = 2
@@ -23,9 +25,14 @@ PRODUCT_STOCK_GE = 0
 PRODUCT_OLD_PRICE_INVALID_MSG = 'Старая цена должна быть больше текущей.'
 
 CATEGORY_PRODUCTS_CACHE_PATTERN = 'products:category:*'
-PRODUCTS_CACHE_VERSION_KEY = 'cache:products:version'
+
+
+CATEGORIES_CACHE_VERSION_KEY = 'cache:categories:version'
+
 PRODUCT_CACHE_VERSION_KEY = 'cache:product:version'
+PRODUCTS_CACHE_VERSION_KEY = 'cache:products:version'
 CATEGORY_PRODUCTS_CACHE_VERSION_KEY = 'cache:category_products:version'
+
 PRODUCTS_CACHE_PATTERN = 'products:*'
 REVIEW_CACHE_PATTERN = 'reviews:product:*'
 

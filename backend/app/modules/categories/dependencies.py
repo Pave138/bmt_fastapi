@@ -3,10 +3,17 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.db.session import SessionDep
+from app.modules.products.repositories import ProductRepository
 from app.services.cache.dependencies import RedisDep
 
 from .repositories import CategoryRepository
 from .services import CategoryService
+
+
+async def get_product_repository_for_category(
+        session: SessionDep
+) -> ProductRepository:
+    return ProductRepository(session)
 
 
 async def get_category_repository(
@@ -23,10 +30,15 @@ CategoryRepositoryDep = Annotated[
 
 async def get_category_service(
     repository: CategoryRepositoryDep,
+    product_repository: Annotated[
+        ProductRepository,
+        Depends(get_product_repository_for_category)
+    ],
     redis: RedisDep
 ) -> CategoryService:
     return CategoryService(
         repository=repository,
+        product_repository=product_repository,
         redis=redis
     )
 

@@ -1,7 +1,11 @@
 import structlog
 from redis.asyncio import Redis
 
-from app.core.constants import CACHE_TTL, CATEGORY_NOT_FOUND_MSG
+from app.core.constants import (
+    CACHE_TTL,
+    CATEGORIES_CACHE_VERSION_KEY,
+    CATEGORY_NOT_FOUND_MSG,
+)
 from app.core.exceptions import ConflictException, NotFoundException
 from app.modules.categories.repositories import CategoryRepository
 from app.modules.products.schemas import (
@@ -14,6 +18,7 @@ from app.services.cache.keys import (
     get_category_products_key,
 )
 
+from ..products.repositories import ProductRepository
 from .models import Category
 from .schemas import (
     CategoryCreate,
@@ -31,14 +36,16 @@ class CategoryService(BaseService):
     def __init__(
         self,
         repository: CategoryRepository,
+        product_repository: ProductRepository,
         redis: Redis
     ):
         self.repository = repository
+        self.product_repository = product_repository
         self.redis = redis
 
     async def create_category(self, data: CategoryCreate) -> CategoryDB:
         if data.parent_id:
-            if not await self.repository.exists_by_id(data.parent_id):
+            if not await self.repository.exists(data.parent_id):
                 raise NotFoundException(
                     f'Подкатегория {data.parent_id} не найдена'
                 )
@@ -51,7 +58,7 @@ class CategoryService(BaseService):
                 category_id=category.id
             )
 
-            await self.invalidate_category_cache()
+            await self.redis.incr(CATEGORIES_CACHE_VERSION_KEY)
 
             return CategoryDB.model_validate(category)
         except Exception:
@@ -62,7 +69,7 @@ class CategoryService(BaseService):
             raise
 
     async def get_categories(self) -> list[CategoryResponse]:
-        cache_key = get_categories_key()
+        cache_key = await get_categories_key(self.redis)
         cached = await self.redis.get(
             cache_key
         )
@@ -140,7 +147,7 @@ class CategoryService(BaseService):
         if 'parent_id' in update_data:
             await self.get_by_id(update_data['parent_id'])
 
-        await self.invalidate_category_cache()
+        await self.redis.incr(CATEGORIES_CACHE_VERSION_KEY)
 
         logger.debug(
             'category.update',
@@ -168,17 +175,12 @@ class CategoryService(BaseService):
         try:
             await self.repository.session.delete(category)
             await self.repository.session.commit()
-            await self.invalidate_category_cache()
+
+            await self.redis.incr(CATEGORIES_CACHE_VERSION_KEY)
+
         except Exception:
             await self.repository.session.rollback()
             raise
-
-    async def invalidate_category_cache(self):
-        await self.redis.delete(get_categories_key())
-
-        logger.info(
-            'category_cache_invalidated'
-        )
 
     async def get_category_products_by_id(
             self,
@@ -186,7 +188,12 @@ class CategoryService(BaseService):
             limit: int,
             offset: int
     ) -> list[ProductListResponse]:
-        cache_key = get_category_products_key(category_id, limit, offset)
+        cache_key = await get_category_products_key(
+            self.redis,
+            category_id,
+            limit,
+            offset
+        )
 
         cached = await self.redis.get(cache_key)
 
@@ -200,7 +207,7 @@ class CategoryService(BaseService):
             )
             return products_list_adapter.validate_json(cached)
 
-        products = await self.repository.get_category_products_by_id(
+        products = await self.product_repository.get_all_by_category_id(
             category_id=category_id,
             limit=limit,
             offset=offset

@@ -9,9 +9,10 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
     false,
     text,
-    true, UniqueConstraint,
+    true,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

@@ -3,6 +3,7 @@ from typing import Optional
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.constants import CATEGORY_NAME_MAX_LENGTH
 from app.db.base import Base
 from app.db.mixins import CommonMixin
 
@@ -10,7 +11,7 @@ from app.db.mixins import CommonMixin
 ## Slug field in future.
 class Category(CommonMixin, Base):
     name: Mapped[str] = mapped_column(
-        String(length=255),
+        String(length=CATEGORY_NAME_MAX_LENGTH),
         nullable=False,
         index=True,
         unique=True

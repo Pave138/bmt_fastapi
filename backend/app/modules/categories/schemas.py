@@ -2,25 +2,30 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-from ..products.schemas import ProductResponse
+from app.core.constants import CATEGORY_NAME_MAX_LENGTH
+from app.modules.products.schemas import ProductResponse
+
 from .models import Category
 
 
-class CategoryBase(BaseModel):
-    name: str
+class CategoryFields(BaseModel):
+    name: str = Field(max_length=CATEGORY_NAME_MAX_LENGTH)
     parent_id: Optional[int] = None
 
 
-class CategoryCreate(CategoryBase):
+class CategoryCreate(CategoryFields):
     pass
 
 
 class CategoryUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(
+        None,
+        max_length=CATEGORY_NAME_MAX_LENGTH
+    )
     parent_id: Optional[int] = None
 
 
-class CategoryDB(BaseModel):
+class CategoryDB(CategoryFields):
     id: int
     name: str
     parent_id: Optional[int] = None
@@ -29,7 +34,7 @@ class CategoryDB(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class CategoryResponse(CategoryBase):
+class CategoryResponse(CategoryFields):
     id: int
     children: List['CategoryResponse'] = Field(
         default_factory=list

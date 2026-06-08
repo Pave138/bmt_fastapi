@@ -1,10 +1,11 @@
 from typing import Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..reviews.models import Review
+from app.modules.reviews.models import Review
+
 from .models import Product
 
 
@@ -13,12 +14,9 @@ class ProductRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_all(
-        self,
-        limit: int,
-        offset: int
-    ) -> list[tuple[Product, float, int]]:
-        result = await self.session.execute(
+    @staticmethod
+    def _build_products_with_stats_query() -> Select:
+        return (
             select(
                 Product,
                 func.coalesce(
@@ -32,6 +30,15 @@ class ProductRepository:
                 Product.id == Review.product_id
             )
             .group_by(Product.id)
+        )
+
+    async def get_all(
+        self,
+        limit: int,
+        offset: int
+    ) -> list[tuple[Product, float, int]]:
+        result = await self.session.execute(
+            self._build_products_with_stats_query()
             .order_by(Product.created_at)
             .offset(offset)
             .limit(limit)
@@ -63,7 +70,7 @@ class ProductRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_by_id_with_stats(
+    async def get_by_id_with_reviews_and_stats(
             self,
             product_id: int
     ) -> Optional[tuple[Product, float, int]]:
@@ -80,6 +87,9 @@ class ProductRepository:
                     Review.id
                 ).label('reviews_count')
             )
+            .options(
+                selectinload(Product.reviews)
+            )
             .outerjoin(
                 Review,
                 Product.id == Review.product_id
@@ -95,15 +105,15 @@ class ProductRepository:
         category_id: int,
         limit: int,
         offset: int
-    ) -> list[Product]:
+    ) -> list[tuple[Product, float, int]]:
         result = await self.session.execute(
-            select(Product).where(
-                Product.category_id == category_id
-            ).options(
+            self._build_products_with_stats_query()
+            .where(Product.category_id == category_id)
+            .options(
                 selectinload(Product.category)
             ).limit(limit).offset(offset)
         )
-        return result.scalars().all()
+        return result.all()
 
     async def create(self, data: dict) -> Product:
         product = Product(**data)
