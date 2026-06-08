@@ -20,7 +20,10 @@ class ProductRepository:
             select(
                 Product,
                 func.coalesce(
-                    func.avg(Review.rating),
+                    func.round(
+                        func.avg(Review.rating),
+                        2
+                    ),
                     0
                 ).label('avg_rating'),
                 func.count(Review.id).label('reviews_count')
@@ -79,7 +82,10 @@ class ProductRepository:
                 Product,
 
                 func.coalesce(
-                    func.avg(Review.rating),
+                    func.round(
+                        func.avg(Review.rating),
+                        2
+                    ),
                     0
                 ).label('avg_rating'),
 
