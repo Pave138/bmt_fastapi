@@ -23,5 +23,8 @@ class Settings(BaseSettings):
 
     REDIS_URL: str
 
+    MINIO_ACCESS_KEY: str
+    MINIO_SECRET_KEY: str
+
 
 settings = Settings()

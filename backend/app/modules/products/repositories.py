@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.modules.reviews.models import Review
 
-from .models import Product
+from .models import Product, ProductImage
 
 
 class ProductRepository:
@@ -147,3 +147,50 @@ class ProductRepository:
             ).with_for_update()
         )
         return result.scalar_one_or_none()
+
+
+class ProductImageRepository:
+
+    def __init__(
+        self,
+        session: AsyncSession
+    ):
+        self.session = session
+
+    async def create(
+        self,
+        product_id: int,
+        file_key: str,
+        is_main: bool = False
+    ) -> ProductImage:
+        image = ProductImage(
+            product_id=product_id,
+            file_key=file_key,
+            is_main=is_main
+        )
+
+        self.session.add(image)
+        await self.session.flush()
+
+        return image
+
+    async def get_by_id(
+        self,
+        image_id: int
+    ) -> Optional[ProductImage]:
+        result = await self.session.execute(
+            select(ProductImage)
+            .where(ProductImage.id == image_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_product_images(
+        self,
+        product_id: int
+    ) -> list[ProductImage]:
+        result = await self.session.execute(
+            select(ProductImage)
+            .where(ProductImage.product_id == product_id)
+            .order_by(ProductImage.is_main.desc())
+        )
+        return result.scalars().all()
