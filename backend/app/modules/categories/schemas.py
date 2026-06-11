@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
-from app.core.constants import CATEGORY_NAME_MAX_LENGTH, CATEGORY_EXAMPLE_NAME
+from app.core.constants import CATEGORY_EXAMPLE_NAME, CATEGORY_NAME_MAX_LENGTH
 from app.modules.products.schemas import ProductResponse
 
 from .models import Category

@@ -102,22 +102,21 @@ products_list_adapter = TypeAdapter(
 )
 
 
-class ProductImageBase(BaseModel):
-    product_id: int
-    url: str
-    is_main: bool = False
-
-
-class ProductImageCreate(ProductImageBase):
-    pass
-
-
-class ProductImageUpdate(BaseModel):
-    url: Optional[str] = None
-    is_main: Optional[bool] = None
-
-
-class ProductImageRead(ProductImageBase):
+class ProductImageResponse(BaseModel):
     id: int
+    product_id: int
+    file_key: str
+    image_url: str
+    original_filename: str
+    content_type: str
+    file_size: int
+    width: Optional[int]
+    height: Optional[int]
+    is_main: bool
+    created_at: dt
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProductImageUploadResponse(ProductImageResponse):
+    pass

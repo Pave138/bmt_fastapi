@@ -18,9 +18,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.constants import (
     DEFAULT_PRODUCT_STOCK,
+    PRODUCT_IMAGE_CONTENT_TYPE_MAX_LENGTH,
+    PRODUCT_IMAGE_FILE_KEY_MAX_LENGTH,
+    PRODUCT_IMAGE_ORIGINAL_FILENAME_MAX_LENGTH,
     PRODUCT_NAME_MAX_LENGTH,
     PRODUCT_PRICE_PRECISION,
-    PRODUCT_PRICE_SCALE, PRODUCT_IMAGE_FILE_KEY_MAX_LENGTH,
+    PRODUCT_PRICE_SCALE,
 )
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
@@ -97,7 +100,28 @@ class ProductImage(CommonMixin, Base):
     )
     file_key: Mapped[str] = mapped_column(
         String(PRODUCT_IMAGE_FILE_KEY_MAX_LENGTH),
+        nullable=False,
+        unique=True
+    )
+    original_filename: Mapped[str] = mapped_column(
+        String(PRODUCT_IMAGE_ORIGINAL_FILENAME_MAX_LENGTH),
         nullable=False
+    )
+    content_type: Mapped[str] = mapped_column(
+        String(PRODUCT_IMAGE_CONTENT_TYPE_MAX_LENGTH),
+        nullable=False
+    )
+    file_size: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+    width: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True
+    )
+    height: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True
     )
     is_main: Mapped[bool] = mapped_column(
         Boolean,

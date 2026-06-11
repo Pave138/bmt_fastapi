@@ -22,7 +22,7 @@ class ProductRepository:
                 func.coalesce(
                     func.round(
                         func.avg(Review.rating),
-                        2
+                        1
                     ),
                     0
                 ).label('avg_rating'),
@@ -159,14 +159,10 @@ class ProductImageRepository:
 
     async def create(
         self,
-        product_id: int,
-        file_key: str,
-        is_main: bool = False
+        **data
     ) -> ProductImage:
         image = ProductImage(
-            product_id=product_id,
-            file_key=file_key,
-            is_main=is_main
+            **data
         )
 
         self.session.add(image)
@@ -180,7 +176,9 @@ class ProductImageRepository:
     ) -> Optional[ProductImage]:
         result = await self.session.execute(
             select(ProductImage)
-            .where(ProductImage.id == image_id)
+            .where(
+                ProductImage.id == image_id
+            )
         )
         return result.scalar_one_or_none()
 
@@ -194,3 +192,24 @@ class ProductImageRepository:
             .order_by(ProductImage.is_main.desc())
         )
         return result.scalars().all()
+
+    async def unset_main(
+        self,
+        product_id: int
+    ) -> None:
+        result = await self.session.execute(
+            select(ProductImage)
+            .where(
+                ProductImage.product_id == product_id,
+                ProductImage.is_main.is_(True)
+            )
+        )
+
+        for image in result.scalars():
+            image.is_main = False
+
+    async def delete(
+        self,
+        image: ProductImage
+    ) -> None:
+        await self.session.delete(image)

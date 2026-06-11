@@ -1,11 +1,11 @@
 from uuid import UUID
 
+from app.core.constants import CART_ALREADY_EXISTS_MSG, CART_NOT_FOUND_MSG
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.modules.carts.repositories import CartRepository
 
 from .models import Cart
 from .schemas import CartCreate
-from app.core.constants import CART_NOT_FOUND_MSG, CART_ALREADY_EXISTS_MSG
 
 
 class CartService:

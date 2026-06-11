@@ -8,6 +8,7 @@ from app.core.constants import (
 )
 from app.core.exceptions import ConflictException, NotFoundException
 from app.modules.categories.repositories import CategoryRepository
+from app.modules.products.repositories import ProductRepository
 from app.modules.products.schemas import (
     ProductListResponse,
     products_list_adapter,
@@ -18,7 +19,6 @@ from app.services.cache.keys import (
     get_category_products_key,
 )
 
-from app.modules.products.repositories import ProductRepository
 from .models import Category
 from .schemas import (
     CategoryCreate,
