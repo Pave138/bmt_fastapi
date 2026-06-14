@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -13,7 +12,7 @@ class CartRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_by_id(self, cart_id: int) -> Optional[Cart]:
+    async def get_by_id(self, cart_id: int) -> Cart | None:
         result = await self.session.execute(
             select(Cart).where(
                 Cart.id == cart_id
@@ -21,7 +20,7 @@ class CartRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_by_user_id(self, user_id: UUID) -> Optional[Cart]:
+    async def get_by_user_id(self, user_id: UUID) -> Cart | None:
         result = await self.session.execute(
             select(Cart).where(
                 Cart.user_id == user_id

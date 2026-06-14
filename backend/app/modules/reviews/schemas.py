@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
@@ -14,7 +13,7 @@ from app.core.constants import (
 class ReviewFields(BaseModel):
     product_id: int
     rating: int = Field(ge=REVIEW_RATING_GE, le=REVIEW_RATING_LE)
-    comment: Optional[str] = Field(
+    comment: str | None = Field(
         None,
         max_length=REVIEW_COMMENT_MAX_LENGTH
     )
@@ -34,12 +33,12 @@ class ReviewCreate(ReviewFields):
 
 
 class ReviewUpdate(BaseModel):
-    rating: Optional[int] = Field(
+    rating: int | None = Field(
         None,
         ge=REVIEW_RATING_GE,
         le=REVIEW_RATING_LE
     )
-    comment: Optional[str] = Field(
+    comment: str | None = Field(
         None,
         max_length=REVIEW_COMMENT_MAX_LENGTH
     )
@@ -58,7 +57,7 @@ class ReviewResponse(ReviewFields):
     id: int
     user_id: UUID
     rating: int
-    comment: Optional[str] = None
+    comment: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

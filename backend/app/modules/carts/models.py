@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey
@@ -6,6 +9,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.db.mixins import CommonMixin
 
+if TYPE_CHECKING:
+    from app.db.models import CartItem, User
+
 
 class Cart(CommonMixin, Base):
     user_id: Mapped[UUID] = mapped_column(
@@ -13,8 +19,8 @@ class Cart(CommonMixin, Base):
         unique=True,
         nullable=False
     )
-    user: Mapped['User'] = relationship('User', back_populates='cart')
-    items: Mapped[list['CartItem']] = relationship(
+    user: Mapped[User] = relationship('User', back_populates='cart')
+    items: Mapped[list[CartItem]] = relationship(
         'CartItem',
         back_populates='cart',
         lazy='selectin',

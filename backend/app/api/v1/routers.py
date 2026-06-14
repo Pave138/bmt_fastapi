@@ -2,7 +2,15 @@ from fastapi import APIRouter
 
 from app.core.constants import API_V1_PREFIX
 
-from .endpoints import *
+from .endpoints import (
+    auth_router,
+    cart_router,
+    category_router,
+    product_router,
+    product_image_router,
+    review_router,
+    user_router,
+)
 
 main_router = APIRouter(prefix=API_V1_PREFIX)
 
@@ -27,6 +35,12 @@ main_router.include_router(
     product_router,
     prefix='/products',
     tags=['Товары']
+)
+
+main_router.include_router(
+    product_image_router,
+    prefix="/products",
+    tags=["Изображения товаров"]
 )
 
 main_router.include_router(

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from fastapi import HTTPException, status
 
@@ -10,7 +10,7 @@ class AppException(HTTPException):
             self,
             status_code: int,
             detail: str,
-            headers: Optional[Dict[str, Any]] = None
+            headers: Dict[str, Any] | None = None
     ):
         super().__init__(
             status_code=status_code,

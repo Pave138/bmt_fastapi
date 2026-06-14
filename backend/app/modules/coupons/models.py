@@ -1,7 +1,6 @@
 from datetime import datetime as dt
 from decimal import Decimal
 from enum import StrEnum
-from typing import Optional
 
 from sqlalchemy import (
     Boolean,
@@ -49,11 +48,11 @@ class Coupon(CommonMixin, Base):
         server_default=text('true'),
         nullable=False
     )
-    expires_at: Mapped[Optional[dt]] = mapped_column(
+    expires_at: Mapped[dt | None] = mapped_column(
         DateTime,
         nullable=True
     )
-    usage_limit: Mapped[Optional[int]] = mapped_column(
+    usage_limit: Mapped[int | None] = mapped_column(
         Integer,
         nullable=True
     )
@@ -63,7 +62,7 @@ class Coupon(CommonMixin, Base):
         server_default=text('0'),
         nullable=False
     )
-    min_order_amount: Mapped[Optional[Decimal]] = mapped_column(
+    min_order_amount: Mapped[Decimal | None] = mapped_column(
         Numeric(10, 2),
         nullable=True
     )

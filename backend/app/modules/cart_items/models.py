@@ -1,8 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.db.models import Cart, Product
 
 
 class CartItem(CommonMixin, TimestampMixin, Base):
@@ -21,8 +28,8 @@ class CartItem(CommonMixin, TimestampMixin, Base):
         nullable=False
     )
 
-    cart: Mapped['Cart'] = relationship('Cart', back_populates='items')
-    product: Mapped['Product'] = relationship('Product')
+    cart: Mapped[Cart] = relationship('Cart', back_populates='items')
+    product: Mapped[Product] = relationship('Product')
 
     __table_args__ = (
         Index(

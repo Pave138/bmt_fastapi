@@ -1,6 +1,6 @@
 from datetime import datetime as dt
 from decimal import Decimal
-from typing import Annotated, Optional, Self
+from typing import Annotated, Self
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
@@ -30,9 +30,9 @@ class ProductFields(BaseModel):
     name: str = Field(
         max_length=PRODUCT_NAME_MAX_LENGTH
     )
-    description: Optional[str] = None
+    description: str | None = None
     price: PriceDecimal
-    old_price: Optional[PriceDecimal]
+    old_price: PriceDecimal | None
     category_id: int
     stock: int = Field(ge=PRODUCT_STOCK_GE, default=DEFAULT_PRODUCT_STOCK)
 
@@ -65,19 +65,19 @@ class ProductCreate(ProductFields):
 
 
 class ProductUpdate(BaseModel):
-    name: Optional[str] = Field(
+    name: str | None = Field(
         None,
         max_length=PRODUCT_NAME_MAX_LENGTH
     )
-    description: Optional[str] = None
-    price: Optional[PriceDecimal] = None
-    old_price: Optional[PriceDecimal] = None
-    category_id: Optional[int] = None
-    stock: Optional[int] = Field(
+    description: str | None = None
+    price: PriceDecimal | None = None
+    old_price: PriceDecimal | None = None
+    category_id: int | None = None
+    stock: int | None = Field(
         None,
         ge=PRODUCT_STOCK_GE
     )
-    is_active: Optional[bool] = None
+    is_active: bool | None = None
 
 
 class ProductDB(ProductFields):
@@ -100,23 +100,3 @@ class ProductResponse(ProductListResponse):
 products_list_adapter = TypeAdapter(
     list[ProductListResponse]
 )
-
-
-class ProductImageResponse(BaseModel):
-    id: int
-    product_id: int
-    file_key: str
-    image_url: str
-    original_filename: str
-    content_type: str
-    file_size: int
-    width: Optional[int]
-    height: Optional[int]
-    is_main: bool
-    created_at: dt
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class ProductImageUploadResponse(ProductImageResponse):
-    pass

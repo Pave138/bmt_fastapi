@@ -1,4 +1,6 @@
-from typing import Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
@@ -19,6 +21,9 @@ from app.core.constants import (
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
 
+if TYPE_CHECKING:
+    from app.db.models import Product, User
+    
 
 class Review(CommonMixin, TimestampMixin, Base):
     user_id: Mapped[UUID] = mapped_column(
@@ -33,16 +38,16 @@ class Review(CommonMixin, TimestampMixin, Base):
         Integer,
         nullable=False
     )
-    comment: Mapped[Optional[str]] = mapped_column(
+    comment: Mapped[str | None] = mapped_column(
         String(length=REVIEW_COMMENT_MAX_LENGTH),
         nullable=True
     )
 
-    user: Mapped['User'] = relationship(
+    user: Mapped[User] = relationship(
         'User',
         back_populates='reviews'
     )
-    product: Mapped['Product'] = relationship(
+    product: Mapped[Product] = relationship(
         'Product',
         back_populates='reviews'
     )

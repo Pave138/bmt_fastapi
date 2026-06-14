@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from decimal import Decimal
 from enum import StrEnum
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Enum as SQLEnum
@@ -8,6 +11,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.db.models import OrderItem, User
 
 
 class OrderStatus(StrEnum):
@@ -45,11 +51,11 @@ class Order(CommonMixin, TimestampMixin, Base):
         nullable=False
     )
 
-    user: Mapped['User'] = relationship(
+    user: Mapped[User] = relationship(
         'User',
         back_populates='orders'
     )
-    items: Mapped[list['OrderItem']] = relationship(
+    items: Mapped[list[OrderItem]] = relationship(
         'OrderItem',
         back_populates='order',
         cascade='all, delete-orphan',

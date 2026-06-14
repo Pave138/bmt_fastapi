@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -40,7 +38,7 @@ class CategoryRepository:
             for row in rows
         ]
 
-    async def get_by_id(self, category_id: int) -> Optional[Category]:
+    async def get_by_id(self, category_id: int) -> Category | None:
         result = await self.session.execute(
             select(Category).where(
                 Category.id == category_id

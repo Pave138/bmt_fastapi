@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +9,7 @@ class ReviewRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_by_id(self, review_id: int) -> Optional[Review]:
+    async def get_by_id(self, review_id: int) -> Review | None:
         result = await self.session.execute(
             select(Review).where(Review.id == review_id)
         )

@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.db.models import Order, Product
 
 
 class OrderItem(CommonMixin, TimestampMixin, Base):
@@ -25,11 +31,11 @@ class OrderItem(CommonMixin, TimestampMixin, Base):
         nullable=False
     )
 
-    order: Mapped['Order'] = relationship(
+    order: Mapped[Order] = relationship(
         'Order',
         back_populates='items'
     )
-    product: Mapped['Product'] = relationship(
+    product: Mapped[Product] = relationship(
         'Product'
     )
 

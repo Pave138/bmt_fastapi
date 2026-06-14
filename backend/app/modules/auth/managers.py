@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from fastapi import Request
@@ -18,7 +17,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
     async def on_after_register(
         self,
         user: User,
-        request: Optional[Request] = None
+        request: Request | None = None
     ):
         print(f'Пользователь {user.id} зарегистрирован.')
 
@@ -26,7 +25,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
         self,
         user: User,
         token: str,
-        request: Optional[Request] = None
+        request: Request | None = None
     ):
         print(f'Токен сброса пароля: {token}')
 
@@ -34,7 +33,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
         self,
         user: User,
         token: str,
-        request: Optional[Request] = None
+        request: Request | None = None
     ):
         print(f'Токен верификации: {token}')
 

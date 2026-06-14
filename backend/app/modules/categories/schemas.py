@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
@@ -10,7 +10,7 @@ from .models import Category
 
 class CategoryFields(BaseModel):
     name: str = Field(max_length=CATEGORY_NAME_MAX_LENGTH)
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
 
 
 class CategoryCreate(CategoryFields):
@@ -26,11 +26,11 @@ class CategoryCreate(CategoryFields):
 
 
 class CategoryUpdate(BaseModel):
-    name: Optional[str] = Field(
+    name: str | None = Field(
         None,
         max_length=CATEGORY_NAME_MAX_LENGTH
     )
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -45,7 +45,7 @@ class CategoryUpdate(BaseModel):
 class CategoryDB(CategoryFields):
     id: int
     name: str
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
     products: List[ProductResponse]
 
     model_config = ConfigDict(from_attributes=True)
