@@ -34,6 +34,10 @@ from .schemas import (
     ProductUpdate,
     products_list_adapter,
 )
+from ..product_images.models import ProductImage
+from ..product_images.repositories import ProductImageRepository
+from ..product_images.schemas import ProductImageResponse
+from ...services.minio import MinioService
 
 logger = structlog.get_logger()
 
@@ -43,10 +47,14 @@ class ProductService(BaseService):
     def __init__(
         self,
         repository: ProductRepository,
+        image_repository: ProductImageRepository,
+        minio_service: MinioService,
         category_repository: CategoryRepository,
         redis: Redis
     ):
         self.repository = repository
+        self.image_repository = image_repository
+        self.minio_service = minio_service
         self.category_repository = category_repository
         self.redis = redis
 
@@ -58,6 +66,24 @@ class ProductService(BaseService):
 
         logger.info(
             'product_cache.invalidate'
+        )
+
+    def _build_image_response(
+            self,
+            image: ProductImage
+    ) -> ProductImageResponse:
+        return ProductImageResponse(
+            id=image.id,
+            product_id=image.product_id,
+            original_filename=image.original_filename,
+            content_type=image.content_type,
+            file_size=image.file_size,
+            width=image.width,
+            height=image.height,
+            is_main=image.is_main,
+            image_url=self.minio_service.get_url(
+                image.file_key
+            )
         )
 
     async def get_all(
@@ -104,6 +130,7 @@ class ProductService(BaseService):
                 old_price=product.old_price,
                 stock=product.stock,
                 category_id=product.category_id,
+                is_active=product.is_active,
 
                 avg_rating=float(avg_rating),
                 reviews_count=reviews_count
@@ -213,6 +240,11 @@ class ProductService(BaseService):
 
         product, avg_rating, reviews_count = row
 
+        images = [
+            self._build_image_response(image)
+            for image in product.images
+        ]
+
         response = ProductResponse(
             id=product.id,
             name=product.name,
@@ -229,6 +261,7 @@ class ProductService(BaseService):
             created_at=product.created_at,
             updated_at=product.updated_at,
 
+            images=images,
             reviews=product.reviews,
 
             avg_rating=float(avg_rating),

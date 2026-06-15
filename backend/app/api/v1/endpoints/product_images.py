@@ -1,5 +1,6 @@
-from fastapi import APIRouter, File, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 
+from app.modules.auth.dependencies import current_superuser
 from app.modules.product_images.dependencies import ProductImageServiceDep
 from app.modules.product_images.schemas import ProductImageResponse
 
@@ -8,8 +9,10 @@ router = APIRouter()
 
 @ router.post(
     '/{product_id}/images',
+    summary='Загрузить изображение к товару(superuser only)',
     response_model=ProductImageResponse,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(current_superuser)]
 )
 async def upload_product_image(
     product_id: int,
@@ -39,7 +42,9 @@ async def get_product_images(
 
 @router.patch(
     '/images/{image_id}/set-main',
-    response_model=ProductImageResponse
+    summary='Назначить изображение главным (superuser only)',
+    response_model=ProductImageResponse,
+    dependencies=[Depends(current_superuser)]
 )
 async def set_main_image(
     image_id: int,
@@ -52,7 +57,9 @@ async def set_main_image(
 
 @router.delete(
     '/images/{image_id}',
-    status_code=status.HTTP_204_NO_CONTENT
+    summary='Удалить изображение (superuser only)',
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(current_superuser)]
 )
 async def delete_product_image(
     image_id: int,

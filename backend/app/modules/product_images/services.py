@@ -19,7 +19,7 @@ from app.modules.products.repositories import ProductRepository
 from app.services.minio import MinioService
 
 from .repositories import ProductImageRepository
-from .schemas import ProductImageResponse
+from .schemas import ProductImageResponse, ProductImageDB
 
 
 class ProductImageService:
@@ -69,11 +69,7 @@ class ProductImageService:
 
         extension = file.filename.split('.')[-1]
 
-        file_key = (
-            'products/'
-            f'{product_id}/'
-            f'{uuid4()}.{extension}'
-        )
+        file_key = f'{product_id}/{uuid4()}.{extension}'
 
         self.minio_service.upload(
             file_key=file_key,
@@ -106,13 +102,15 @@ class ProductImageService:
                 db_image
             )
 
-            db_data = ProductImageResponse.model_validate(
+            db_data = ProductImageDB.model_validate(
                 db_image
             )
 
             return ProductImageResponse(
                 **db_data.model_dump(),
-                image_url=self.minio_service.get_url(db_image.file_key),
+                image_url=self.minio_service.get_url(
+                    db_image.file_key
+                )
             )
 
         except UnidentifiedImageError:

@@ -14,6 +14,7 @@ from app.core.constants import (
     PRODUCT_STOCK_GE,
 )
 from app.core.exceptions import ValidationException
+from app.modules.product_images.schemas import ProductImageResponse
 from app.modules.reviews.schemas import ReviewResponse
 
 PriceDecimal = Annotated[
@@ -31,6 +32,7 @@ class ProductFields(BaseModel):
         max_length=PRODUCT_NAME_MAX_LENGTH
     )
     description: str | None = None
+    is_active: bool
     price: PriceDecimal
     old_price: PriceDecimal | None
     category_id: int
@@ -86,12 +88,18 @@ class ProductDB(ProductFields):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ProductListResponse(ProductDB):
+class ProductFieldsResponse(ProductDB):
     avg_rating: float
     reviews_count: int
 
 
-class ProductResponse(ProductListResponse):
+class ProductListResponse(ProductFieldsResponse):
+    main_image: ProductImageResponse | None = None
+
+
+
+class ProductResponse(ProductFieldsResponse):
+    images: list[ProductImageResponse]
     created_at: dt
     updated_at: dt
     reviews: list[ReviewResponse] = Field(default_factory=list)

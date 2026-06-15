@@ -6,8 +6,8 @@ from .endpoints import (
     auth_router,
     cart_router,
     category_router,
-    product_router,
     product_image_router,
+    product_router,
     review_router,
     user_router,
 )

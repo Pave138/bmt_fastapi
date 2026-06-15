@@ -48,6 +48,19 @@ class ProductImageRepository:
         )
         return result.scalars().all()
 
+    async def get_is_main_product_image(
+        self,
+        product_id: int
+    ) -> ProductImage | None:
+        result = await self.session.execute(
+            select(ProductImage)
+            .where(
+                ProductImage.product_id == product_id,
+                ProductImage.is_main.is_(True)
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def unset_main(
         self,
         product_id: int

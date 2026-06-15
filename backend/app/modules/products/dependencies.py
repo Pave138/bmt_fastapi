@@ -4,7 +4,9 @@ from fastapi import Depends
 
 from app.db.session import SessionDep
 from app.modules.categories.dependencies import CategoryRepositoryDep
+from app.modules.product_images.dependencies import ProductImageRepositoryDep
 from app.services.cache.dependencies import RedisDep
+from app.services.minio import MinioServiceDep
 
 from .repositories import ProductRepository
 from .services import ProductService
@@ -22,11 +24,15 @@ ProductRepositoryDep = Annotated[
 
 async def get_product_service(
     repository: ProductRepositoryDep,
+    image_repository: ProductImageRepositoryDep,
+    minio_service: MinioServiceDep,
     category_repository: CategoryRepositoryDep,
     redis: RedisDep
 ) -> ProductService:
     return ProductService(
         repository=repository,
+        image_repository=image_repository,
+        minio_service=minio_service,
         category_repository=category_repository,
         redis=redis
     )

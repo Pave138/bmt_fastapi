@@ -27,6 +27,8 @@ from .schemas import (
     CategoryUpdate,
     categories_list_adapter,
 )
+from ..product_images.schemas import ProductImageResponse
+from ...services.minio import MinioService
 
 logger = structlog.get_logger()
 
@@ -37,10 +39,12 @@ class CategoryService(BaseService):
         self,
         repository: CategoryRepository,
         product_repository: ProductRepository,
+        minio_service: MinioService,
         redis: Redis
     ):
         self.repository = repository
         self.product_repository = product_repository
+        self.minio_service = minio_service
         self.redis = redis
 
     async def create_category(self, data: CategoryCreate) -> CategoryDB:
@@ -228,11 +232,29 @@ class CategoryService(BaseService):
                 old_price=product.old_price,
                 stock=product.stock,
                 category_id=product.category_id,
+                is_active=product.is_active,
 
                 avg_rating=float(avg_rating),
-                reviews_count=reviews_count
+                reviews_count=reviews_count,
+                main_image=(
+                    ProductImageResponse(
+                        id=main_image.id,
+                        product_id=main_image.product_id,
+                        original_filename=main_image.original_filename,
+                        content_type=main_image.content_type,
+                        file_size=main_image.file_size,
+                        width=main_image.width,
+                        height=main_image.height,
+                        is_main=True,
+                        image_url=self.minio_service.get_url(
+                            main_image.file_key
+                        )
+                    )
+                    if main_image
+                    else None
+                )
             )
-            for product, avg_rating, reviews_count in products
+            for product, main_image, avg_rating, reviews_count in products
         ]
         await self.redis.set(
             cache_key,

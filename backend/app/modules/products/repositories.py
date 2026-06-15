@@ -1,3 +1,5 @@
+from operator import and_
+
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -5,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.modules.reviews.models import Review
 
 from .models import Product
+from ..product_images.models import ProductImage
 
 
 class ProductRepository:
@@ -17,6 +20,7 @@ class ProductRepository:
         return (
             select(
                 Product,
+                ProductImage,
                 func.coalesce(
                     func.round(
                         func.avg(Review.rating),
@@ -30,7 +34,17 @@ class ProductRepository:
                 Review,
                 Product.id == Review.product_id
             )
-            .group_by(Product.id)
+            .outerjoin(
+                ProductImage,
+                and_(
+                    ProductImage.product_id == Product.id,
+                    ProductImage.is_main.is_(True)
+                )
+            )
+            .group_by(
+                Product.id,
+                ProductImage.id
+            )
         )
 
     async def get_all(
@@ -76,30 +90,15 @@ class ProductRepository:
             product_id: int
     ) -> tuple[Product, float, int] | None:
         result = await self.session.execute(
-            select(
-                Product,
-
-                func.coalesce(
-                    func.round(
-                        func.avg(Review.rating),
-                        2
-                    ),
-                    0
-                ).label('avg_rating'),
-
-                func.count(
-                    Review.id
-                ).label('reviews_count')
-            )
-            .options(
-                selectinload(Product.reviews)
-            )
-            .outerjoin(
-                Review,
-                Product.id == Review.product_id
-            )
+            self._build_products_with_stats_query()
             .where(Product.id == product_id)
-            .group_by(Product.id)
+            .outerjoin(
+                ProductImage,
+                and_(
+                    ProductImage.product_id == product_id,
+                    ProductImage.is_main.is_(True)
+                )
+            )
         )
 
         return result.one_or_none()
@@ -109,7 +108,7 @@ class ProductRepository:
         category_id: int,
         limit: int,
         offset: int
-    ) -> list[tuple[Product, float, int]]:
+    ) -> list[tuple[Product, ProductImage | None, float, int]]:
         result = await self.session.execute(
             self._build_products_with_stats_query()
             .where(Product.category_id == category_id)
