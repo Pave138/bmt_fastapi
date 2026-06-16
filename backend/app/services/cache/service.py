@@ -1,8 +1,8 @@
-from structlog import get_logger
 from typing import Type
 
 from pydantic import BaseModel
 from redis.asyncio import Redis
+from structlog import get_logger
 
 from app.core.constants import (
     CACHE_TTL,

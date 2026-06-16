@@ -4,7 +4,6 @@ from app.core.constants import API_V1_PREFIX
 
 from .endpoints import (
     auth_router,
-    cart_router,
     category_router,
     product_image_router,
     product_router,
@@ -43,11 +42,11 @@ main_router.include_router(
     tags=["Изображения товаров"]
 )
 
-main_router.include_router(
-    cart_router,
-    prefix='/carts',
-    tags=['Корзины']
-)
+# main_router.include_router(
+#     cart_router,
+#     prefix='/carts',
+#     tags=['Корзины']
+# )
 
 main_router.include_router(
     review_router,

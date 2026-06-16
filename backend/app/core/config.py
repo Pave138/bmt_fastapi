@@ -23,7 +23,6 @@ class Settings(BaseSettings):
 
     REDIS_URL: str
 
-    MINIO_BUCKET_NAME: str
     MINIO_ENDPOINT: str
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str

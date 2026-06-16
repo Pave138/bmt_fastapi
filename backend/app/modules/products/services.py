@@ -4,13 +4,9 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.constants import (
     CACHE_TTL,
-    CATEGORIES_CACHE_VERSION_KEY,
     CATEGORY_NOT_FOUND_MSG,
-    CATEGORY_PRODUCTS_CACHE_VERSION_KEY,
-    PRODUCT_CACHE_VERSION_KEY,
     PRODUCT_NOT_FOUND_MSG,
     PRODUCT_OLD_PRICE_INVALID_MSG,
-    PRODUCTS_CACHE_VERSION_KEY,
 )
 from app.core.exceptions import (
     ConflictException,
@@ -31,6 +27,7 @@ from app.services.cache.keys import (
     get_product_key,
     get_products_key,
 )
+from app.services.cache.service import CacheService
 from app.services.minio import MinioService
 
 from .repositories import ProductRepository
@@ -42,7 +39,6 @@ from .schemas import (
     ProductUpdate,
     products_list_adapter,
 )
-from ...services.cache.service import CacheService
 
 logger = structlog.get_logger()
 
@@ -220,7 +216,10 @@ class ProductService(BaseService):
         row = await self.repository.get_by_id_with_all(
             product_id
         )
-        if row is None:
+
+        product, avg_rating, reviews_count = row
+
+        if product is None:
             logger.warning(
                 'product.not_found',
                 product_id=product_id
@@ -228,8 +227,6 @@ class ProductService(BaseService):
             raise NotFoundException(
                 PRODUCT_NOT_FOUND_MSG
             )
-
-        product, avg_rating, reviews_count = row
 
         images = [
             self._build_image_response(image)
@@ -363,7 +360,7 @@ class ProductService(BaseService):
             self.repository.session
         )
 
-        await self.invalidate_product_cache()
+        await self.cache_service.invalidate_product_cache()
 
         return result
 

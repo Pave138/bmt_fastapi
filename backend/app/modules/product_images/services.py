@@ -16,11 +16,11 @@ from app.core.exceptions import (
     ValidationException,
 )
 from app.modules.products.repositories import ProductRepository
+from app.services.cache.service import CacheService
 from app.services.minio import MinioService
 
 from .repositories import ProductImageRepository
 from .schemas import ProductImageDB, ProductImageResponse
-from ...services.cache.service import CacheService
 
 
 class ProductImageService:

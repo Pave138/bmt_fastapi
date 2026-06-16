@@ -1,5 +1,4 @@
 import structlog
-from pydantic import BaseModel
 from redis.asyncio import Redis
 
 from app.core.constants import (
@@ -9,9 +8,13 @@ from app.core.constants import (
 )
 from app.core.exceptions import ConflictException, NotFoundException
 from app.modules.categories.repositories import CategoryRepository
-from app.modules.product_images.schemas import ProductImageResponse
+from app.modules.product_images.schemas import (
+    ProductImageDB,
+    ProductImageResponse,
+)
 from app.modules.products.repositories import ProductRepository
 from app.modules.products.schemas import (
+    ProductDB,
     ProductListResponse,
     products_list_adapter,
 )
@@ -226,22 +229,16 @@ class CategoryService(BaseService):
         )
         response = [
             ProductListResponse(
-                **ProductListResponse.model_validate(
+                **ProductDB.model_validate(
                     product
-                ).model_dump(
-                    exclude={
-                        'avg_rating',
-                        'reviews_count',
-                        'main_image'
-                    }
-                ),
+                ).model_dump(),
                 avg_rating=float(avg_rating),
                 reviews_count=reviews_count,
                 main_image=(
                     ProductImageResponse(
-                        **ProductImageResponse.model_validate(
+                        **ProductImageDB.model_validate(
                             main_image
-                        ).model_dump(exclude={'image_url'}),
+                        ).model_dump(),
                         image_url=self.minio_service.get_url(
                             main_image.file_key
                         )

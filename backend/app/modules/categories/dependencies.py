@@ -4,8 +4,8 @@ from fastapi import Depends
 
 from app.db.session import SessionDep
 from app.modules.products.repositories import ProductRepository
-from app.services.minio import MinioServiceDep
 from app.services.cache.dependencies import RedisDep
+from app.services.minio import MinioServiceDep
 
 from .repositories import CategoryRepository
 from .services import CategoryService

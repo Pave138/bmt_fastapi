@@ -1,3 +1,5 @@
+name: bmt
+
 services:
   db:
     container_name: bmt-shop_db
@@ -19,6 +21,34 @@ services:
     depends_on:
       - db
 
+  minio:
+    image: minio/minio
+    container_name: minio
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:-admin}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-password123}"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  createBuckets:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      mc mb --ignore-existing local/products;
+      mc anonymous set download local/products;
+      exit 0;
+      "
+
   backend:
     image: pave138/bmt-shop_backend
     container_name: bmt-shop_backend
@@ -28,7 +58,7 @@ services:
       - .env
 
     depends_on:
-      - redis
+      - createBuckets
 
   gateway:
     container_name: bmt-shop_proxy
@@ -41,3 +71,4 @@ services:
 
 volumes:
   pg_data:
+  minio_data:

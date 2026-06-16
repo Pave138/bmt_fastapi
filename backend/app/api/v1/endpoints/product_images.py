@@ -29,6 +29,7 @@ async def upload_product_image(
 
 @router.get(
     '/{product_id}/images',
+    summary='Получить все изображения товара',
     response_model=list[ProductImageResponse]
 )
 async def get_product_images(

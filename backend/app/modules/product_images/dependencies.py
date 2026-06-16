@@ -1,6 +1,5 @@
 from typing import Annotated
 
-from anyio.functools import cache
 from fastapi import Depends
 
 from app.db.session import SessionDep
