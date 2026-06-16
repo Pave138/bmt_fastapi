@@ -48,6 +48,7 @@ class ProductCreate(ProductFields):
                 'description': 'Бензопила',
                 'price': '149999.99',
                 'old_price': '164999.99',
+                'is_active': True,
                 'category_id': 1,
                 'stock': 10
             }
@@ -100,8 +101,6 @@ class ProductListResponse(ProductFieldsResponse):
 
 class ProductResponse(ProductFieldsResponse):
     images: list[ProductImageResponse]
-    created_at: dt
-    updated_at: dt
     reviews: list[ReviewResponse] = Field(default_factory=list)
 
 

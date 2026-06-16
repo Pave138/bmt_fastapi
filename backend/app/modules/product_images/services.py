@@ -19,7 +19,8 @@ from app.modules.products.repositories import ProductRepository
 from app.services.minio import MinioService
 
 from .repositories import ProductImageRepository
-from .schemas import ProductImageResponse, ProductImageDB
+from .schemas import ProductImageDB, ProductImageResponse
+from ...services.cache.service import CacheService
 
 
 class ProductImageService:
@@ -28,11 +29,13 @@ class ProductImageService:
         self,
         product_repository: ProductRepository,
         image_repository: ProductImageRepository,
-        minio_service: MinioService
+        minio_service: MinioService,
+        cache_service: CacheService
     ):
         self.product_repository = product_repository
         self.image_repository = image_repository
         self.minio_service = minio_service
+        self.cache_service = cache_service
 
     async def upload_image(
         self,
@@ -101,6 +104,7 @@ class ProductImageService:
             await self.image_repository.session.refresh(
                 db_image
             )
+            await self.cache_service.invalidate_product_cache()
 
             db_data = ProductImageDB.model_validate(
                 db_image
@@ -148,6 +152,7 @@ class ProductImageService:
         )
 
         await self.image_repository.session.commit()
+        await self.cache_service.invalidate_product_cache()
 
     async def get_product_images(
         self,
@@ -192,6 +197,7 @@ class ProductImageService:
         await self.image_repository.session.refresh(
             image
         )
+        await self.cache_service.invalidate_product_cache()
         return ProductImageResponse(
             **image.__dict__,
             image_url=self.minio_service.get_url(

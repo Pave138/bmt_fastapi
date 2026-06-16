@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.modules.products.models import Product
+from app.modules.reviews.models import Review
 
-from ..reviews.models import Review
 from .models import Category
 
 

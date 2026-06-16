@@ -1,15 +1,34 @@
+from structlog import get_logger
 from typing import Type
 
 from pydantic import BaseModel
 from redis.asyncio import Redis
 
-from app.core.constants import CACHE_TTL
+from app.core.constants import (
+    CACHE_TTL,
+    CATEGORIES_CACHE_VERSION_KEY,
+    CATEGORY_PRODUCTS_CACHE_VERSION_KEY,
+    PRODUCT_CACHE_VERSION_KEY,
+    PRODUCTS_CACHE_VERSION_KEY,
+)
+
+logger = get_logger()
 
 
 class CacheService:
 
     def __init__(self, redis: Redis):
         self.redis = redis
+        
+    async def invalidate_product_cache(self) -> None:
+        await self.redis.incr(PRODUCT_CACHE_VERSION_KEY)
+        await self.redis.incr(PRODUCTS_CACHE_VERSION_KEY)
+        await self.redis.incr(CATEGORIES_CACHE_VERSION_KEY)
+        await self.redis.incr(CATEGORY_PRODUCTS_CACHE_VERSION_KEY)
+
+        logger.info(
+            'product_cache.invalidate'
+        )
 
     async def get_model(
             self,

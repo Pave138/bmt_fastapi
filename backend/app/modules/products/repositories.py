@@ -1,13 +1,11 @@
-from operator import and_
-
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.modules.product_images.models import ProductImage
 from app.modules.reviews.models import Review
 
 from .models import Product
-from ..product_images.models import ProductImage
 
 
 class ProductRepository:
@@ -34,13 +32,6 @@ class ProductRepository:
                 Review,
                 Product.id == Review.product_id
             )
-            .outerjoin(
-                ProductImage,
-                and_(
-                    ProductImage.product_id == Product.id,
-                    ProductImage.is_main.is_(True)
-                )
-            )
             .group_by(
                 Product.id,
                 ProductImage.id
@@ -51,10 +42,16 @@ class ProductRepository:
         self,
         limit: int,
         offset: int
-    ) -> list[tuple[Product, float, int]]:
+    ) -> list[tuple[Product, ProductImage | None, float, int]]:
         result = await self.session.execute(
             self._build_products_with_stats_query()
-            .order_by(Product.created_at)
+            .outerjoin(
+                ProductImage,
+                and_(
+                    ProductImage.product_id == Product.id,
+                    ProductImage.is_main.is_(True),
+                ),
+            )
             .offset(offset)
             .limit(limit)
         )
@@ -72,36 +69,46 @@ class ProductRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_by_id_with_reviews(
+    async def get_by_id_with_all(
         self,
         product_id: int
-    ) -> Product | None:
-        result = await self.session.execute(
+    ) -> tuple[Product| None, float, int]:
+        product_result = await self.session.execute(
             select(Product)
-            .where(Product.id == product_id)
             .options(
-                selectinload(Product.reviews)
+                selectinload(Product.images), selectinload(Product.reviews)
             )
-        )
-        return result.scalar_one_or_none()
-
-    async def get_by_id_with_reviews_and_stats(
-            self,
-            product_id: int
-    ) -> tuple[Product, float, int] | None:
-        result = await self.session.execute(
-            self._build_products_with_stats_query()
             .where(Product.id == product_id)
-            .outerjoin(
-                ProductImage,
-                and_(
-                    ProductImage.product_id == product_id,
-                    ProductImage.is_main.is_(True)
-                )
+        )
+
+        product = product_result.scalar_one_or_none()
+
+        if product is None:
+            return None, 0.0, 0
+
+        stats_result = await self.session.execute(
+            select(
+                func.coalesce(
+                    func.round(
+                        func.avg(Review.rating),
+                        1
+                    ),
+                    0
+                ).label('avg_rating'),
+                func.count(Review.id).label('reviews_count')
+            )
+            .where(
+                Review.product_id == product_id
             )
         )
 
-        return result.one_or_none()
+        avg_rating, reviews_count = stats_result.one()
+
+        return (
+            product,
+            float(avg_rating),
+            reviews_count
+        )
 
     async def get_all_by_category_id(
         self,
@@ -112,9 +119,8 @@ class ProductRepository:
         result = await self.session.execute(
             self._build_products_with_stats_query()
             .where(Product.category_id == category_id)
-            .options(
-                selectinload(Product.category)
-            ).limit(limit).offset(offset)
+            .order_by(Product.images)
+            .limit(limit).offset(offset)
         )
         return result.all()
 

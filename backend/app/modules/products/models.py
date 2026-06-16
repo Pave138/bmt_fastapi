@@ -71,7 +71,8 @@ class Product(CommonMixin, TimestampMixin, Base):
     images: Mapped[list[ProductImage]] = relationship(
         'ProductImage',
         back_populates='product',
-        cascade='all, delete-orphan'
+        cascade='all, delete-orphan',
+        order_by='ProductImage.is_main.desc()'
     )
     reviews: Mapped[list[Review]] = relationship(
         'Review',

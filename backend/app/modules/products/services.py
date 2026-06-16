@@ -18,12 +18,20 @@ from app.core.exceptions import (
     ValidationException,
 )
 from app.modules.categories.repositories import CategoryRepository
+from app.modules.product_images.models import ProductImage
+from app.modules.product_images.repositories import ProductImageRepository
+from app.modules.product_images.schemas import (
+    ProductImageDB,
+    ProductImageResponse,
+)
+from app.modules.reviews.schemas import ReviewResponse
 from app.services.base_service import BaseService
 from app.services.cache.keys import (
     get_category_products_key,
     get_product_key,
     get_products_key,
 )
+from app.services.minio import MinioService
 
 from .repositories import ProductRepository
 from .schemas import (
@@ -34,10 +42,7 @@ from .schemas import (
     ProductUpdate,
     products_list_adapter,
 )
-from ..product_images.models import ProductImage
-from ..product_images.repositories import ProductImageRepository
-from ..product_images.schemas import ProductImageResponse
-from ...services.minio import MinioService
+from ...services.cache.service import CacheService
 
 logger = structlog.get_logger()
 
@@ -50,37 +55,24 @@ class ProductService(BaseService):
         image_repository: ProductImageRepository,
         minio_service: MinioService,
         category_repository: CategoryRepository,
-        redis: Redis
+        redis: Redis,
+        cache_service: CacheService
     ):
         self.repository = repository
         self.image_repository = image_repository
         self.minio_service = minio_service
         self.category_repository = category_repository
         self.redis = redis
-
-    async def invalidate_product_cache(self) -> None:
-        await self.redis.incr(PRODUCT_CACHE_VERSION_KEY)
-        await self.redis.incr(PRODUCTS_CACHE_VERSION_KEY)
-        await self.redis.incr(CATEGORIES_CACHE_VERSION_KEY)
-        await self.redis.incr(CATEGORY_PRODUCTS_CACHE_VERSION_KEY)
-
-        logger.info(
-            'product_cache.invalidate'
-        )
+        self.cache_service = cache_service
 
     def _build_image_response(
             self,
             image: ProductImage
     ) -> ProductImageResponse:
         return ProductImageResponse(
-            id=image.id,
-            product_id=image.product_id,
-            original_filename=image.original_filename,
-            content_type=image.content_type,
-            file_size=image.file_size,
-            width=image.width,
-            height=image.height,
-            is_main=image.is_main,
+            **ProductImageDB.model_validate(
+                image
+            ).model_dump(),
             image_url=self.minio_service.get_url(
                 image.file_key
             )
@@ -123,19 +115,18 @@ class ProductService(BaseService):
 
         response = [
             ProductListResponse(
-                id=product.id,
-                name=product.name,
-                description=product.description,
-                price=product.price,
-                old_price=product.old_price,
-                stock=product.stock,
-                category_id=product.category_id,
-                is_active=product.is_active,
-
+                **ProductDB.model_validate(
+                    product
+                ).model_dump(),
                 avg_rating=float(avg_rating),
-                reviews_count=reviews_count
+                reviews_count=int(reviews_count),
+                main_image=(
+                    self._build_image_response(main_image)
+                    if main_image
+                    else None
+                )
             )
-            for product, avg_rating, reviews_count in products
+            for product, main_image, avg_rating, reviews_count in products
         ]
 
         await self.redis.set(
@@ -172,7 +163,7 @@ class ProductService(BaseService):
             })
             await self.repository.session.commit()
 
-            await self.invalidate_product_cache()
+            await self.cache_service.invalidate_product_cache()
 
             await self.repository.session.refresh(
                 product
@@ -226,7 +217,7 @@ class ProductService(BaseService):
                     cache_key
                 )
 
-        row = await self.repository.get_by_id_with_reviews_and_stats(
+        row = await self.repository.get_by_id_with_all(
             product_id
         )
         if row is None:
@@ -246,26 +237,17 @@ class ProductService(BaseService):
         ]
 
         response = ProductResponse(
-            id=product.id,
-            name=product.name,
-            description=product.description,
-
-            price=product.price,
-            old_price=product.old_price,
-
-            stock=product.stock,
-            is_active=product.is_active,
-
-            category_id=product.category_id,
-
-            created_at=product.created_at,
-            updated_at=product.updated_at,
-
-            images=images,
-            reviews=product.reviews,
+            **ProductDB.model_validate(
+                product
+            ).model_dump(),
 
             avg_rating=float(avg_rating),
-            reviews_count=reviews_count
+            reviews_count=reviews_count,
+            images=images,
+            reviews=[
+                ReviewResponse.model_validate(review)
+                for review in product.reviews
+            ]
         )
 
         await self.redis.set(
@@ -397,7 +379,7 @@ class ProductService(BaseService):
             await self.repository.delete(product)
             await self.repository.session.commit()
 
-            await self.invalidate_product_cache()
+            await self.cache_service.invalidate_product_cache()
 
             logger.info(
                 'product.deleted',

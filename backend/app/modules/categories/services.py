@@ -1,4 +1,5 @@
 import structlog
+from pydantic import BaseModel
 from redis.asyncio import Redis
 
 from app.core.constants import (
@@ -8,6 +9,7 @@ from app.core.constants import (
 )
 from app.core.exceptions import ConflictException, NotFoundException
 from app.modules.categories.repositories import CategoryRepository
+from app.modules.product_images.schemas import ProductImageResponse
 from app.modules.products.repositories import ProductRepository
 from app.modules.products.schemas import (
     ProductListResponse,
@@ -18,6 +20,7 @@ from app.services.cache.keys import (
     get_categories_key,
     get_category_products_key,
 )
+from app.services.minio import MinioService
 
 from .models import Category
 from .schemas import (
@@ -27,8 +30,6 @@ from .schemas import (
     CategoryUpdate,
     categories_list_adapter,
 )
-from ..product_images.schemas import ProductImageResponse
-from ...services.minio import MinioService
 
 logger = structlog.get_logger()
 
@@ -225,27 +226,22 @@ class CategoryService(BaseService):
         )
         response = [
             ProductListResponse(
-                id=product.id,
-                name=product.name,
-                description=product.description,
-                price=product.price,
-                old_price=product.old_price,
-                stock=product.stock,
-                category_id=product.category_id,
-                is_active=product.is_active,
-
+                **ProductListResponse.model_validate(
+                    product
+                ).model_dump(
+                    exclude={
+                        'avg_rating',
+                        'reviews_count',
+                        'main_image'
+                    }
+                ),
                 avg_rating=float(avg_rating),
                 reviews_count=reviews_count,
                 main_image=(
                     ProductImageResponse(
-                        id=main_image.id,
-                        product_id=main_image.product_id,
-                        original_filename=main_image.original_filename,
-                        content_type=main_image.content_type,
-                        file_size=main_image.file_size,
-                        width=main_image.width,
-                        height=main_image.height,
-                        is_main=True,
+                        **ProductImageResponse.model_validate(
+                            main_image
+                        ).model_dump(exclude={'image_url'}),
                         image_url=self.minio_service.get_url(
                             main_image.file_key
                         )

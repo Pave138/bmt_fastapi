@@ -1,9 +1,11 @@
 from typing import Annotated
 
+from anyio.functools import cache
 from fastapi import Depends
 
 from app.db.session import SessionDep
 from app.modules.products.repositories import ProductRepository
+from app.services.cache.dependencies import CacheServiceDep
 from app.services.minio import MinioServiceDep
 
 from .repositories import ProductImageRepository
@@ -36,12 +38,14 @@ ProductImageRepositoryDep = Annotated[
 def get_product_image_service(
         product_repository: ProductRepositoryDep,
         image_repository: ProductImageRepositoryDep,
-        minio_service: MinioServiceDep
+        minio_service: MinioServiceDep,
+        cache_service: CacheServiceDep
 ) -> ProductImageService:
     return ProductImageService(
         product_repository=product_repository,
         image_repository=image_repository,
-        minio_service=minio_service
+        minio_service=minio_service,
+        cache_service=cache_service
     )
 
 

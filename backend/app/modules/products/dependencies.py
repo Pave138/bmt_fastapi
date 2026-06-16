@@ -5,7 +5,7 @@ from fastapi import Depends
 from app.db.session import SessionDep
 from app.modules.categories.dependencies import CategoryRepositoryDep
 from app.modules.product_images.dependencies import ProductImageRepositoryDep
-from app.services.cache.dependencies import RedisDep
+from app.services.cache.dependencies import RedisDep, CacheServiceDep
 from app.services.minio import MinioServiceDep
 
 from .repositories import ProductRepository
@@ -27,14 +27,16 @@ async def get_product_service(
     image_repository: ProductImageRepositoryDep,
     minio_service: MinioServiceDep,
     category_repository: CategoryRepositoryDep,
-    redis: RedisDep
+    redis: RedisDep,
+    cache_service: CacheServiceDep
 ) -> ProductService:
     return ProductService(
         repository=repository,
         image_repository=image_repository,
         minio_service=minio_service,
         category_repository=category_repository,
-        redis=redis
+        redis=redis,
+        cache_service=cache_service
     )
 
 
