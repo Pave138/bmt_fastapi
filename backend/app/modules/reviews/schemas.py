@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 from app.core.constants import (
@@ -55,7 +53,7 @@ class ReviewUpdate(BaseModel):
 
 class ReviewResponse(ReviewFields):
     id: int
-    user_id: UUID
+    user_username: str
     rating: int
     comment: str | None = None
 

@@ -15,10 +15,9 @@ if TYPE_CHECKING:
 class User(SQLAlchemyBaseUserTableUUID, Base):
     __tablename__ = "user"
 
-    username: Mapped[str | None] = mapped_column(
+    username: Mapped[str] = mapped_column(
         String,
-        unique=True,
-        nullable=True
+        unique=True
     )
     cart: Mapped[Cart | None] = relationship(
         'Cart',

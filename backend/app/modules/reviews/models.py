@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from uuid import UUID
 
 from sqlalchemy import (
     CheckConstraint,
@@ -26,8 +25,8 @@ if TYPE_CHECKING:
     
 
 class Review(CommonMixin, TimestampMixin, Base):
-    user_id: Mapped[UUID] = mapped_column(
-        ForeignKey('user.id', ondelete='CASCADE'),
+    user_username: Mapped[str] = mapped_column(
+        ForeignKey('user.username', ondelete='CASCADE'),
         nullable=False
     )
     product_id: Mapped[int] = mapped_column(
@@ -58,7 +57,7 @@ class Review(CommonMixin, TimestampMixin, Base):
             name='check_review_rating_range'
         ),
         UniqueConstraint(
-            'user_id',
+            'user_username',
             'product_id',
             name='uq_review_user_product'
         ),

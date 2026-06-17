@@ -111,7 +111,7 @@ class ReviewService(BaseService):
         try:
             review = await self.repository.create({
                 **data.model_dump(),
-                'user_id': user.id
+                'user_username': user.username
             })
 
             await self.repository.session.commit()
@@ -141,7 +141,7 @@ class ReviewService(BaseService):
     ) -> ReviewResponse:
         review = await self.get_by_id(review_id)
 
-        if user.id != review.user_id:
+        if user.username != review.user_username:
             logger.debug(
                 'review.update_failed_user_not_owner',
                 review_id=review_id,
@@ -175,10 +175,10 @@ class ReviewService(BaseService):
             )
             raise NotFoundException(REVIEW_NOT_FOUND_MSG)
 
-        if review.user_id != user.id:
+        if review.user_username != user.username:
             logger.warning(
                 'review.delete_forbidden',
-                review_user_id=review.user_id,
+                review_user_username=review.user_username,
                 user_id=user.id
             )
             raise ForbiddenException(
