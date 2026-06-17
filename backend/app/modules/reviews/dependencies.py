@@ -4,7 +4,7 @@ from fastapi import Depends
 
 from app.db.session import SessionDep
 from app.modules.products.dependencies import ProductServiceDep
-from app.services.cache.dependencies import RedisDep
+from app.services.cache.dependencies import CacheServiceDep, RedisDep
 
 from .repositories import ReviewRepository
 from .services import ReviewService
@@ -23,9 +23,10 @@ ReviewRepositoryDep = Annotated[
 async def get_review_service(
         repository: ReviewRepositoryDep,
         product_service: ProductServiceDep,
-        redis: RedisDep
+        redis: RedisDep,
+        cache_service: CacheServiceDep
 ) -> ReviewService:
-    return ReviewService(repository, product_service, redis)
+    return ReviewService(repository, product_service, redis, cache_service)
 
 
 ReviewServiceDep = Annotated[

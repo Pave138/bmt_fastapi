@@ -24,6 +24,7 @@ from .schemas import (
     ReviewUpdate,
     reviews_list_adapter,
 )
+from ...services.cache.service import CacheService
 
 logger = structlog.get_logger()
 
@@ -34,11 +35,13 @@ class ReviewService(BaseService):
         self,
         repository: ReviewRepository,
         product_service: ProductService,
-        redis: Redis
+        redis: Redis,
+        cache_service: CacheService
     ):
         self.repository = repository
         self.product_service = product_service
         self.redis = redis
+        self.cache_service = cache_service
 
     async def get_by_id(self, review_id: int) -> Review:
 
@@ -118,7 +121,7 @@ class ReviewService(BaseService):
                 review_id=review.id
             )
 
-            await self.product_service.invalidate_product_cache()
+            await self.cache_service.invalidate_product_cache()
 
             return ReviewResponse.model_validate(review)
         except IntegrityError:
@@ -150,7 +153,7 @@ class ReviewService(BaseService):
 
         update_data = data.model_dump(exclude_unset=True)
 
-        await self.product_service.invalidate_product_cache()
+        await self.cache_service.invalidate_product_cache()
 
         return await self.update_model(
             review,
@@ -186,7 +189,7 @@ class ReviewService(BaseService):
             await self.repository.delete(review)
             await self.repository.session.commit()
 
-            await self.product_service.invalidate_product_cache()
+            await self.cache_service.invalidate_product_cache()
 
             logger.debug(
                 'review.delete',
