@@ -15,6 +15,7 @@ from app.modules.products.services import ProductService
 from app.modules.users.models import User
 from app.services.base_service import BaseService
 from app.services.cache.keys import get_product_reviews_key
+from app.services.cache.service import CacheService
 
 from .models import Review
 from .repositories import ReviewRepository
@@ -24,7 +25,6 @@ from .schemas import (
     ReviewUpdate,
     reviews_list_adapter,
 )
-from ...services.cache.service import CacheService
 
 logger = structlog.get_logger()
 

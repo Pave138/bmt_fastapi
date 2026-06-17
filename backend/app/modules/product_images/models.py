@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, false, text
+from sqlalchemy import (
+    Boolean,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    false,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.constants import (

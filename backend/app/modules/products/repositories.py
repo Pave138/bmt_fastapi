@@ -1,6 +1,6 @@
 from sqlalchemy import Select, and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from app.modules.product_images.models import ProductImage
 from app.modules.reviews.models import Review
@@ -15,27 +15,26 @@ class ProductRepository:
 
     @staticmethod
     def _build_products_with_stats_query() -> Select:
+        main_image = aliased(ProductImage)
+
         return (
             select(
                 Product,
-                ProductImage,
-                func.coalesce(
-                    func.round(
-                        func.avg(Review.rating),
-                        1
-                    ),
-                    0
-                ).label('avg_rating'),
-                func.count(Review.id).label('reviews_count')
+                main_image,
+                func.coalesce(func.round(func.avg(Review.rating), 1), 0).label(
+                    "avg_rating"
+                ),
+                func.count(Review.id).label("reviews_count"),
             )
             .outerjoin(
-                Review,
-                Product.id == Review.product_id
+                main_image,
+                and_(
+                    main_image.product_id == Product.id,
+                    main_image.is_main.is_(True),
+                ),
             )
-            .group_by(
-                Product.id,
-                ProductImage.id
-            )
+            .outerjoin(Review, Review.product_id == Product.id)
+            .group_by(Product.id, main_image.id)
         )
 
     async def get_all(
@@ -44,17 +43,9 @@ class ProductRepository:
         offset: int
     ) -> list[tuple[Product, ProductImage | None, float, int]]:
         result = await self.session.execute(
-            self._build_products_with_stats_query()
-            .outerjoin(
-                ProductImage,
-                and_(
-                    ProductImage.product_id == Product.id,
-                    ProductImage.is_main.is_(True),
-                ),
-            )
-            .offset(offset)
-            .limit(limit)
+            self._build_products_with_stats_query().offset(offset).limit(limit)
         )
+
         return result.all()
 
     async def get_by_id(
@@ -111,17 +102,15 @@ class ProductRepository:
         )
 
     async def get_all_by_category_id(
-        self,
-        category_id: int,
-        limit: int,
-        offset: int
+        self, category_id: int, limit: int, offset: int
     ) -> list[tuple[Product, ProductImage | None, float, int]]:
         result = await self.session.execute(
             self._build_products_with_stats_query()
             .where(Product.category_id == category_id)
-            .order_by(Product.images)
-            .limit(limit).offset(offset)
+            .offset(offset)
+            .limit(limit)
         )
+
         return result.all()
 
     async def create(self, data: dict) -> Product:
