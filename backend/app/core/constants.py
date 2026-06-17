@@ -61,6 +61,13 @@ PRODUCT_OLD_PRICE_INVALID_MSG = (
 )
 
 
+# ===== ProductSpecification =====
+
+PRODUCT_SPECIFICATION_NAME_MAX_LENGTH = 100
+PRODUCT_SPECIFICATION_VALUE_MAX_LENGTH = 255
+PRODUCT_SPECIFICATION_NOT_FOUND_MSG = 'Характеристика товара не найдена.'
+
+
 # ===== ProductImage =====
 
 PRODUCT_IMAGE_MAX_SIZE = 10 * 1024 * 1024

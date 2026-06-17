@@ -67,7 +67,9 @@ class ProductRepository:
         product_result = await self.session.execute(
             select(Product)
             .options(
-                selectinload(Product.images), selectinload(Product.reviews)
+                selectinload(Product.images),
+                selectinload(Product.reviews),
+                selectinload(Product.specification)
             )
             .where(Product.id == product_id)
         )
@@ -124,7 +126,6 @@ class ProductRepository:
 
     async def delete(self, product: Product) -> None:
         await self.session.delete(product)
-        await self.session.flush()
 
     async def exists_by_id(self, product_id: int) -> bool:
         result = await self.session.execute(
@@ -134,8 +135,8 @@ class ProductRepository:
 
     async def get_by_id_for_update(self, product_id: int) -> Product | None:
         result = await self.session.execute(
-            select(Product).where(
-                Product.id == product_id
-            ).with_for_update()
+            select(Product)
+            .where(Product.id == product_id)
+            .with_for_update()
         )
         return result.scalar_one_or_none()

@@ -7,6 +7,7 @@ from .endpoints import (
     category_router,
     product_image_router,
     product_router,
+    product_specification_router,
     review_router,
     user_router,
 )
@@ -34,6 +35,12 @@ main_router.include_router(
     product_router,
     prefix='/products',
     tags=['Товары']
+)
+
+main_router.include_router(
+    product_specification_router,
+    prefix='/specs',
+    tags=['Характеристики товаров']
 )
 
 main_router.include_router(
