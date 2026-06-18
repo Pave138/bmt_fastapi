@@ -20,8 +20,10 @@ from app.modules.product_images.schemas import (
     ProductImageDB,
     ProductImageResponse,
 )
-from app.modules.product_specifications.schemas import SpecResponse
-from app.modules.reviews.schemas import ReviewResponse
+from app.modules.product_specifications.schemas import (
+    spec_list_adapter_response,
+)
+from app.modules.reviews.schemas import reviews_list_adapter_response
 from app.services.base_service import BaseService
 from app.services.cache.keys import (
     get_category_products_key,
@@ -239,17 +241,15 @@ class ProductService(BaseService):
                 product
             ).model_dump(),
 
-            specifications=[
-                SpecResponse.model_validate(spec)
-                for spec in product.specifications
-            ],
+            specifications=spec_list_adapter_response.validate_python(
+                product.specifications
+            ),
             avg_rating=float(avg_rating),
             reviews_count=reviews_count,
             images=images,
-            reviews=[
-                ReviewResponse.model_validate(review)
-                for review in product.reviews
-            ]
+            reviews=reviews_list_adapter_response.validate_python(
+                product.reviews
+            )
         )
 
         await self.redis.set(

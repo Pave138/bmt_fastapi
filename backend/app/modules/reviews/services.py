@@ -21,9 +21,9 @@ from .models import Review
 from .repositories import ReviewRepository
 from .schemas import (
     ReviewCreate,
-    ReviewResponse,
+    ReviewDB,
     ReviewUpdate,
-    reviews_list_adapter,
+    reviews_list_adapter_response,
 )
 
 logger = structlog.get_logger()
@@ -64,7 +64,7 @@ class ReviewService(BaseService):
     async def get_all_by_product_id(
         self,
         product_id: int
-    ) -> list[ReviewResponse]:
+    ) -> list[ReviewDB]:
         await self.product_service.get_by_id(product_id)
 
         cache_key = get_product_reviews_key(product_id)
@@ -77,20 +77,20 @@ class ReviewService(BaseService):
                 source='redis'
             )
 
-            return reviews_list_adapter.validate_json(
+            return reviews_list_adapter_response.validate_json(
                 cached_reviews
             )
 
         reviews = await self.repository.get_all_by_product_id(product_id)
 
         response = [
-            ReviewResponse.model_validate(review)
+            ReviewDB.model_validate(review)
             for review in reviews
         ]
 
         await self.redis.set(
             cache_key,
-            reviews_list_adapter.dump_json(response),
+            reviews_list_adapter_response.dump_json(response),
             ex=CACHE_TTL
         )
 
@@ -104,7 +104,7 @@ class ReviewService(BaseService):
         self,
         user: User,
         data: ReviewCreate
-    ) -> ReviewResponse:
+    ) -> ReviewDB:
 
         await self.product_service.get_by_id(data.product_id)
 
@@ -123,7 +123,7 @@ class ReviewService(BaseService):
 
             await self.cache_service.invalidate_product_cache()
 
-            return ReviewResponse.model_validate(review)
+            return ReviewDB.model_validate(review)
         except IntegrityError:
             await self.repository.session.rollback()
             logger.exception(
@@ -138,7 +138,7 @@ class ReviewService(BaseService):
         review_id: int,
         user: User,
         data: ReviewUpdate
-    ) -> ReviewResponse:
+    ) -> ReviewDB:
         review = await self.get_by_id(review_id)
 
         if user.username != review.user_username:

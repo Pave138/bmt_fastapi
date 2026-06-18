@@ -8,7 +8,7 @@ from app.services.base_service import BaseService
 from app.services.cache.service import CacheService
 
 from .repositories import ProductSpecificationRepository
-from .schemas import SpecCreate, SpecResponse, SpecUpdate, SpecDB
+from .schemas import SpecCreate, SpecDB, SpecResponse, SpecUpdate
 
 
 class ProductSpecificationService(BaseService):

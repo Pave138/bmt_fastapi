@@ -9,7 +9,6 @@ from app.core.constants import (
 
 
 class ReviewFields(BaseModel):
-    product_id: int
     rating: int = Field(ge=REVIEW_RATING_GE, le=REVIEW_RATING_LE)
     comment: str | None = Field(
         None,
@@ -18,6 +17,7 @@ class ReviewFields(BaseModel):
 
 
 class ReviewCreate(ReviewFields):
+    product_id: int
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -52,14 +52,20 @@ class ReviewUpdate(BaseModel):
 
 
 class ReviewResponse(ReviewFields):
-    id: int
     user_username: str
-    rating: int
-    comment: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
-reviews_list_adapter = TypeAdapter(
+class ReviewDB(ReviewResponse):
+    product_id: int
+    id: int
+
+
+reviews_list_adapter_db = TypeAdapter(
+    list[ReviewDB]
+)
+
+reviews_list_adapter_response = TypeAdapter(
     list[ReviewResponse]
 )

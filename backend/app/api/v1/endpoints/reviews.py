@@ -4,6 +4,7 @@ from app.modules.auth.dependencies import CurrentUserDep
 from app.modules.reviews.dependencies import ReviewServiceDep
 from app.modules.reviews.schemas import (
     ReviewCreate,
+    ReviewDB,
     ReviewResponse,
     ReviewUpdate,
 )
@@ -13,7 +14,7 @@ router = APIRouter()
 
 @router.post(
     '/',
-    response_model=ReviewResponse,
+    response_model=ReviewDB,
     summary='Создать отзыв'
 )
 async def create_review(
@@ -29,7 +30,7 @@ async def create_review(
 
 @router.patch(
     '/{review_id}',
-    response_model=ReviewResponse,
+    response_model=ReviewDB,
     summary='Изменить отзыв'
 )
 async def update_review(

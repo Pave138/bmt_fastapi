@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 from app.core.constants import (
     PRODUCT_SPECIFICATION_NAME_MAX_LENGTH,
@@ -39,3 +39,8 @@ class SpecResponse(SpecFields):
 
 class SpecDB(SpecResponse):
     id: int
+
+
+spec_list_adapter_response = TypeAdapter(
+    list[SpecResponse]
+)
