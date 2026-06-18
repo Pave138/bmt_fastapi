@@ -29,5 +29,5 @@ class ProductSpecification(CommonMixin, Base):
     )
     product: Mapped[Product] = relationship(
         'Product',
-        back_populates='specification'
+        back_populates='specifications'
     )

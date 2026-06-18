@@ -42,7 +42,7 @@ class Product(CommonMixin, TimestampMixin, Base):
         index=True
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    specification: Mapped[list[ProductSpecification]] = relationship(
+    specifications: Mapped[list[ProductSpecification]] = relationship(
         'ProductSpecification',
         back_populates='product',
         cascade='all, delete-orphan'

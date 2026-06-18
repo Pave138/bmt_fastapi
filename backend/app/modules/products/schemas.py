@@ -100,7 +100,7 @@ class ProductListResponse(ProductFieldsResponse):
 
 
 class ProductResponse(ProductFieldsResponse):
-    specification: list[SpecResponse] = Field(default_factory=list)
+    specifications: list[SpecResponse] = Field(default_factory=list)
     images: list[ProductImageResponse]
     reviews: list[ReviewResponse] = Field(default_factory=list)
 

@@ -15,6 +15,7 @@ class ProductSpecificationRepository:
         self,
         data: dict
     ) -> ProductSpecification:
+        print(data)
         spec = ProductSpecification(
             **data
         )

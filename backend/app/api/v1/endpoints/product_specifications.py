@@ -4,14 +4,17 @@ from app.modules.auth.dependencies import current_superuser
 from app.modules.product_specifications.dependencies import (
     ProductSpecificationServiceDep,
 )
-from app.modules.product_specifications.schemas import SpecCreate, SpecResponse
+from app.modules.product_specifications.schemas import (
+    SpecCreate,
+    SpecDB,
+)
 
 router = APIRouter()
 
 
 @router.post(
     '/{product_id}',
-    response_model=SpecResponse,
+    response_model=SpecDB,
     summary='Создать характеристику товара (superuser_only)',
     dependencies=[Depends(current_superuser)]
 )
@@ -19,19 +22,19 @@ async def create_spec(
     product_id: int,
     data: SpecCreate,
     service: ProductSpecificationServiceDep
-) -> SpecResponse:
+) -> SpecDB:
     return await service.create(product_id, data)
 
 
 @router.get(
     '/{product_id}',
-    response_model=list[SpecResponse],
+    response_model=list[SpecDB],
     summary='Получить все характеристики товара'
 )
 async def get_specs(
     product_id: int,
     service: ProductSpecificationServiceDep
-) -> list[SpecResponse]:
+) -> list[SpecDB]:
     return await service.get_by_product_id(product_id)
 
 

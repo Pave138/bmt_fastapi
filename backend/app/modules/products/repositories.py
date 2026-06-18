@@ -69,7 +69,7 @@ class ProductRepository:
             .options(
                 selectinload(Product.images),
                 selectinload(Product.reviews),
-                selectinload(Product.specification)
+                selectinload(Product.specifications)
             )
             .where(Product.id == product_id)
         )

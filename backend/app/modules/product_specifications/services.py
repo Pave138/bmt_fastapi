@@ -8,7 +8,7 @@ from app.services.base_service import BaseService
 from app.services.cache.service import CacheService
 
 from .repositories import ProductSpecificationRepository
-from .schemas import SpecCreate, SpecResponse, SpecUpdate
+from .schemas import SpecCreate, SpecResponse, SpecUpdate, SpecDB
 
 
 class ProductSpecificationService(BaseService):
@@ -26,24 +26,26 @@ class ProductSpecificationService(BaseService):
         self,
         product_id: int,
         data: SpecCreate
-    ) -> SpecResponse:
+    ) -> SpecDB:
         if not await self.product_repository.exists_by_id(product_id):
             raise NotFoundException(
                 PRODUCT_NOT_FOUND_MSG
             )
 
         spec = await self.repository.create({
-            **data.model_dump()
+            **data.model_dump(),
+            'product_id': product_id
         })
+
         await self.repository.session.commit()
         await self.cache_service.invalidate_product_cache()
         
-        return SpecResponse.model_validate(spec)
+        return SpecDB.model_validate(spec)
     
     async def get_by_product_id(
         self,
         product_id: int
-    ) -> list[SpecResponse]:
+    ) -> list[SpecDB]:
         if not await self.product_repository.exists_by_id(product_id):
             raise NotFoundException(
                 PRODUCT_NOT_FOUND_MSG
@@ -52,7 +54,7 @@ class ProductSpecificationService(BaseService):
         specs = await self.repository.get_product_spec(product_id)
         
         response = [
-            SpecResponse.model_validate(spec)
+            SpecDB.model_validate(spec)
             for spec in specs
         ]
         

@@ -12,11 +12,9 @@ class SpecFields(BaseModel):
 
 
 class SpecCreate(SpecFields):
-    product_id: int
     model_config = ConfigDict(
         json_schema_extra={
             'example': {
-                'product_id': 1,
                 'name': 'Мощность',
                 'value': '6 л.с.'
             }
@@ -37,3 +35,7 @@ class SpecUpdate(BaseModel):
 
 class SpecResponse(SpecFields):
     model_config = ConfigDict(from_attributes=True)
+
+
+class SpecDB(SpecResponse):
+    id: int

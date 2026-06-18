@@ -239,9 +239,9 @@ class ProductService(BaseService):
                 product
             ).model_dump(),
 
-            specification=[
+            specifications=[
                 SpecResponse.model_validate(spec)
-                for spec in product.specification
+                for spec in product.specifications
             ],
             avg_rating=float(avg_rating),
             reviews_count=reviews_count,
