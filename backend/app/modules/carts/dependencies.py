@@ -3,13 +3,15 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.db.session import SessionDep
+from app.modules.cart_items.dependencies import CartItemRepositoryDep
+from app.modules.products.dependencies import ProductRepositoryDep
 
 from .repositories import CartRepository
 from .services import CartService
 
 
 async def get_cart_repository(
-        session: SessionDep
+    session: SessionDep
 ) -> CartRepository:
     return CartRepository(session)
 
@@ -21,9 +23,15 @@ CartRepositoryDep = Annotated[
 
 
 async def get_cart_service(
-        repository: CartRepositoryDep
+    repository: CartRepositoryDep,
+    cart_item_repository: CartItemRepositoryDep,
+    product_repository: ProductRepositoryDep
 ) -> CartService:
-    return CartService(repository)
+    return CartService(
+        repository,
+        cart_item_repository,
+        product_repository
+    )
 
 
 CartServiceDep = Annotated[

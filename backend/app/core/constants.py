@@ -98,3 +98,4 @@ REVIEW_EXAMPLE_COMMENT = (
 
 CART_NOT_FOUND_MSG = 'Корзина не найдена'
 CART_ALREADY_EXISTS_MSG = 'Корзина существует'
+
