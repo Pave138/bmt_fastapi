@@ -16,6 +16,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.constants import (
     COUPON_CODE_MAX_LENGTH,
+    COUPON_MIN_ORDER_AMOUNT_PRECISION,
+    COUPON_MIN_ORDER_AMOUNT_SCALE,
+    COUPON_USAGE_LIMIT_GT,
     COUPON_VALUE_PRECISION,
     COUPON_VALUE_SCALE,
 )
@@ -32,8 +35,7 @@ class Coupon(CommonMixin, Base):
     code: Mapped[str] = mapped_column(
         String(COUPON_CODE_MAX_LENGTH),
         unique=True,
-        nullable=False,
-        index=True
+        nullable=False
     )
     discount_type: Mapped[DiscountType] = mapped_column(
         SQLEnum(
@@ -71,26 +73,36 @@ class Coupon(CommonMixin, Base):
         nullable=False
     )
     min_order_amount: Mapped[Decimal | None] = mapped_column(
-        Numeric(10, 2),
+        Numeric(
+            COUPON_MIN_ORDER_AMOUNT_PRECISION,
+            COUPON_MIN_ORDER_AMOUNT_SCALE
+        ),
         nullable=True
     )
 
     __table_args__ = (
         CheckConstraint(
-            'value > 0',
-            name='check_coupon_value_positive'
+            "value > 0",
+            name="check_coupon_value_positive"
         ),
         CheckConstraint(
-            'used_count >= 0',
-            name='check_coupon_used_count_positive'
+            "used_count >= 0",
+            name="check_coupon_used_count_positive"
         ),
         CheckConstraint(
-            'usage_limit IS NULL OR usage_limit > 0',
-            name='check_coupon_usage_limit_positive'
+            f"usage_limit IS NULL OR usage_limit > {COUPON_USAGE_LIMIT_GT}",
+            name="check_coupon_usage_limit_positive",
         ),
         CheckConstraint(
-            'min_order_amount IS NULL OR min_order_amount >= 0',
-            name='check_coupon_min_order_amount_positive'
+            """
+            usage_limit IS NULL
+            OR used_count <= usage_limit
+            """,
+            name="check_coupon_used_count_limit",
+        ),
+        CheckConstraint(
+            "min_order_amount IS NULL OR min_order_amount >= 0",
+            name="check_coupon_min_order_amount_positive",
         ),
         CheckConstraint(
             """
@@ -103,6 +115,6 @@ class Coupon(CommonMixin, Base):
                 discount_type = 'fixed'
             )
             """,
-            name='check_coupon_percent_max'
-        )
+            name="check_coupon_percent_max",
+        ),
     )
