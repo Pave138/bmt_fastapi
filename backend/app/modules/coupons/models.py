@@ -14,7 +14,11 @@ from sqlalchemy import (
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.constants import COUPON_CODE_MAX_LENGTH
+from app.core.constants import (
+    COUPON_CODE_MAX_LENGTH,
+    COUPON_VALUE_PRECISION,
+    COUPON_VALUE_SCALE,
+)
 from app.db.base import Base
 from app.db.mixins import CommonMixin
 
@@ -40,7 +44,10 @@ class Coupon(CommonMixin, Base):
         nullable=False
     )
     value: Mapped[Decimal] = mapped_column(
-        Numeric(10, 2),
+        Numeric(
+            COUPON_VALUE_PRECISION,
+            COUPON_VALUE_SCALE
+        ),
         nullable=False
     )
     is_active: Mapped[bool] = mapped_column(
