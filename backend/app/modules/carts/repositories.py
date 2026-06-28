@@ -4,6 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.modules.cart_items.models import CartItem
+
 from .models import Cart
 
 
@@ -14,9 +16,12 @@ class CartRepository:
 
     async def get_by_user_id(self, user_id: UUID) -> Cart | None:
         result = await self.session.execute(
-            select(Cart).where(
-                Cart.user_id == user_id
-            ).options(selectinload(Cart.items))
+            select(Cart)
+            .where(Cart.user_id == user_id)
+            .options(
+                selectinload(Cart.items)
+                .selectinload(CartItem.product)
+            )
         )
         return result.scalar_one_or_none()
 
@@ -24,7 +29,7 @@ class CartRepository:
         cart = Cart(user_id=user_id)
         self.session.add(cart)
         await self.session.flush()
-        return cart
+        return await self.get_by_user_id(user_id)
 
     async def get_or_create(
         self,

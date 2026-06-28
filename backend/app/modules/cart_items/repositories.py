@@ -1,4 +1,4 @@
-from sqlalchemy import and_, select
+from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import CartItem
@@ -44,5 +44,17 @@ class CartItemRepository:
         await self.session.refresh(item)
         return item
 
-    async def delete(self, item: CartItem) -> None:
-        await self.session.delete(item)
+    async def delete_by_cart_id(
+        self,
+        cart_id: int
+    ) -> None:
+        await self.session.execute(
+            delete(CartItem)
+            .where(CartItem.cart_id == cart_id)
+        )
+
+    async def delete_item(
+        self,
+        cart_item: CartItem
+    ) -> None:
+        await self.session.delete(cart_item)

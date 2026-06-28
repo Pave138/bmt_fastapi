@@ -1,55 +1,90 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status
 
-from app.modules.auth.dependencies import CurrentUserDep, current_superuser
+from app.modules.auth.dependencies import CurrentUserDep
 from app.modules.carts.dependencies import CartServiceDep
-from app.modules.carts.models import Cart
-from app.modules.carts.schemas import CartCreate, CartResponse
+from app.modules.carts.schemas import (
+    AddToCart,
+    CartResponse,
+    UpdateCartItemSchema,
+)
 
 router = APIRouter()
 
 
 @router.get(
-    '/{cart_id}',
+    '/',
     response_model=CartResponse,
-    dependencies=[Depends(current_superuser)],
-    summary='Получить корзину по ID (superuser only)'
+    summary='Получить корзину'
 )
-async def get_cart(cart_id: int, service: CartServiceDep) -> Cart:
-    return await service.get_cart(cart_id)
-
-
-@router.get(
-    '/user/me',
-    response_model=CartResponse,
-    summary='Получить корзину текущего пользователя'
-)
-async def get_user_cart(
-        user: CurrentUserDep,
-        service: CartServiceDep
-) -> Cart:
-    return await service.get_user_cart(user.id)
+async def get_cart(
+    user: CurrentUserDep,
+    service: CartServiceDep
+) -> CartResponse:
+    return await service.get_cart_response(
+        user.id
+    )
 
 
 @router.post(
-    '/',
-    response_model=CartResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary='Создать корзину'
+    '/items',
+    summary='Добавить товар',
+    status_code=status.HTTP_204_NO_CONTENT
 )
-async def create_cart(
-        data: CartCreate,
-        service: CartServiceDep
-) -> Cart:
-    return await service.create_cart(data)
+async def add_product(
+    data: AddToCart,
+    user: CurrentUserDep,
+    service: CartServiceDep
+) -> None:
+    await service.add_product(
+        user_id=user.id,
+        product_id=data.product_id,
+        quantity=data.quantity
+    )
+
+
+@router.patch(
+    '/items/{product_id}',
+    summary='Изменить количество',
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def update_quantity(
+    product_id: int,
+    data: UpdateCartItemSchema,
+    user: CurrentUserDep,
+    service: CartServiceDep
+) -> None:
+    await service.update_quantity(
+        user_id=user.id,
+        product_id=product_id,
+        quantity=data.quantity
+    )
 
 
 @router.delete(
-    '/{cart_id}',
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary='Удалить корзину'
+    '/items/{product_id}',
+    summary='Удалить товар',
+    status_code=status.HTTP_204_NO_CONTENT
 )
-async def delete_cart(
-        cart_id: int,
-        service: CartServiceDep
+async def remove_product(
+    product_id: int,
+    user: CurrentUserDep,
+    service: CartServiceDep
 ) -> None:
-    await service.delete_cart(cart_id)
+    await service.remove_product(
+        user_id=user.id,
+        product_id=product_id
+    )
+
+
+@router.delete(
+    '/',
+    summary='Очистить корзину',
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def clear_cart(
+    user: CurrentUserDep,
+    service: CartServiceDep
+) -> None:
+    await service.clear_cart(
+        user_id=user.id
+    )
