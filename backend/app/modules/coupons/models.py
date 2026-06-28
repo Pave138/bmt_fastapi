@@ -14,6 +14,7 @@ from sqlalchemy import (
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.constants import COUPON_CODE_MAX_LENGTH
 from app.db.base import Base
 from app.db.mixins import CommonMixin
 
@@ -25,7 +26,7 @@ class DiscountType(StrEnum):
 
 class Coupon(CommonMixin, Base):
     code: Mapped[str] = mapped_column(
-        String,
+        String(COUPON_CODE_MAX_LENGTH),
         unique=True,
         nullable=False,
         index=True

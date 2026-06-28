@@ -94,8 +94,7 @@ REVIEW_EXAMPLE_COMMENT = (
 )
 
 
-# ===== Cart =====
+# ===== Coupon =====
 
-CART_NOT_FOUND_MSG = 'Корзина не найдена'
-CART_ALREADY_EXISTS_MSG = 'Корзина существует'
+COUPON_CODE_MAX_LENGTH = 32
 
