@@ -6,6 +6,7 @@ from .endpoints import (
     auth_router,
     cart_router,
     category_router,
+    coupon_router,
     product_image_router,
     product_router,
     product_specification_router,
@@ -60,4 +61,10 @@ main_router.include_router(
     cart_router,
     prefix='/cart',
     tags=['Корзина']
+)
+
+main_router.include_router(
+    coupon_router,
+    prefix='/coupons',
+    tags=['Купоны']
 )

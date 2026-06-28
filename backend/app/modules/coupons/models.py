@@ -1,3 +1,4 @@
+from datetime import UTC
 from datetime import datetime as dt
 from decimal import Decimal
 from enum import StrEnum
@@ -79,6 +80,24 @@ class Coupon(CommonMixin, Base):
         ),
         nullable=True
     )
+    
+    @property
+    def is_expired(self) -> bool:
+        return (
+            self.expires_at is not None
+            and self.expires_at <= dt.now(UTC)
+        )
+
+    @property
+    def is_available(self) -> bool:
+        return (
+            self.is_active
+            and not self.is_expired
+            and (
+                self.usage_limit is None
+                or self.used_count < self.usage_limit
+            )
+        )
 
     __table_args__ = (
         CheckConstraint(
