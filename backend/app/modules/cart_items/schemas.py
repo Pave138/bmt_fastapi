@@ -1,6 +1,8 @@
-from datetime import datetime as dt
+from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
+
+from app.modules.products.schemas import CartProduct
 
 
 class CartItemBase(BaseModel):
@@ -16,10 +18,8 @@ class CartItemUpdate(BaseModel):
     quantity: int = Field(gt=0)
 
 
-class CartItemResponse(CartItemBase):
-    id: int
-    cart_id: int
-    created_at: dt
-    updated_at: dt
-
-    model_config = ConfigDict(from_attributes=True)
+class CartItemResponse(BaseModel):
+    product_id: int
+    quantity: int
+    subtotal: Decimal
+    product: CartProduct

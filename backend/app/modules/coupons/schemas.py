@@ -86,6 +86,15 @@ class CouponUpdate(BaseModel):
     )
 
 
+class CouponCartResponse(BaseModel):
+    code: str
+    discount_type: str
+    value: Decimal
+    min_order_amount: Decimal | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CouponResponse(CouponFields):
     id: int
 

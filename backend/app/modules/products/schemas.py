@@ -108,3 +108,11 @@ class ProductResponse(ProductFieldsResponse):
 products_list_adapter = TypeAdapter(
     list[ProductListResponse]
 )
+
+
+class CartProduct(BaseModel):
+    id: int
+    name: str
+    price: Decimal
+
+    model_config = ConfigDict(from_attributes=True)

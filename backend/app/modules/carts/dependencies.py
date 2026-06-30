@@ -4,6 +4,7 @@ from fastapi import Depends
 
 from app.db.session import SessionDep
 from app.modules.cart_items.dependencies import CartItemRepositoryDep
+from app.modules.coupons.dependencies import CouponRepositoryDep
 from app.modules.products.dependencies import ProductRepositoryDep
 
 from .repositories import CartRepository
@@ -25,12 +26,14 @@ CartRepositoryDep = Annotated[
 async def get_cart_service(
     repository: CartRepositoryDep,
     cart_item_repository: CartItemRepositoryDep,
-    product_repository: ProductRepositoryDep
+    product_repository: ProductRepositoryDep,
+    coupon_repository: CouponRepositoryDep
 ) -> CartService:
     return CartService(
         repository,
         cart_item_repository,
-        product_repository
+        product_repository,
+        coupon_repository
     )
 
 

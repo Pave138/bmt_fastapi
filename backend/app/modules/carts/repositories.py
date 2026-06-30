@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.modules.cart_items.models import CartItem
+from app.modules.coupons.models import Coupon
 
 from .models import Cart
 
@@ -20,7 +21,8 @@ class CartRepository:
             .where(Cart.user_id == user_id)
             .options(
                 selectinload(Cart.items)
-                .selectinload(CartItem.product)
+                .selectinload(CartItem.product),
+                selectinload(Cart.coupon)
             )
         )
         return result.scalar_one_or_none()
@@ -45,3 +47,12 @@ class CartRepository:
 
     async def delete(self, cart: Cart) -> None:
         await self.session.delete(cart)
+
+    async def apply_coupon(
+        self,
+        cart: Cart,
+        coupon: Coupon
+    ) -> None:
+        cart.coupon = coupon
+        await self.session.flush()
+

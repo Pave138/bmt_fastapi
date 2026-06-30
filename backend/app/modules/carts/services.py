@@ -2,13 +2,20 @@ from decimal import Decimal
 from uuid import UUID
 
 from app.core.constants import PRODUCT_NOT_FOUND_MSG
-from app.core.exceptions import BadRequestException, NotFoundException
+from app.core.exceptions import (
+    BadRequestException,
+    NotFoundException,
+    ValidationException,
+)
 from app.modules.cart_items.repositories import CartItemRepository
 from app.modules.carts.repositories import CartRepository
+from app.modules.coupons.repositories import CouponRepository
+from app.modules.coupons.schemas import CouponCartResponse
 from app.modules.products.repositories import ProductRepository
+from app.modules.products.schemas import CartProduct
 
 from .models import Cart
-from .schemas import CartItemResponse, CartProduct, CartResponse
+from .schemas import ApplyCoupon, CartItemResponse, CartResponse
 
 
 class CartService:
@@ -17,11 +24,13 @@ class CartService:
         self,
         repository: CartRepository,
         cart_item_repository: CartItemRepository,
-        product_repository: ProductRepository
+        product_repository: ProductRepository,
+        coupon_repository: CouponRepository
     ):
         self.repository = repository
         self.cart_item_repository = cart_item_repository
         self.product_repository = product_repository
+        self.coupon_repository = coupon_repository
 
     async def get_cart(self, user_id: UUID) -> Cart:
         return await self.repository.get_or_create(user_id)
@@ -164,9 +173,48 @@ class CartService:
                 )
             )
 
+        coupon = None
+
+        if cart.coupon:
+            coupon = CouponCartResponse.model_validate(cart.coupon)
+
         return CartResponse(
             id=cart.id,
             total_items=total_items,
             total_price=total_price,
+            coupon=coupon,
             items=items,
         )
+
+    async def apply_coupon(
+        self,
+        data: ApplyCoupon,
+        user_id: UUID
+    ) -> None:
+        cart = await self.repository.get_by_user_id(user_id)
+        coupon = await self.coupon_repository.get_by_code(data.code)
+        if coupon is None:
+            raise NotFoundException(
+                'Купон не существует'
+            )
+        if coupon.is_expired:
+            raise ValidationException(
+                f'Срок действия купон истек: {coupon.expires_at}'
+            )
+        if not coupon.is_available:
+            raise ValidationException(
+                'Купон недоступен'
+            )
+
+        cart.coupon = coupon
+
+        await self.repository.session.commit()
+
+    async def deactivate_coupon(
+        self,
+        user_id: UUID
+    ) -> None:
+        cart = await self.repository.get_by_user_id(user_id)
+        cart.coupon = None
+
+        await self.repository.session.commit()

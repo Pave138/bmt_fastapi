@@ -94,14 +94,14 @@ async def clear_cart(
 @router.post(
     '/coupon',
     summary='Применить купон',
-    response_model=CartResponse
+    status_code=status.HTTP_204_NO_CONTENT
 )
 async def apply_coupon_cart(
     data: ApplyCoupon,
     user: CurrentUserDep,
     service: CartServiceDep
-) -> CartResponse:
-    pass
+) -> None:
+    await service.apply_coupon(data, user.id)
 
 
 @router.delete(
@@ -109,8 +109,8 @@ async def apply_coupon_cart(
     summary='Удалить купон',
     status_code=status.HTTP_204_NO_CONTENT
 )
-async def delete_coupon_cart(
+async def deactivate_coupon_cart(
     user: CurrentUserDep,
     service: CartServiceDep
 ) -> None:
-    pass
+    await service.deactivate_coupon(user.id)
