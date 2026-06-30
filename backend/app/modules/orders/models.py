@@ -9,9 +9,9 @@ from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import ForeignKey, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.constants import COUPON_VALUE_PRECISION, COUPON_VALUE_SCALE
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
-from app.core.constants import COUPON_VALUE_PRECISION, COUPON_VALUE_SCALE
 
 if TYPE_CHECKING:
     from app.db.models import Coupon, OrderItem, User

@@ -4,7 +4,6 @@ from datetime import UTC
 from datetime import datetime as dt
 from decimal import Decimal
 from enum import StrEnum
-
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (

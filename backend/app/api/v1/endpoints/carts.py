@@ -4,6 +4,7 @@ from app.modules.auth.dependencies import CurrentUserDep
 from app.modules.carts.dependencies import CartServiceDep
 from app.modules.carts.schemas import (
     AddToCart,
+    ApplyCoupon,
     CartResponse,
     UpdateCartItemSchema,
 )
@@ -88,3 +89,28 @@ async def clear_cart(
     await service.clear_cart(
         user_id=user.id
     )
+
+
+@router.post(
+    '/coupon',
+    summary='Применить купон',
+    response_model=CartResponse
+)
+async def apply_coupon_cart(
+    data: ApplyCoupon,
+    user: CurrentUserDep,
+    service: CartServiceDep
+) -> CartResponse:
+    pass
+
+
+@router.delete(
+    '/coupon',
+    summary='Удалить купон',
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_coupon_cart(
+    user: CurrentUserDep,
+    service: CartServiceDep
+) -> None:
+    pass

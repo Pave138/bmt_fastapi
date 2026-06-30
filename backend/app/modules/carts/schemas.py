@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class AddToCart(BaseModel):
     product_id: int
     quantity: int = Field(default=1, gt=0)
+    coupon_id : int | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -45,3 +46,7 @@ class CartResponse(BaseModel):
     items: list[CartItemResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ApplyCoupon(BaseModel):
+    code: str
