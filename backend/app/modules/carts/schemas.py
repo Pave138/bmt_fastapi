@@ -9,6 +9,15 @@ class AddToCart(BaseModel):
     product_id: int
     quantity: int = Field(default=1, gt=0)
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'product_id': 1,
+                'quantity': 1
+            }
+        }
+    )
+
 
 class UpdateCartItemSchema(BaseModel):
     quantity: int = Field(gt=0)
