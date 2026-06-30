@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 from datetime import UTC
 from datetime import datetime as dt
 from decimal import Decimal
 from enum import StrEnum
+
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -13,7 +17,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.constants import (
     COUPON_CODE_MAX_LENGTH,
@@ -25,6 +29,9 @@ from app.core.constants import (
 )
 from app.db.base import Base
 from app.db.mixins import CommonMixin
+
+if TYPE_CHECKING:
+    from app.modules.orders.models import Order
 
 
 class DiscountType(StrEnum):
@@ -79,6 +86,10 @@ class Coupon(CommonMixin, Base):
             COUPON_MIN_ORDER_AMOUNT_SCALE
         ),
         nullable=True
+    )
+    orders: Mapped[list[Order]] = relationship(
+        'Order',
+        back_populates='coupon'
     )
     
     @property

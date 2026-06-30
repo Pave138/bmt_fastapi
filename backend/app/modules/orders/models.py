@@ -11,9 +11,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
+from app.core.constants import COUPON_VALUE_PRECISION, COUPON_VALUE_SCALE
 
 if TYPE_CHECKING:
-    from app.db.models import OrderItem, User
+    from app.db.models import Coupon, OrderItem, User
 
 
 class OrderStatus(StrEnum):
@@ -60,4 +61,18 @@ class Order(CommonMixin, TimestampMixin, Base):
         back_populates='order',
         cascade='all, delete-orphan',
         passive_deletes=True
+    )
+    coupon_id: Mapped[int | None] = mapped_column(
+        ForeignKey('coupon.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True
+    )
+    coupon: Mapped[Coupon | None] = relationship(
+        'Coupon',
+        back_populates='orders'
+    )
+    discount_amount: Mapped[Decimal] = mapped_column(
+        Numeric(COUPON_VALUE_PRECISION, COUPON_VALUE_SCALE),
+        default=Decimal('0.00'),
+        nullable=False
     )
