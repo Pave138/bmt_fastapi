@@ -10,7 +10,7 @@ from app.db.base import Base
 from app.db.mixins import CommonMixin
 
 if TYPE_CHECKING:
-    from app.db.models import CartItem, User
+    from app.db.models import CartItem, Coupon, User
 
 
 class Cart(CommonMixin, Base):
@@ -26,3 +26,8 @@ class Cart(CommonMixin, Base):
         lazy='selectin',
         cascade='all, delete-orphan'
     )
+    coupon_id: Mapped[int | None] = mapped_column(
+        ForeignKey('coupon.id', ondelete='SET NULL'),
+        nullable=True
+    )
+    coupon: Mapped[Coupon | None] = relationship('Coupon')
