@@ -9,6 +9,7 @@ from app.core.exceptions import (
 )
 from app.modules.cart_items.repositories import CartItemRepository
 from app.modules.carts.repositories import CartRepository
+from app.modules.coupons.models import DiscountType
 from app.modules.coupons.repositories import CouponRepository
 from app.modules.coupons.schemas import CouponCartResponse
 from app.modules.products.repositories import ProductRepository
@@ -154,12 +155,24 @@ class CartService:
     async def get_cart_response(self, user_id: UUID) -> CartResponse:
         cart = await self.get_cart(user_id)
 
-        items = []
+        coupon = (
+            CouponCartResponse.model_validate(cart.coupon)
+            if cart.coupon
+            else None
+        )
+
+        items: list[CartItemResponse] = []
         total_price = Decimal('0')
         total_items = 0
 
         for item in cart.items:
             subtotal = item.product.price * item.quantity
+
+            if (
+                cart.coupon
+                and cart.coupon.discount_type == DiscountType.PERCENT
+            ):
+                subtotal -= subtotal * cart.coupon.value / Decimal('100')
 
             total_price += subtotal
             total_items += item.quantity
@@ -173,10 +186,14 @@ class CartService:
                 )
             )
 
-        coupon = None
-
-        if cart.coupon:
-            coupon = CouponCartResponse.model_validate(cart.coupon)
+        if (
+            cart.coupon
+            and cart.coupon.discount_type == DiscountType.FIXED
+        ):
+            total_price = max(
+                Decimal('0'),
+                total_price - cart.coupon.value
+            )
 
         return CartResponse(
             id=cart.id,
