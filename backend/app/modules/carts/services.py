@@ -155,10 +155,17 @@ class CartService:
     async def get_cart_response(self, user_id: UUID) -> CartResponse:
         cart = await self.get_cart(user_id)
 
-        coupon = (
-            CouponCartResponse.model_validate(cart.coupon)
-            if cart.coupon
-            else None
+        total_before_discount = sum(
+            item.product.price * item.quantity
+            for item in cart.items
+        )
+
+        can_apply_coupon = (
+            cart.coupon is not None
+            and (
+                cart.coupon.min_order_amount is None
+                or total_before_discount >= cart.coupon.min_order_amount
+            )
         )
 
         items: list[CartItemResponse] = []
@@ -169,7 +176,7 @@ class CartService:
             subtotal = item.product.price * item.quantity
 
             if (
-                cart.coupon
+                can_apply_coupon
                 and cart.coupon.discount_type == DiscountType.PERCENT
             ):
                 subtotal -= subtotal * cart.coupon.value / Decimal('100')
@@ -187,13 +194,19 @@ class CartService:
             )
 
         if (
-            cart.coupon
+            can_apply_coupon
             and cart.coupon.discount_type == DiscountType.FIXED
         ):
             total_price = max(
                 Decimal('0'),
                 total_price - cart.coupon.value
             )
+
+        coupon = (
+            CouponCartResponse.model_validate(cart.coupon)
+            if can_apply_coupon
+            else None
+        )
 
         return CartResponse(
             id=cart.id,
