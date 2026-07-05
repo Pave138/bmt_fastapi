@@ -19,9 +19,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.constants import (
     DEFAULT_PRODUCT_STOCK,
+    MONEY_PRECISION,
+    MONEY_SCALE,
     PRODUCT_NAME_MAX_LENGTH,
-    PRODUCT_PRICE_PRECISION,
-    PRODUCT_PRICE_SCALE,
 )
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
@@ -48,12 +48,12 @@ class Product(CommonMixin, TimestampMixin, Base):
         cascade='all, delete-orphan'
     )
     price: Mapped[Decimal] = mapped_column(
-        Numeric(PRODUCT_PRICE_PRECISION, PRODUCT_PRICE_SCALE),
+        Numeric(MONEY_PRECISION, MONEY_SCALE),
         nullable=False,
         index=True
     )
     old_price: Mapped[Decimal | None] = mapped_column(
-        Numeric(PRODUCT_PRICE_PRECISION, PRODUCT_PRICE_SCALE),
+        Numeric(MONEY_PRECISION, MONEY_SCALE),
         nullable=True
     )
     ## sku: Mapped[str] = mapped_column(String, index=True)

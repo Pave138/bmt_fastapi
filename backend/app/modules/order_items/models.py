@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.constants import MONEY_PRECISION, MONEY_SCALE
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
 
@@ -23,7 +24,7 @@ class OrderItem(CommonMixin, TimestampMixin, Base):
         nullable=False
     )
     price_at_purchase: Mapped[Decimal] = mapped_column(
-        Numeric(10, 2),
+        Numeric(MONEY_PRECISION, MONEY_SCALE),
         nullable=False
     )
     quantity: Mapped[int] = mapped_column(

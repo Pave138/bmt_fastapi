@@ -5,11 +5,11 @@ from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 from app.core.constants import (
     DEFAULT_PRODUCT_STOCK,
+    MONEY_PRECISION,
+    MONEY_SCALE,
     PRODUCT_NAME_MAX_LENGTH,
     PRODUCT_OLD_PRICE_INVALID_MSG,
     PRODUCT_PRICE_GT,
-    PRODUCT_PRICE_PRECISION,
-    PRODUCT_PRICE_SCALE,
     PRODUCT_STOCK_GE,
 )
 from app.core.exceptions import ValidationException
@@ -21,8 +21,8 @@ PriceDecimal = Annotated[
     Decimal,
     Field(
         gt=PRODUCT_PRICE_GT,
-        decimal_places=PRODUCT_PRICE_SCALE,
-        max_digits=PRODUCT_PRICE_PRECISION
+        decimal_places=MONEY_SCALE,
+        max_digits=MONEY_PRECISION
     )
 ]
 
