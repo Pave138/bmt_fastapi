@@ -17,6 +17,7 @@ dependencies = [
     "sqlalchemy>=2.0.50",
     "structlog>=25.5.0",
     "uvicorn>=0.48.0",
+    "yookassa>=3.11.0",
 ]
 
 [dependency-groups]

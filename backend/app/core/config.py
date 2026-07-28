@@ -28,5 +28,8 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str
     MINIO_SECURE: str
 
+    YOOKASSA_ACCOUNT_ID: str
+    YOOKASSA_SECRET_KEY: str
+
 
 settings = Settings()
