@@ -1,7 +1,10 @@
+from datetime import datetime as dt
+from decimal import Decimal
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .models import Payment
+from .models import Payment, PaymentMethod
 
 
 class PaymentRepository:
@@ -12,8 +15,21 @@ class PaymentRepository:
     ):
         self.session = session
 
-    async def create(self, data: dict) -> Payment:
-        payment = Payment(**data)
+    async def create(
+        self,
+        payment_method: PaymentMethod,
+        order_id: int,
+        amount: Decimal,
+        external_payment_id: str | None = None,
+        paid_at: dt | None = None
+    ) -> Payment:
+        payment = Payment(
+            payment_method=payment_method,
+            order_id=order_id,
+            amount=amount,
+            external_payment_id=external_payment_id,
+            paid_at=paid_at
+        )
 
         self.session.add(payment)
         await self.session.flush()

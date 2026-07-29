@@ -1,12 +1,16 @@
+from decimal import Decimal
 from uuid import UUID
 
 from app.core.exceptions import ValidationException
 from app.modules.carts.repositories import CartRepository
 from app.modules.order_items.repositories import OrderItemRepository
-from app.modules.orders.repositories import OrderRepository
 from app.modules.payments.models import PaymentMethod
 from app.modules.payments.repositories import PaymentRepository
 from app.services.base_service import BaseService
+from app.services.yookassa import payment_create
+
+from .repositories import OrderRepository
+from .schemas import OrderDB, OrderResponse, orders_list_adapter
 
 
 class OrderService(BaseService):
@@ -24,7 +28,11 @@ class OrderService(BaseService):
         self.order_item_repository = order_item_repository
 
 
-    async def create(self, user_id: UUID, payment_method: PaymentMethod):
+    async def create(
+        self,
+        user_id: UUID,
+        payment_method: PaymentMethod
+    ) -> OrderResponse:
         cart = await self.cart_repository.get_or_create(user_id)
 
         if not cart.items:
@@ -32,10 +40,75 @@ class OrderService(BaseService):
                 'Корзина пуста'
             )
 
-        order = await self.repository.create(
-            user_id=user_id,
-
+        total_before_discount = sum(
+            item.product.price * item.quantity
+            for item in cart.items
         )
 
+        can_apply_coupon = (
+            cart.coupon is not None
+            and (
+                cart.coupon.min_order_amount is None
+                or total_before_discount >= cart.coupon.min_order_amount
+            )
+        )
 
+        total_price = Decimal('0')
 
+        for item in cart.items:
+            subtotal = item.product.price * item.quantity
+
+            total_price += subtotal
+
+        order = await self.repository.create(
+            user_id=user_id,
+            total_price=total_price,
+            discount_amount=0,
+            coupon_id=cart.coupon_id
+        )
+        payment = None
+
+        if payment_method == PaymentMethod.CASH:
+            await self.payment_repository.create(
+                payment_method=payment_method,
+                order_id=order.id,
+                amount=total_price
+            )
+        elif payment_method == PaymentMethod.YOOKASSA:
+            payment = payment_create(
+                amount=total_price,
+                order_id=order.id,
+                username=user_id
+            )
+
+        ext_payment_id = payment.id if payment else None
+
+        await self.payment_repository.create(
+            payment_method=payment_method,
+            order_id=order.id,
+            amount=total_price,
+            external_payment_id=ext_payment_id
+        )
+        confirmation_url = (
+            payment.confirmation.confirmation_url if payment else None
+        )
+
+        await self.cart_repository.delete(cart)
+
+        await self.repository.session.commit()
+
+        coupon_code = cart.coupon.code if cart.coupon else None
+
+        return OrderResponse(
+            **OrderDB.model_validate(order).model_dump(),
+            coupon_code=coupon_code,
+            confirmation_url=confirmation_url
+        )
+
+    async def get_by_user_id(
+        self,
+        user_id: UUID
+    ) -> list[OrderResponse]:
+        orders = await self.repository.get_by_user_id(user_id)
+
+        return orders_list_adapter.validate_python(orders)
