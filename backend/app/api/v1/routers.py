@@ -6,7 +6,6 @@ from .endpoints import (
     auth_router,
     cart_router,
     category_router,
-    coupon_router,
     order_router,
     product_image_router,
     product_router,
@@ -14,8 +13,15 @@ from .endpoints import (
     review_router,
     user_router,
 )
+from .endpoints.admin import admin_router
 
 main_router = APIRouter(prefix=API_V1_PREFIX)
+
+main_router.include_router(
+    admin_router,
+    prefix='/admin',
+    tags=['SuperUser Only']
+)
 
 main_router.include_router(
     auth_router,
@@ -62,12 +68,6 @@ main_router.include_router(
     cart_router,
     prefix='/cart',
     tags=['Корзина']
-)
-
-main_router.include_router(
-    coupon_router,
-    prefix='/coupons',
-    tags=['Купоны']
 )
 
 main_router.include_router(

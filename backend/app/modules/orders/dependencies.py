@@ -3,10 +3,10 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.db.session import SessionDep
+from app.modules.carts.dependencies import CartRepositoryDep
 from app.modules.order_items.dependencies import OrderItemRepositoryDep
 from app.modules.orders.repositories import OrderRepository
 from app.modules.orders.services import OrderService
-from app.modules.carts.dependencies import CartRepositoryDep
 from app.modules.payments.dependencies import PaymentRepositoryDep
 
 

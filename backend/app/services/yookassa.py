@@ -1,5 +1,5 @@
 from decimal import Decimal
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 from yookassa import Configuration, Payment
 

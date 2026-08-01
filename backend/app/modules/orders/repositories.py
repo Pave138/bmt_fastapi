@@ -1,3 +1,4 @@
+from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select
@@ -18,8 +19,8 @@ class OrderRepository:
     async def create(
         self,
         user_id: UUID,
-        total_price,
-        discount_amount,
+        total_price: Decimal = Decimal('0'),
+        discount_amount: Decimal = Decimal('0'),
         coupon_id: int | None = None
     ) -> Order:
         order = Order(

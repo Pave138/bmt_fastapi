@@ -1,29 +1,13 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter
 
-from app.modules.auth.dependencies import current_superuser
 from app.modules.product_specifications.dependencies import (
     ProductSpecificationServiceDep,
 )
 from app.modules.product_specifications.schemas import (
-    SpecCreate,
     SpecDB,
 )
 
 router = APIRouter()
-
-
-@router.post(
-    '/{product_id}',
-    response_model=SpecDB,
-    summary='Создать характеристику товара (superuser_only)',
-    dependencies=[Depends(current_superuser)]
-)
-async def create_spec(
-    product_id: int,
-    data: SpecCreate,
-    service: ProductSpecificationServiceDep
-) -> SpecDB:
-    return await service.create(product_id, data)
 
 
 @router.get(
@@ -36,16 +20,3 @@ async def get_specs(
     service: ProductSpecificationServiceDep
 ) -> list[SpecDB]:
     return await service.get_by_product_id(product_id)
-
-
-@router.delete(
-    '/{spec_id}',
-    summary='Удалить характеристику (superuser_only)',
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(current_superuser)]
-)
-async def delete_spec(
-    spec_id: int,
-    service: ProductSpecificationServiceDep
-) -> None:
-    await service.delete(spec_id)

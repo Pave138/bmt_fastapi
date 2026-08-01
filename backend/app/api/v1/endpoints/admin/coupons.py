@@ -9,7 +9,7 @@ router = APIRouter()
 
 @router.post(
     '/',
-    summary='Создать купон (superuser only)',
+    summary='Создать купон',
     response_model=CouponResponse,
     dependencies=[Depends(current_superuser)]
 )
@@ -22,7 +22,7 @@ async def create_coupon(
 
 @router.get(
     '/',
-    summary='Получить все купоны (superuser only)',
+    summary='Получить все купоны',
     response_model=list[CouponResponse],
     dependencies=[Depends(current_superuser)]
 )
