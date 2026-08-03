@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 @router.post(
-    '/',
+    '',
     summary='Создать товар',
     response_model=ProductDB,
     dependencies=[Depends(current_superuser)]

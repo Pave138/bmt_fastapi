@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.post(
-    '/',
+    '',
     response_model=ReviewDB,
     summary='Создать отзыв'
 )
