@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get(
-    '/',
+    '',
     response_model=list[CategoryResponse],
     summary='Получить все категории'
 )

@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.post(
-    '/',
+    '',
     summary='Создать заказ',
     response_model=OrderResponse
 )
@@ -23,7 +23,7 @@ async def create_order(
 
 
 @router.get(
-    '/',
+    '',
     summary='Получить все заказы',
     response_model=list[OrderResponse]
 )

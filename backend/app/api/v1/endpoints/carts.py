@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.get(
-    '/',
+    '',
     response_model=CartResponse,
     summary='Получить корзину'
 )
@@ -78,7 +78,7 @@ async def remove_product(
 
 
 @router.delete(
-    '/',
+    '',
     summary='Очистить корзину',
     status_code=status.HTTP_204_NO_CONTENT
 )

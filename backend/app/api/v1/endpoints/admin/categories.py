@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.post(
-    '/',
+    '',
     response_model=CategoryDB,
     summary='Создать категорию',
     dependencies=[Depends(current_superuser)]

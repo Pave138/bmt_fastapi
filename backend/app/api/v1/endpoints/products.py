@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 @router.get(
-    '/',
+    '',
     summary='Получить все товары',
     response_model=list[ProductListResponse]
 )
