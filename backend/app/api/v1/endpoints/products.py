@@ -14,10 +14,11 @@ router = APIRouter()
 )
 async def get_products(
     service: ProductServiceDep,
+    search: str | None = None,
     limit: int = LIMIT_PRODUCTS,
     offset: int = OFFSET_PRODUCTS
 ) -> list[ProductListResponse]:
-    return await service.get_all(limit=limit, offset=offset)
+    return await service.get_all(search=search, limit=limit, offset=offset)
 
 
 @router.get(
