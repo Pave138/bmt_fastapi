@@ -1,15 +1,23 @@
 import Logo from "./Logo";
-import Search from "./Search";
+import Search from "./Header/Search";
 import CartButton from "./CartButton";
 
 function Header() {
     return (
-        <header className="flex items-center justify-between border-b bg-white px-8 py-4 shadow-sm">
-            <Logo />
+        <header className="border-b bg-white shadow-sm">
+            <div className="mx-auto flex max-w-7xl items-center gap-6 px-6 py-4">
+                <Logo />
 
-            <Search />
+                <Search />
 
-            <CartButton />
+                <nav className="ml-auto flex items-center gap-6">
+                    <a href="#">Каталог</a>
+                    <a href="#">Акции</a>
+                    <a href="#">Контакты</a>
+
+                    <CartButton />
+                </nav>
+            </div>
         </header>
     );
 }
