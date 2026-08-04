@@ -14,7 +14,10 @@ class ProductRepository:
         self.session = session
 
     @staticmethod
-    def _build_products_with_stats_query(search: str | None) -> Select:
+    def _build_products_with_stats_query(
+        category: int | None,
+        search: str | None
+    ) -> Select:
         main_image = aliased(ProductImage)
 
         query = (
@@ -37,6 +40,11 @@ class ProductRepository:
             .group_by(Product.id, main_image.id)
         )
 
+        if category:
+            query = query.where(
+                Product.category_id == category
+            )
+
         if search:
             query = query.where(
                 Product.name.ilike(f'%{search}%')
@@ -45,13 +53,14 @@ class ProductRepository:
 
     async def get_all(
         self,
+        category: int | None,
         search: str | None,
         limit: int,
         offset: int
     ) -> list[tuple[Product, ProductImage | None, float, int]]:
         print(search)
         result = await self.session.execute(
-            self._build_products_with_stats_query(search)
+            self._build_products_with_stats_query(category, search)
             .offset(offset)
             .limit(limit)
         )

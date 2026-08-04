@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.core.constants import LIMIT_PRODUCTS, OFFSET_PRODUCTS
 from app.modules.products.dependencies import ProductServiceDep
@@ -14,11 +14,23 @@ router = APIRouter()
 )
 async def get_products(
     service: ProductServiceDep,
-    search: str | None = None,
+    category: int | None = Query(
+        None,
+        description='Товары определенной категории'
+    ),
+    search: str | None = Query(
+        None, 
+        description='Поиск по названию товара'
+    ),
     limit: int = LIMIT_PRODUCTS,
     offset: int = OFFSET_PRODUCTS
 ) -> list[ProductListResponse]:
-    return await service.get_all(search=search, limit=limit, offset=offset)
+    return await service.get_all(
+        category=category,
+        search=search,
+        limit=limit,
+        offset=offset
+    )
 
 
 @router.get(

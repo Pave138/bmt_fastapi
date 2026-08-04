@@ -22,13 +22,21 @@ async def get_product_key(redis: Redis, product_id: int) -> str:
 
 async def get_products_key(
     redis: Redis,
+    category: int | None,
     search: str | None,
     limit: int,
     offset: int
 ) -> str:
     version = await redis.get(PRODUCTS_CACHE_VERSION_KEY)
     version = version or '1'
-    return f'products:v{version}:search:{search or 'all'}:{limit}:{offset}'
+    return (
+        f'products:'
+        f'v{version}:'
+        f'category:{category}:'
+        f'search:{search or 'all'}:'
+        f'limit:{limit}'
+        f'offset:{offset}'
+    )
 
 
 async def get_category_products_key(
