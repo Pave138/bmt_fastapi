@@ -2,6 +2,7 @@ from sqlalchemy import Select, and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
+from app.modules.categories.repositories import CategoryRepository
 from app.modules.product_images.models import ProductImage
 from app.modules.reviews.models import Review
 
@@ -16,7 +17,7 @@ class ProductRepository:
     @staticmethod
     def _build_products_with_stats_query(
         category: int | None,
-        search: str | None
+        search: str | None,
     ) -> Select:
         main_image = aliased(ProductImage)
 
@@ -24,9 +25,10 @@ class ProductRepository:
             select(
                 Product,
                 main_image,
-                func.coalesce(func.round(func.avg(Review.rating), 1), 0).label(
-                    "avg_rating"
-                ),
+                func.coalesce(
+                    func.round(func.avg(Review.rating), 1),
+                    0,
+                ).label("avg_rating"),
                 func.count(Review.id).label("reviews_count"),
             )
             .outerjoin(
@@ -36,20 +38,26 @@ class ProductRepository:
                     main_image.is_main.is_(True),
                 ),
             )
-            .outerjoin(Review, Review.product_id == Product.id)
-            .group_by(Product.id, main_image.id)
+            .outerjoin(
+                Review,
+                Review.product_id == Product.id,
+            )
         )
 
-        if category:
+        if category is not None:
+            category_tree = CategoryRepository.descendants_cte(category)
+
             query = query.where(
-                Product.category_id == category
+                Product.category_id.in_(select(category_tree.c.id))
             )
 
         if search:
-            query = query.where(
-                Product.name.ilike(f'%{search}%')
-            )
-        return query
+            query = query.where(Product.name.ilike(f"%{search}%"))
+
+        return query.group_by(
+            Product.id,
+            main_image.id,
+        )
 
     async def get_all(
         self,

@@ -115,6 +115,13 @@ class ProductService(BaseService):
                     offset=offset
                 )
 
+        category_ids = None
+
+        if category is not None:
+            category_ids = await self.category_repository.get_descendant_ids(
+                category
+            )
+
         products = await self.repository.get_all(
             category=category,
             search=search,

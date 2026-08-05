@@ -1,6 +1,6 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from app.modules.products.models import Product
 from app.modules.reviews.models import Review
@@ -12,6 +12,51 @@ class CategoryRepository:
 
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    @staticmethod
+    def descendants_cte(category_id: int):
+        category_tree = (
+            select(Category.id)
+            .where(Category.id == category_id)
+            .cte(
+                name="category_tree",
+                recursive=True,
+            )
+        )
+
+        category_alias = aliased(Category)
+
+        return category_tree.union_all(
+            select(category_alias.id).where(
+                category_alias.parent_id == category_tree.c.id
+            )
+        )
+
+    async def get_descendant_ids(
+        self,
+        category_id: int,
+    ) -> list[int]:
+        rows = await self.get_all_for_tree()
+
+        children_map: dict[int | None, list[int]] = {}
+
+        for row in rows:
+            children_map.setdefault(
+                row['parent_id'],
+                []
+            ).append(row['id'])
+
+        result: list[int] = []
+
+        def dfs(category: int) -> None:
+            result.append(category)
+
+            for child in children_map.get(category, []):
+                dfs(child)
+
+        dfs(category_id)
+
+        return result
 
     async def get_all_for_tree(
         self,
