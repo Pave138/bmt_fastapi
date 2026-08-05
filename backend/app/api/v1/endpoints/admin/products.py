@@ -3,8 +3,19 @@ from fastapi import APIRouter, Depends, status
 from app.modules.auth.dependencies import current_superuser
 from app.modules.products.dependencies import ProductServiceDep
 from app.modules.products.schemas import ProductCreate, ProductDB, ProductUpdate
+from app.services.cache.dependencies import CacheServiceDep
 
 router = APIRouter()
+
+
+@router.post(
+    '/invalidate_product_cache',
+    summary='Сброс кэша редис',
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(current_superuser)]
+)
+async def invalidate_product_cache(service: CacheServiceDep) -> None:
+    await service.invalidate_product_cache()
 
 
 @router.post(
