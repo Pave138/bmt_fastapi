@@ -78,54 +78,52 @@ class CategoryService(BaseService):
 
     async def get_categories(self) -> list[CategoryResponse]:
         cache_key = await get_categories_key(self.redis)
-        cached = await self.redis.get(
-            cache_key
-        )
+
+        cached = await self.redis.get(cache_key)
 
         if cached:
             logger.debug(
-                'categories.loaded',
-                source='cache'
+                "categories.loaded",
+                source="cache",
             )
-            return categories_list_adapter.validate_json(
-                cached
+            return categories_list_adapter.validate_json(cached)
+
+        categories = await self.repository.get_all()
+
+        nodes: dict[int, CategoryResponse] = {
+            category.id: CategoryResponse(
+                id=category.id,
+                name=category.name,
+                parent_id=category.parent_id,
+                children=[],
             )
+            for category in categories
+        }
 
-        rows = await self.repository.get_all_for_tree()
-        nodes = {}
+        roots: list[CategoryResponse] = []
 
-        for row in rows:
-            nodes[row["id"]] = CategoryResponse(
-                **row
-            )
+        for category in categories:
+            node = nodes[category.id]
 
-        roots = []
-
-        for node in nodes.values():
-            if node.parent_id is None:
-                roots.append(
-                    node
-                )
+            if category.parent_id is None:
+                roots.append(node)
             else:
-                parent = nodes.get(
-                    node.parent_id
-                )
-                if parent:
-                    parent.children.append(
-                        node
-                    )
+                parent = nodes.get(category.parent_id)
+
+                if parent is not None:
+                    parent.children.append(node)
 
         await self.redis.set(
             cache_key,
-            categories_list_adapter.dump_json(
-                roots
-            ),
-            ex=CACHE_TTL
+            categories_list_adapter.dump_json(roots),
+            ex=CACHE_TTL,
         )
+
         logger.debug(
-            'categories.loaded',
-            source='db'
+            "categories.loaded",
+            source="db",
         )
+
         return roots
 
     async def get_by_id(self, category_id: int) -> Category:

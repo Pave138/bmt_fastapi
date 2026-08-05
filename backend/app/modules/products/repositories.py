@@ -16,7 +16,7 @@ class ProductRepository:
 
     @staticmethod
     def _build_products_with_stats_query(
-        category: int | None,
+        category_id: int | None,
         search: str | None,
     ) -> Select:
         main_image = aliased(ProductImage)
@@ -44,8 +44,8 @@ class ProductRepository:
             )
         )
 
-        if category is not None:
-            category_tree = CategoryRepository.descendants_cte(category)
+        if category_id is not None:
+            category_tree = CategoryRepository.descendants_cte(category_id)
 
             query = query.where(
                 Product.category_id.in_(select(category_tree.c.id))
@@ -61,14 +61,13 @@ class ProductRepository:
 
     async def get_all(
         self,
-        category: int | None,
+        category_id: int | None,
         search: str | None,
         limit: int,
         offset: int
     ) -> list[tuple[Product, ProductImage | None, float, int]]:
-        print(search)
         result = await self.session.execute(
-            self._build_products_with_stats_query(category, search)
+            self._build_products_with_stats_query(category_id, search)
             .offset(offset)
             .limit(limit)
         )

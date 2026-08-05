@@ -14,7 +14,7 @@ router = APIRouter()
 )
 async def get_products(
     service: ProductServiceDep,
-    category: int | None = Query(
+    category_id: int | None = Query(
         None,
         description='Товары определенной категории'
     ),
@@ -26,7 +26,7 @@ async def get_products(
     offset: int = OFFSET_PRODUCTS
 ) -> list[ProductListResponse]:
     return await service.get_all(
-        category=category,
+        category_id=category_id,
         search=search,
         limit=limit,
         offset=offset

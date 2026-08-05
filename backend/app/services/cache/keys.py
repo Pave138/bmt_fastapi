@@ -22,7 +22,7 @@ async def get_product_key(redis: Redis, product_id: int) -> str:
 
 async def get_products_key(
     redis: Redis,
-    category: int | None,
+    category_id: int | None,
     search: str | None,
     limit: int,
     offset: int
@@ -32,7 +32,7 @@ async def get_products_key(
     return (
         f'products:'
         f'v{version}:'
-        f'category:{category}:'
+        f'category:{category_id}:'
         f'search:{search or 'all'}:'
         f'limit:{limit}'
         f'offset:{offset}'

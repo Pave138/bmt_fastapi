@@ -79,14 +79,14 @@ class ProductService(BaseService):
 
     async def get_all(
         self,
-        category: int | None,
+        category_id: int | None,
         search: str | None,
         limit: int,
         offset: int
     ) -> list[ProductListResponse]:
         cache_key = await get_products_key(
             self.redis,
-            category,
+            category_id,
             search,
             limit,
             offset
@@ -115,15 +115,8 @@ class ProductService(BaseService):
                     offset=offset
                 )
 
-        category_ids = None
-
-        if category is not None:
-            category_ids = await self.category_repository.get_descendant_ids(
-                category
-            )
-
         products = await self.repository.get_all(
-            category=category,
+            category_id=category_id,
             search=search,
             limit=limit,
             offset=offset
