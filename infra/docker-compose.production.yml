@@ -62,7 +62,11 @@ services:
 
   frontend:
     container_name: bmt-shop_frontend
-    build: ../frontend
+    image: pave138/bmt-shop_frontend
+
+    env_file:
+      - .env
+
     volumes:
       - static:/app/build/
 
