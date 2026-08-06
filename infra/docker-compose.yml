@@ -32,6 +32,12 @@ services:
     depends_on:
       - redis
 
+  frontend:
+    container_name: bmt-shop_frontend
+    build: ../frontend
+    volumes:
+      - static:/app/build/
+
   gateway:
     build:
       context: .
@@ -40,8 +46,11 @@ services:
     restart: unless-stopped
     ports:
       - "222:80"
+    volumes:
+      - static:/bmt-shop_static/
     depends_on:
       - backend
 
 volumes:
   pg_data:
+  static:

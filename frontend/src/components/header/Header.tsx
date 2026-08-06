@@ -1,6 +1,6 @@
-import Logo from "./Logo";
-import Search from "./Header/Search";
-import CartButton from "./CartButton";
+import Logo from "../Logo.tsx";
+import Search from "./Search.tsx";
+import CartButton from "../CartButton.tsx";
 
 function Header() {
     return (
