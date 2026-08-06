@@ -60,15 +60,24 @@ services:
     depends_on:
       - createBuckets
 
+  frontend:
+    container_name: bmt-shop_frontend
+    build: ../frontend
+    volumes:
+      - static:/app/build/
+
   gateway:
     container_name: bmt-shop_proxy
     image: pave138/bmt-shop_proxy
     restart: always
     ports:
       - "222:80"
+    volumes:
+      - static:/bmt-shop_static/
     depends_on:
       - backend
 
 volumes:
   pg_data:
   minio_data:
+  static:
