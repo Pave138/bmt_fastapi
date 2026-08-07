@@ -35,6 +35,23 @@ services:
     volumes:
       - minio_data:/data
 
+  frontend:
+    container_name: bmt-shop_frontend
+    build: ../frontend
+    volumes:
+      - static:/app/build/
+
+  gateway:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: bmt-shop_proxy
+    restart: unless-stopped
+    ports:
+      - "222:80"
+    volumes:
+      - static:/bmt-shop_static/
+
   createBuckets:
     image: minio/mc
     depends_on:
@@ -50,3 +67,4 @@ services:
 
 volumes:
   minio_data:
+  static:
