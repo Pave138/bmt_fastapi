@@ -2,39 +2,208 @@ import {
     Heart,
     ShoppingCart,
     Star,
+    Minus,
+    Plus,
 } from "lucide-react";
 
+import {
+    Link,
+} from "react-router-dom";
 
-import { formatPrice } from "../../utils/formatPrice";
+import {
+    formatPrice,
+} from "../../utils/formatPrice";
 
-import type { Product } from "../../types/Product";
+import type {
+    Product,
+} from "../../types/Product";
 
+import {
+    useCart,
+} from "../../context/CartContext";
 
 interface Props {
     product: Product;
 }
 
-
 function ProductCard({
     product,
 }: Props) {
 
+    const {
+        cart,
+        addToCart,
+        updateQuantity,
+    } = useCart();
 
+
+    /*
+     * Товар в корзине
+     */
+    const cartItem = cart?.items.find(
+        (item) =>
+            item.product_id === product.id
+    );
+
+
+    /*
+     * Количество товара в корзине
+     */
+    const quantity =
+        cartItem?.quantity ?? 0;
+
+
+    const isInCart =
+        quantity > 0;
+
+
+    /*
+     * Остаток товара
+     */
+    const stock =
+        Number(product.stock ?? 0);
+
+
+    /*
+     * Проверка наличия
+     */
+    const isOutOfStock =
+        stock <= 0;
+
+
+    /*
+     * Можно ли увеличить количество
+     */
+    const canIncrease =
+        quantity < stock;
+
+
+    /*
+     * Скидка
+     */
     const hasDiscount =
         product.old_price &&
-        Number(product.old_price) > Number(product.price);
+        Number(product.old_price) >
+            Number(product.price);
 
 
-    const discount = hasDiscount
-        ? Math.round(
-              (
-                  1 -
-                  Number(product.price) /
-                  Number(product.old_price)
-              ) * 100
-          )
-        : null;
+    const discount =
+        hasDiscount
+            ? Math.round(
+                  (
+                      1 -
+                      Number(product.price) /
+                          Number(product.old_price)
+                  ) * 100
+              )
+            : null;
 
+
+    /*
+     * Статус остатка
+     */
+    const getStockStatus = () => {
+
+        if (stock <= 0) {
+
+            return {
+                text: "Нет в наличии",
+                className: "text-red-500",
+            };
+
+        }
+
+
+        if (stock <= 5) {
+
+            return {
+                text: `Мало: ${stock} шт.`,
+                className: "text-red-500",
+            };
+
+        }
+
+
+        if (stock <= 20) {
+
+            return {
+                text: `Средне: ${stock} шт.`,
+                className: "text-yellow-600",
+            };
+
+        }
+
+
+        return {
+            text: `Много: ${stock} шт.`,
+            className: "text-green-600",
+        };
+
+    };
+
+
+    const stockStatus =
+        getStockStatus();
+
+
+    /*
+     * Добавить в корзину
+     */
+    const handleAddToCart = async () => {
+
+        if (isOutOfStock) {
+            return;
+        }
+
+
+        await addToCart(
+            product.id,
+            1
+        );
+
+    };
+
+
+    /*
+     * Увеличить количество
+     */
+    const handleIncrease = async () => {
+
+        if (!canIncrease) {
+            return;
+        }
+
+
+        await updateQuantity(
+            product.id,
+            quantity + 1
+        );
+
+    };
+
+
+    /*
+     * Уменьшить количество
+     *
+     * Если quantity === 1,
+     * передаём 0.
+     *
+     * CartContext должен удалить
+     * товар из корзины.
+     */
+    const handleDecrease = async () => {
+
+        if (quantity <= 0) {
+            return;
+        }
+
+
+        await updateQuantity(
+            product.id,
+            quantity - 1
+        );
+
+    };
 
 
     return (
@@ -42,18 +211,26 @@ function ProductCard({
         <div
             className="
                 group
+                relative
                 w-full
                 overflow-hidden
                 rounded-2xl
                 border
                 border-gray-200
                 bg-white
+
                 transition-all
                 duration-300
-                hover:-translate-y-1
-                hover:shadow-xl
+                ease-out
+
+                hover:border-orange-200
+                hover:shadow-[0_16px_40px_rgba(255,165,0,0.12)]
             "
         >
+
+            {/* ========================= */}
+            {/* IMAGE */}
+            {/* ========================= */}
 
             <div
                 className="
@@ -61,63 +238,94 @@ function ProductCard({
                 "
             >
 
-                {
-                    hasDiscount && (
-                        <span
-                            className="
-                                absolute
-                                left-3
-                                top-3
-                                z-10
-                                rounded-lg
-                                bg-red-500
-                                px-2
-                                py-1
-                                text-xs
-                                font-semibold
-                                text-white
-                            "
-                        >
-                            -{discount}%
-                        </span>
-                    )
-                }
+                {/* DISCOUNT */}
+
+                {hasDiscount && (
+
+                    <span
+                        className="
+                            absolute
+                            left-3
+                            top-3
+                            z-20
+
+                            rounded-lg
+                            bg-red-500
+                            px-2
+                            py-1
+
+                            text-xs
+                            font-semibold
+                            text-white
+
+                            shadow-sm
+                        "
+                    >
+                        -{discount}%
+                    </span>
+
+                )}
 
 
+                {/* FAVORITE */}
 
                 <button
+                    type="button"
                     className="
                         absolute
                         right-3
                         top-3
-                        z-10
+                        z-20
+
                         rounded-full
                         bg-white
                         p-2
-                        shadow
-                        transition
+
+                        shadow-sm
+
+                        transition-all
+                        duration-200
+
+                        hover:scale-110
+                        hover:bg-red-50
                         hover:text-red-500
                     "
                 >
-                    <Heart size={18}/>
+
+                    <Heart
+                        size={18}
+                    />
+
                 </button>
 
 
+                {/* PRODUCT IMAGE */}
 
                 <div
                     className="
+                        relative
                         aspect-[4/3]
                         overflow-hidden
                         bg-gray-100
                     "
                 >
 
-                    {
-                        product.main_image ? (
+                    <Link
+                        to={`/products/${product.id}`}
+                        className="
+                            block
+                            h-full
+                            w-full
+                        "
+                    >
+
+                        {product.main_image ? (
 
                             <img
                                 src={
-                                    product.main_image.image_url
+                                    product
+                                        .main_image
+                                        .image_url
                                 }
                                 alt={
                                     product.name
@@ -126,9 +334,11 @@ function ProductCard({
                                     h-full
                                     w-full
                                     object-cover
-                                    transition-transform
-                                    duration-300
-                                    group-hover:scale-105
+
+                                    transition-opacity
+                                    duration-200
+
+                                    group-hover:opacity-90
                                 "
                             />
 
@@ -140,21 +350,25 @@ function ProductCard({
                                     h-full
                                     items-center
                                     justify-center
+
                                     text-gray-400
                                 "
                             >
                                 Нет изображения
                             </div>
 
-                        )
-                    }
+                        )}
+
+                    </Link>
 
                 </div>
-
 
             </div>
 
 
+            {/* ========================= */}
+            {/* CONTENT */}
+            {/* ========================= */}
 
             <div
                 className="
@@ -163,11 +377,14 @@ function ProductCard({
                 "
             >
 
+                {/* RATING */}
+
                 <div
                     className="
                         flex
                         items-center
                         gap-1
+
                         text-sm
                         text-gray-500
                     "
@@ -192,31 +409,43 @@ function ProductCard({
                 </div>
 
 
+                {/* NAME */}
 
-                <h3
+                <Link
+                    to={`/products/${product.id}`}
                     className="
+                        block
                         line-clamp-2
                         min-h-[56px]
+
                         text-base
                         font-semibold
+                        text-gray-900
+
+                        transition-colors
+                        duration-200
+
+                        hover:text-[#FFA500]
                     "
                 >
                     {product.name}
-                </h3>
+                </Link>
 
 
+                {/* STOCK */}
 
                 <p
-                    className="
+                    className={`
                         text-sm
                         font-medium
-                        text-green-600
-                    "
+                        ${stockStatus.className}
+                    `}
                 >
-                    ✓ В наличии
+                    ✓ {stockStatus.text}
                 </p>
 
 
+                {/* PRICE */}
 
                 <div
                     className="
@@ -226,23 +455,21 @@ function ProductCard({
                     "
                 >
 
-                    {
-                        hasDiscount && (
-                            <span
-                                className="
-                                    text-sm
-                                    text-gray-400
-                                    line-through
-                                "
-                            >
-                                {
-                                    formatPrice(
-                                        product.old_price!
-                                    )
-                                } ₽
-                            </span>
-                        )
-                    }
+                    {hasDiscount && (
+
+                        <span
+                            className="
+                                text-sm
+                                text-gray-400
+                                line-through
+                            "
+                        >
+                            {formatPrice(
+                                product.old_price!
+                            )} ₽
+                        </span>
+
+                    )}
 
 
                     <span
@@ -252,49 +479,213 @@ function ProductCard({
                             text-[#FFA500]
                         "
                     >
-                        {
-                            formatPrice(
-                                product.price
-                            )
-                        } ₽
+                        {formatPrice(
+                            product.price
+                        )} ₽
                     </span>
-
 
                 </div>
 
 
+                {/* ========================= */}
+                {/* CART */}
+                {/* ========================= */}
 
-                <button
-                    className="
-                        flex
-                        w-full
-                        items-center
-                        justify-center
-                        gap-2
-                        rounded-xl
-                        bg-[#FFA500]
-                        py-3
-                        font-semibold
-                        text-white
-                        transition
-                        hover:bg-orange-600
-                    "
-                >
+                {!isInCart ? (
 
-                    <ShoppingCart size={18}/>
+                    <button
+                        type="button"
+                        onClick={
+                            handleAddToCart
+                        }
+                        disabled={
+                            isOutOfStock
+                        }
+                        className="
+                            flex
+                            w-full
+                            items-center
+                            justify-center
+                            gap-2
 
-                    В корзину
+                            rounded-xl
 
-                </button>
+                            bg-[#FFA500]
+                            py-3
 
+                            font-semibold
+                            text-white
+
+                            shadow-sm
+
+                            transition-all
+                            duration-200
+
+                            hover:bg-orange-600
+                            hover:shadow-md
+                            active:scale-[0.98]
+
+                            disabled:cursor-not-allowed
+                            disabled:bg-gray-300
+                            disabled:shadow-none
+                        "
+                    >
+
+                        <ShoppingCart
+                            size={18}
+                        />
+
+                        {isOutOfStock
+                            ? "Нет в наличии"
+                            : "В корзину"
+                        }
+
+                    </button>
+
+                ) : (
+
+                    <div
+                        className="
+                            flex
+                            w-full
+                            items-center
+                            gap-2
+                        "
+                    >
+
+                        {/* MINUS */}
+
+                        <button
+                            type="button"
+                            onClick={
+                                handleDecrease
+                            }
+                            disabled={
+                                quantity <= 0
+                            }
+                            className="
+                                flex
+                                h-11
+                                w-11
+                                shrink-0
+                                items-center
+                                justify-center
+
+                                rounded-xl
+
+                                border
+                                border-gray-300
+                                bg-white
+
+                                transition-all
+                                duration-200
+
+                                hover:border-gray-400
+                                hover:bg-gray-100
+                                active:scale-95
+
+                                disabled:cursor-not-allowed
+                                disabled:opacity-50
+                            "
+                        >
+
+                            <Minus
+                                size={18}
+                            />
+
+                        </button>
+
+
+                        {/* QUANTITY */}
+
+                        <div
+                            className="
+                                flex
+                                h-11
+                                flex-1
+                                items-center
+                                justify-center
+                                gap-2
+
+                                rounded-xl
+
+                                bg-green-600
+
+                                font-semibold
+                                text-white
+
+                                shadow-sm
+
+                                transition-colors
+                                duration-200
+
+                                group-hover:bg-green-700
+                            "
+                        >
+
+                            <ShoppingCart
+                                size={18}
+                            />
+
+                            <span>
+                                {quantity}
+                            </span>
+
+                        </div>
+
+
+                        {/* PLUS */}
+
+                        <button
+                            type="button"
+                            onClick={
+                                handleIncrease
+                            }
+                            disabled={
+                                !canIncrease
+                            }
+                            className="
+                                flex
+                                h-11
+                                w-11
+                                shrink-0
+                                items-center
+                                justify-center
+
+                                rounded-xl
+
+                                border
+                                border-gray-300
+                                bg-white
+
+                                transition-all
+                                duration-200
+
+                                hover:border-gray-400
+                                hover:bg-gray-100
+                                active:scale-95
+
+                                disabled:cursor-not-allowed
+                                disabled:opacity-40
+                            "
+                        >
+
+                            <Plus
+                                size={18}
+                            />
+
+                        </button>
+
+                    </div>
+
+                )}
 
             </div>
-
 
         </div>
 
     );
-}
 
+}
 
 export default ProductCard;

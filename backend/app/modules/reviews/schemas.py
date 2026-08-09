@@ -52,6 +52,7 @@ class ReviewUpdate(BaseModel):
 
 
 class ReviewResponse(ReviewFields):
+    id: int
     user_username: str
 
     model_config = ConfigDict(from_attributes=True)
@@ -59,7 +60,6 @@ class ReviewResponse(ReviewFields):
 
 class ReviewDB(ReviewResponse):
     product_id: int
-    id: int
 
 
 reviews_list_adapter_db = TypeAdapter(

@@ -8,6 +8,7 @@ import { router } from "./router";
 import { queryClient } from "./lib/react-query";
 
 import { AuthProvider } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
 
 import "./index.css";
 
@@ -19,9 +20,11 @@ createRoot(
             client={queryClient}
         >
             <AuthProvider>
-                <RouterProvider
-                    router={router}
-                />
+                <CartProvider>
+                    <RouterProvider
+                        router={router}
+                    />
+                </CartProvider>
             </AuthProvider>
         </QueryClientProvider>
     </StrictMode>
