@@ -18,18 +18,15 @@ router.include_router(
         UserRead,
         UserCreate
     ),
-    prefix="/register",
     tags=["auth"],
 )
 
 router.include_router(
     fastapi_users.get_reset_password_router(),
-    prefix="/reset-password",
     tags=["auth"],
 )
 
 router.include_router(
     fastapi_users.get_verify_router(UserRead),
-    prefix="/verify",
     tags=["auth"],
 )

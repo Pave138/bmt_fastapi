@@ -6,12 +6,14 @@ function Search() {
 
     const value = searchParams.get("search") ?? "";
 
-    function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
+    function handleChange(
+        event: React.ChangeEvent<HTMLInputElement>
+    ) {
         const params = new URLSearchParams(searchParams);
 
-        const search = event.target.value.trim();
+        const search = event.target.value;
 
-        if (search === "") {
+        if (!search.trim()) {
             params.delete("search");
         } else {
             params.set("search", search);
@@ -21,32 +23,47 @@ function Search() {
     }
 
     return (
-        <div className="relative flex-1 max-w-2xl">
+        <div className="relative w-full max-w-2xl">
             <SearchIcon
                 size={20}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                className="
+                    pointer-events-none
+                    absolute
+                    left-4
+                    top-1/2
+                    -translate-y-1/2
+                    text-gray-400
+                "
             />
 
             <input
-                type="text"
+                type="search"
                 value={value}
                 onChange={handleChange}
                 placeholder="Поиск товаров..."
                 className="
+                    h-11
                     w-full
-                    rounded-lg
+                    rounded-xl
                     border
-                    border-gray-300
-                    bg-white
-                    py-2.5
+                    border-gray-200
+                    bg-gray-50
                     pl-11
                     pr-4
+                    text-sm
+                    text-gray-900
                     outline-none
                     transition
 
-                    focus:border-orange-500
-                    focus:ring-2
-                    focus:ring-orange-200
+                    placeholder:text-gray-400
+
+                    hover:border-gray-300
+                    hover:bg-white
+
+                    focus:border-orange-400
+                    focus:bg-white
+                    focus:ring-4
+                    focus:ring-orange-100
                 "
             />
         </div>

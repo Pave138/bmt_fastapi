@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import CategoryTree from "../components/catalog/CategoryTree";
@@ -6,98 +5,60 @@ import ProductGrid from "../components/catalog/ProductGrid";
 import CatalogToolbar from "../components/catalog/CatalogToolbar";
 
 import { useCategories } from "../hooks/useCategories";
-
-import { getProducts } from "../api/products";
-
-import type { Product } from "../types/Product";
-
+import { useProducts } from "../hooks/useProducts";
 
 function CatalogPage() {
     const { categories } = useCategories();
 
-
     const [searchParams, setSearchParams] = useSearchParams();
 
+    const categoryParam = searchParams.get("category");
+    const search = searchParams.get("search") ?? undefined;
 
-    const selectedCategory =
-        searchParams.get("category")
-            ? Number(searchParams.get("category"))
-            : null;
+    const selectedCategory = categoryParam
+        ? Number(categoryParam)
+        : null;
 
-
-
-    const [products, setProducts] = useState<Product[]>([]);
-
-
-    const [loadingProducts, setLoadingProducts] = useState(false);
-
-
-
-    useEffect(() => {
-
-        async function loadProducts() {
-
-            setLoadingProducts(true);
-
-
-            try {
-
-                const data = await getProducts(
-                    selectedCategory ?? undefined
-                );
-
-
-                setProducts(data);
-
-
-            } catch (error) {
-
-                console.error(error);
-
-
-            } finally {
-
-                setLoadingProducts(false);
-
-            }
-
-        }
-
-
-        loadProducts();
-
-
-    }, [selectedCategory]);
-
-
-
-
+    const {
+        data: products = [],
+        isLoading: loadingProducts,
+        isError,
+        error,
+    } = useProducts(
+        selectedCategory,
+        search,
+    );
 
     function handleCategorySelect(
-        categoryId: number | null
+        categoryId: number | null,
     ) {
+        const params = new URLSearchParams(searchParams);
 
         if (categoryId === null) {
-
-            setSearchParams({});
-
-            return;
-
+            params.delete("category");
+        } else {
+            params.set(
+                "category",
+                String(categoryId),
+            );
         }
 
-
-        setSearchParams({
-            category: String(categoryId),
-        });
-
+        setSearchParams(params);
     }
 
+    if (isError) {
+        console.error(error);
 
-
-
+        return (
+            <div className="flex h-64 items-center justify-center">
+                <p className="text-red-500">
+                    Не удалось загрузить товары
+                </p>
+            </div>
+        );
+    }
 
     return (
-
         <div
             className="
                 w-full
@@ -105,7 +66,6 @@ function CatalogPage() {
                 py-8
             "
         >
-
             <div
                 className="
                     mx-auto
@@ -117,8 +77,6 @@ function CatalogPage() {
                     lg:grid-cols-[300px_1fr]
                 "
             >
-
-
                 {/* Категории */}
 
                 <div
@@ -128,80 +86,42 @@ function CatalogPage() {
                         h-fit
                     "
                 >
-
                     <CategoryTree
                         categories={categories}
                         selectedCategory={selectedCategory}
                         onSelect={handleCategorySelect}
                     />
-
-
                 </div>
-
-
-
-
 
                 {/* Товары */}
 
-                <main
-                    className="
-                        min-w-0
-                    "
-                >
-
+                <main className="min-w-0">
                     <CatalogToolbar
                         total={products.length}
                     />
 
-
-
-                    {
-                        loadingProducts ? (
-
-                            <div
-                                className="
-                                    flex
-                                    h-64
-                                    items-center
-                                    justify-center
-                                "
-                            >
-
-                                <p
-                                    className="
-                                        text-gray-500
-                                    "
-                                >
-                                    Загрузка товаров...
-                                </p>
-
-
-                            </div>
-
-
-                        ) : (
-
-                            <ProductGrid
-                                products={products}
-                            />
-
-                        )
-                    }
-
-
-
+                    {loadingProducts ? (
+                        <div
+                            className="
+                                flex
+                                h-64
+                                items-center
+                                justify-center
+                            "
+                        >
+                            <p className="text-gray-500">
+                                Загрузка товаров...
+                            </p>
+                        </div>
+                    ) : (
+                        <ProductGrid
+                            products={products}
+                        />
+                    )}
                 </main>
-
-
-
             </div>
-
-
         </div>
-
     );
 }
-
 
 export default CatalogPage;
