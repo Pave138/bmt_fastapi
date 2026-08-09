@@ -124,10 +124,10 @@ function ProductCard({
         }
 
 
-        if (stock <= 20) {
+        if (stock <= 10) {
 
             return {
-                text: `Средне: ${stock} шт.`,
+                text: `Достаточно: ${stock} шт.`,
                 className: "text-yellow-600",
             };
 

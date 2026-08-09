@@ -15,10 +15,19 @@ import {
     useState,
 } from "react";
 
+import type {
+    FormEvent,
+} from "react";
+
 import {
     Link,
     useParams,
 } from "react-router-dom";
+
+import {
+    AnimatePresence,
+    motion,
+} from "framer-motion";
 
 import type {
     Product,
@@ -35,6 +44,10 @@ import {
 import {
     getProductById,
 } from "../api/products";
+
+import {
+    createReview,
+} from "../api/reviews";
 
 
 function ProductPage() {
@@ -97,6 +110,48 @@ function ProductPage() {
         currentImage,
         setCurrentImage,
     ] = useState(0);
+
+
+    const [
+        imageDirection,
+        setImageDirection,
+    ] = useState(1);
+
+
+    /*
+     * =========================
+     * REVIEW FORM
+     * =========================
+     */
+
+    const [
+        reviewRating,
+        setReviewRating,
+    ] = useState(5);
+
+
+    const [
+        reviewComment,
+        setReviewComment,
+    ] = useState("");
+
+
+    const [
+        reviewSubmitting,
+        setReviewSubmitting,
+    ] = useState(false);
+
+
+    const [
+        reviewError,
+        setReviewError,
+    ] = useState<string | null>(null);
+
+
+    const [
+        reviewSuccess,
+        setReviewSuccess,
+    ] = useState<string | null>(null);
 
 
     /*
@@ -169,10 +224,6 @@ function ProductPage() {
      * =========================
      * IMAGES
      * =========================
-     *
-     * Хук находится ДО условительных
-     * return, поэтому порядок хуков
-     * всегда одинаковый.
      */
 
     const images = useMemo(() => {
@@ -364,11 +415,41 @@ function ProductPage() {
      * =========================
      */
 
+    const goToImage =
+        (
+            index: number,
+            direction: number
+        ) => {
+
+            if (
+                images.length <= 1 ||
+                index === currentImage
+            ) {
+                return;
+            }
+
+
+            setImageDirection(
+                direction
+            );
+
+            setCurrentImage(
+                index
+            );
+
+        };
+
+
     const previousImage = () => {
 
         if (images.length <= 1) {
             return;
         }
+
+
+        setImageDirection(
+            -1
+        );
 
 
         setCurrentImage(
@@ -388,6 +469,11 @@ function ProductPage() {
         }
 
 
+        setImageDirection(
+            1
+        );
+
+
         setCurrentImage(
             (current) =>
                 (current + 1) %
@@ -399,7 +485,58 @@ function ProductPage() {
 
     /*
      * =========================
-     * ADD TO CART
+     * SWIPE
+     * =========================
+     */
+
+    const handleDragEnd =
+        (
+            _event: MouseEvent | TouchEvent | PointerEvent,
+            info: {
+                offset: {
+                    x: number;
+                };
+            }
+        ) => {
+
+            if (
+                images.length <= 1
+            ) {
+                return;
+            }
+
+
+            const swipeDistance =
+                Math.abs(
+                    info.offset.x
+                );
+
+
+            if (
+                swipeDistance < 50
+            ) {
+                return;
+            }
+
+
+            if (
+                info.offset.x < 0
+            ) {
+
+                nextImage();
+
+            } else {
+
+                previousImage();
+
+            }
+
+        };
+
+
+    /*
+     * =========================
+     * CART ACTIONS
      * =========================
      */
 
@@ -424,12 +561,6 @@ function ProductPage() {
         };
 
 
-    /*
-     * =========================
-     * INCREASE
-     * =========================
-     */
-
     const handleIncrease =
         async () => {
 
@@ -451,12 +582,6 @@ function ProductPage() {
         };
 
 
-    /*
-     * =========================
-     * DECREASE
-     * =========================
-     */
-
     const handleDecrease =
         async () => {
 
@@ -470,18 +595,98 @@ function ProductPage() {
             }
 
 
-            /*
-             * При quantity === 1
-             * передаём 0.
-             *
-             * CartContext должен удалить
-             * товар из корзины.
-             */
-
             await updateQuantity(
                 product.id,
                 quantity - 1
             );
+
+        };
+
+
+    /*
+     * =========================
+     * REVIEW SUBMIT
+     * =========================
+     */
+
+    const handleReviewSubmit =
+        async (
+            event: FormEvent<HTMLFormElement>
+        ) => {
+
+            event.preventDefault();
+
+
+            if (!product) {
+                return;
+            }
+
+
+            setReviewError(null);
+
+            setReviewSuccess(null);
+
+            setReviewSubmitting(true);
+
+
+            try {
+
+                await createReview({
+                    product_id:
+                        product.id,
+
+                    rating:
+                        reviewRating,
+
+                    comment:
+                        reviewComment.trim()
+                            ? reviewComment.trim()
+                            : null,
+                });
+
+
+                const updatedProduct =
+                    await getProductById(
+                        product.id
+                    );
+
+
+                setProduct(
+                    updatedProduct
+                );
+
+
+                setReviewRating(
+                    5
+                );
+
+                setReviewComment(
+                    ""
+                );
+
+
+                setReviewSuccess(
+                    "Спасибо! Ваш отзыв успешно добавлен."
+                );
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                setReviewError(
+                    "Не удалось добавить отзыв. Возможно, вы уже оставляли отзыв на этот товар."
+                );
+
+            } finally {
+
+                setReviewSubmitting(
+                    false
+                );
+
+            }
 
         };
 
@@ -664,7 +869,7 @@ function ProductPage() {
                                     absolute
                                     left-4
                                     top-4
-                                    z-20
+                                    z-30
                                     rounded-lg
                                     bg-red-500
                                     px-3
@@ -685,34 +890,101 @@ function ProductPage() {
 
                         <div
                             className="
-                                flex
+                                relative
                                 aspect-square
-                                items-center
-                                justify-center
+                                overflow-hidden
                             "
                         >
 
                             {activeImage ? (
 
-                                <img
-                                    src={
-                                        activeImage.image_url
+                                <AnimatePresence
+                                    initial={false}
+                                    custom={
+                                        imageDirection
                                     }
-                                    alt={
-                                        product.name
-                                    }
-                                    className="
-                                        h-full
-                                        w-full
-                                        object-contain
-                                        p-6
-                                    "
-                                />
+                                    mode="wait"
+                                >
+
+                                    <motion.img
+                                        key={
+                                            activeImage.id
+                                        }
+                                        src={
+                                            activeImage.image_url
+                                        }
+                                        alt={
+                                            product.name
+                                        }
+                                        custom={
+                                            imageDirection
+                                        }
+                                        initial={{
+                                            opacity: 0,
+                                            x:
+                                                imageDirection *
+                                                80,
+                                            scale: 0.98,
+                                        }}
+                                        animate={{
+                                            opacity: 1,
+                                            x: 0,
+                                            scale: 1,
+                                        }}
+                                        exit={{
+                                            opacity: 0,
+                                            x:
+                                                imageDirection *
+                                                -80,
+                                            scale: 0.98,
+                                        }}
+                                        transition={{
+                                            duration: 0.3,
+                                            ease: [
+                                                0.22,
+                                                1,
+                                                0.36,
+                                                1,
+                                            ],
+                                        }}
+                                        drag={
+                                            images.length >
+                                            1
+                                                ? "x"
+                                                : false
+                                        }
+                                        dragConstraints={{
+                                            left: 0,
+                                            right: 0,
+                                        }}
+                                        dragElastic={0.7}
+                                        onDragEnd={
+                                            handleDragEnd
+                                        }
+                                        className="
+                                            absolute
+                                            inset-0
+                                            h-full
+                                            w-full
+                                            cursor-grab
+                                            object-contain
+                                            p-6
+                                            active:cursor-grabbing
+                                            select-none
+                                        "
+                                        draggable={false}
+                                    />
+
+                                </AnimatePresence>
 
                             ) : (
 
                                 <div
                                     className="
+                                        flex
+                                        h-full
+                                        items-center
+                                        justify-center
                                         text-gray-400
                                     "
                                 >
@@ -721,90 +993,94 @@ function ProductPage() {
 
                             )}
 
+
+                            {/* PREVIOUS */}
+
+                            {images.length > 1 && (
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        previousImage
+                                    }
+                                    className="
+                                        absolute
+                                        left-4
+                                        top-1/2
+                                        z-20
+                                        flex
+                                        h-11
+                                        w-11
+                                        -translate-y-1/2
+                                        items-center
+                                        justify-center
+                                        rounded-full
+                                        bg-white/95
+                                        shadow-md
+                                        backdrop-blur-sm
+                                        transition
+                                        hover:bg-white
+                                        hover:shadow-lg
+                                        active:scale-95
+                                    "
+                                    aria-label="Предыдущее изображение"
+                                >
+
+                                    <ChevronLeft
+                                        size={22}
+                                    />
+
+                                </button>
+
+                            )}
+
+
+                            {/* NEXT */}
+
+                            {images.length > 1 && (
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        nextImage
+                                    }
+                                    className="
+                                        absolute
+                                        right-4
+                                        top-1/2
+                                        z-20
+                                        flex
+                                        h-11
+                                        w-11
+                                        -translate-y-1/2
+                                        items-center
+                                        justify-center
+                                        rounded-full
+                                        bg-white/95
+                                        shadow-md
+                                        backdrop-blur-sm
+                                        transition
+                                        hover:bg-white
+                                        hover:shadow-lg
+                                        active:scale-95
+                                    "
+                                    aria-label="Следующее изображение"
+                                >
+
+                                    <ChevronRight
+                                        size={22}
+                                    />
+
+                                </button>
+
+                            )}
+
                         </div>
-
-
-                        {/* PREVIOUS */}
-
-                        {images.length > 1 && (
-
-                            <button
-                                type="button"
-                                onClick={
-                                    previousImage
-                                }
-                                className="
-                                    absolute
-                                    left-4
-                                    top-1/2
-                                    flex
-                                    h-11
-                                    w-11
-                                    -translate-y-1/2
-                                    items-center
-                                    justify-center
-                                    rounded-full
-                                    bg-white
-                                    shadow-md
-                                    transition
-                                    hover:bg-gray-50
-                                    active:scale-95
-                                "
-                                aria-label="Предыдущее изображение"
-                            >
-
-                                <ChevronLeft
-                                    size={22}
-                                />
-
-                            </button>
-
-                        )}
-
-
-                        {/* NEXT */}
-
-                        {images.length > 1 && (
-
-                            <button
-                                type="button"
-                                onClick={
-                                    nextImage
-                                }
-                                className="
-                                    absolute
-                                    right-4
-                                    top-1/2
-                                    flex
-                                    h-11
-                                    w-11
-                                    -translate-y-1/2
-                                    items-center
-                                    justify-center
-                                    rounded-full
-                                    bg-white
-                                    shadow-md
-                                    transition
-                                    hover:bg-gray-50
-                                    active:scale-95
-                                "
-                                aria-label="Следующее изображение"
-                            >
-
-                                <ChevronRight
-                                    size={22}
-                                />
-
-                            </button>
-
-                        )}
 
                     </div>
 
 
-                    {/* ========================= */}
                     {/* THUMBNAILS */}
-                    {/* ========================= */}
 
                     {images.length > 1 && (
 
@@ -824,16 +1100,26 @@ function ProductPage() {
                                     index
                                 ) => (
 
-                                    <button
+                                    <motion.button
                                         key={
                                             image.id
                                         }
                                         type="button"
                                         onClick={() =>
-                                            setCurrentImage(
-                                                index
+                                            goToImage(
+                                                index,
+                                                index >
+                                                    currentImage
+                                                    ? 1
+                                                    : -1
                                             )
                                         }
+                                        whileHover={{
+                                            scale: 1.04,
+                                        }}
+                                        whileTap={{
+                                            scale: 0.96,
+                                        }}
                                         className={`
                                             h-20
                                             w-20
@@ -843,17 +1129,15 @@ function ProductPage() {
                                             border-2
                                             bg-gray-100
                                             transition
+                                            duration-200
 
                                             ${
                                                 index ===
                                                 currentImage
-                                                    ? "border-[#FFA500]"
+                                                    ? "border-[#FFA500] shadow-sm"
                                                     : "border-transparent hover:border-gray-300"
                                             }
                                         `}
-                                        aria-label={
-                                            `Изображение ${index + 1}`
-                                        }
                                     >
 
                                         <img
@@ -868,13 +1152,33 @@ function ProductPage() {
                                                 w-full
                                                 object-cover
                                             "
+                                            draggable={false}
                                         />
 
-                                    </button>
+                                    </motion.button>
 
                                 )
                             )}
 
+                        </div>
+
+                    )}
+
+
+                    {/* IMAGE COUNTER */}
+
+                    {images.length > 1 && (
+
+                        <div
+                            className="
+                                mt-2
+                                text-center
+                                text-xs
+                                text-gray-400
+                            "
+                        >
+                            {currentImage + 1} /{" "}
+                            {images.length}
                         </div>
 
                     )}
@@ -935,6 +1239,7 @@ function ProductPage() {
                             </span>
 
                         </div>
+
 
                         <span>
                             {product.reviews_count} отзывов
@@ -1077,9 +1382,7 @@ function ProductPage() {
                     )}
 
 
-                    {/* ========================= */}
                     {/* ACTIONS */}
-                    {/* ========================= */}
 
                     <div
                         className="
@@ -1143,8 +1446,6 @@ function ProductPage() {
                                 "
                             >
 
-                                {/* MINUS */}
-
                                 <button
                                     type="button"
                                     onClick={
@@ -1165,7 +1466,6 @@ function ProductPage() {
                                         hover:bg-gray-100
                                         active:scale-95
                                     "
-                                    aria-label="Уменьшить количество"
                                 >
 
                                     <Minus
@@ -1174,8 +1474,6 @@ function ProductPage() {
 
                                 </button>
 
-
-                                {/* QUANTITY */}
 
                                 <div
                                     className="
@@ -1200,8 +1498,6 @@ function ProductPage() {
 
                                 </div>
 
-
-                                {/* PLUS */}
 
                                 <button
                                     type="button"
@@ -1228,7 +1524,6 @@ function ProductPage() {
                                         disabled:cursor-not-allowed
                                         disabled:opacity-40
                                     "
-                                    aria-label="Увеличить количество"
                                 >
 
                                     <Plus
@@ -1241,8 +1536,6 @@ function ProductPage() {
 
                         )}
 
-
-                        {/* FAVORITE */}
 
                         <button
                             type="button"
@@ -1272,6 +1565,866 @@ function ProductPage() {
                         </button>
 
                     </div>
+
+                </div>
+
+            </div>
+
+
+            {/* ================================================== */}
+            {/* TECHNICAL SPECIFICATIONS + RIGHT COLUMN            */}
+            {/* ================================================== */}
+
+            <div
+                className="
+                    mt-16
+                    grid
+                    grid-cols-1
+                    items-start
+                    gap-8
+                    lg:grid-cols-2
+                "
+            >
+
+                {/* ================================================== */}
+                {/* LEFT: SPECIFICATIONS                              */}
+                {/* ================================================== */}
+
+                <section>
+
+                    <div
+                        className="
+                            rounded-2xl
+                            border
+                            border-gray-200
+                            bg-white
+                            p-6
+                            shadow-sm
+                        "
+                    >
+
+                        <div
+                            className="
+                                mb-6
+                            "
+                        >
+
+                            <h2
+                                className="
+                                    text-2xl
+                                    font-bold
+                                    text-gray-900
+                                "
+                            >
+                                Технические характеристики
+                            </h2>
+
+
+                            <p
+                                className="
+                                    mt-1
+                                    text-sm
+                                    text-gray-500
+                                "
+                            >
+                                Основные характеристики товара
+                            </p>
+
+                        </div>
+
+
+                        {product.specifications &&
+                        product.specifications.length > 0 ? (
+
+                            <div
+                                className="
+                                    overflow-hidden
+                                    rounded-xl
+                                    border
+                                    border-gray-200
+                                "
+                            >
+
+                                {product.specifications.map(
+                                    (
+                                        specification,
+                                        index
+                                    ) => (
+
+                                        <div
+                                            key={`${specification.name}-${index}`}
+                                            className={`
+                                                grid
+                                                grid-cols-1
+                                                gap-1
+                                                px-4
+                                                py-3.5
+                                                sm:grid-cols-[minmax(170px,0.8fr)_minmax(0,1.2fr)]
+
+                                                ${
+                                                    index % 2 === 0
+                                                        ? "bg-gray-50"
+                                                        : "bg-white"
+                                                }
+
+                                                ${
+                                                    index !==
+                                                    product.specifications.length - 1
+                                                        ? "border-b border-gray-200"
+                                                        : ""
+                                                }
+                                            `}
+                                        >
+
+                                            <span
+                                                className="
+                                                    text-sm
+                                                    font-medium
+                                                    text-gray-500
+                                                "
+                                            >
+                                                {
+                                                    specification.name
+                                                }
+                                            </span>
+
+
+                                            <span
+                                                className="
+                                                    text-sm
+                                                    font-semibold
+                                                    text-gray-900
+                                                "
+                                            >
+                                                {
+                                                    specification.value
+                                                }
+                                            </span>
+
+                                        </div>
+
+                                    )
+                                )}
+
+                            </div>
+
+                        ) : (
+
+                            <div
+                                className="
+                                    rounded-xl
+                                    border
+                                    border-dashed
+                                    border-gray-300
+                                    bg-gray-50
+                                    px-5
+                                    py-8
+                                    text-center
+                                    text-sm
+                                    text-gray-500
+                                "
+                            >
+                                Технические характеристики не указаны
+                            </div>
+
+                        )}
+
+                    </div>
+
+                </section>
+
+
+                {/* ================================================== */}
+                {/* RIGHT COLUMN                                       */}
+                {/* ================================================== */}
+
+                <div
+                    className="
+                        space-y-8
+                    "
+                >
+
+                    {/* ================================================== */}
+                    {/* CREATE REVIEW                                       */}
+                    {/* ================================================== */}
+
+                    <section>
+
+                        <div
+                            className="
+                                rounded-2xl
+                                border
+                                border-gray-200
+                                bg-white
+                                p-6
+                                shadow-sm
+                            "
+                        >
+
+                            <div>
+
+                                <div
+                                    className="
+                                        flex
+                                        items-center
+                                        gap-3
+                                    "
+                                >
+
+                                    <div
+                                        className="
+                                            flex
+                                            h-10
+                                            w-10
+                                            items-center
+                                            justify-center
+                                            rounded-xl
+                                            bg-yellow-50
+                                        "
+                                    >
+
+                                        <Star
+                                            size={21}
+                                            className="
+                                                fill-yellow-400
+                                                text-yellow-400
+                                            "
+                                        />
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <h2
+                                            className="
+                                                text-2xl
+                                                font-bold
+                                                text-gray-900
+                                            "
+                                        >
+                                            Оставить отзыв
+                                        </h2>
+
+
+                                        <p
+                                            className="
+                                                mt-1
+                                                text-sm
+                                                text-gray-500
+                                            "
+                                        >
+                                            Поделитесь своим мнением о товаре
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <form
+                                onSubmit={
+                                    handleReviewSubmit
+                                }
+                                className="
+                                    mt-6
+                                "
+                            >
+
+                                {/* RATING */}
+
+                                <div>
+
+                                    <label
+                                        className="
+                                            block
+                                            text-sm
+                                            font-semibold
+                                            text-gray-900
+                                        "
+                                    >
+                                        Ваша оценка
+                                    </label>
+
+
+                                    <div
+                                        className="
+                                            mt-3
+                                            flex
+                                            items-center
+                                            gap-1
+                                        "
+                                    >
+
+                                        {Array.from(
+                                            {
+                                                length: 5,
+                                            }
+                                        ).map(
+                                            (
+                                                _,
+                                                index
+                                            ) => {
+
+                                                const rating =
+                                                    index + 1;
+
+
+                                                return (
+
+                                                    <button
+                                                        key={
+                                                            rating
+                                                        }
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setReviewRating(
+                                                                rating
+                                                            )
+                                                        }
+                                                        className="
+                                                            rounded-lg
+                                                            p-1
+                                                            transition
+                                                            hover:scale-110
+                                                        "
+                                                        aria-label={
+                                                            `Оценка ${rating}`
+                                                        }
+                                                    >
+
+                                                        <Star
+                                                            size={30}
+                                                            className={
+                                                                rating <=
+                                                                reviewRating
+                                                                    ? "fill-yellow-400 text-yellow-400"
+                                                                    : "text-gray-300"
+                                                            }
+                                                        />
+
+                                                    </button>
+
+                                                );
+
+                                            }
+                                        )}
+
+                                    </div>
+
+
+                                    <p
+                                        className="
+                                            mt-1
+                                            text-xs
+                                            text-gray-500
+                                        "
+                                    >
+                                        {reviewRating} из 5
+                                    </p>
+
+                                </div>
+
+
+                                {/* COMMENT */}
+
+                                <div
+                                    className="
+                                        mt-5
+                                    "
+                                >
+
+                                    <label
+                                        htmlFor="review-comment"
+                                        className="
+                                            block
+                                            text-sm
+                                            font-semibold
+                                            text-gray-900
+                                        "
+                                    >
+                                        Комментарий
+                                    </label>
+
+
+                                    <textarea
+                                        id="review-comment"
+                                        value={
+                                            reviewComment
+                                        }
+                                        onChange={(
+                                            event
+                                        ) =>
+                                            setReviewComment(
+                                                event.target.value
+                                            )
+                                        }
+                                        placeholder="Расскажите, что вам понравилось или не понравилось..."
+                                        maxLength={1000}
+                                        rows={6}
+                                        className="
+                                            mt-2
+                                            w-full
+                                            resize-none
+                                            rounded-xl
+                                            border
+                                            border-gray-300
+                                            bg-gray-50
+                                            px-4
+                                            py-3
+                                            text-sm
+                                            text-gray-900
+                                            outline-none
+                                            transition
+                                            placeholder:text-gray-400
+                                            focus:border-[#FFA500]
+                                            focus:bg-white
+                                            focus:ring-2
+                                            focus:ring-orange-100
+                                        "
+                                    />
+
+
+                                    <div
+                                        className="
+                                            mt-1
+                                            text-right
+                                            text-xs
+                                            text-gray-400
+                                        "
+                                    >
+                                        {
+                                            reviewComment.length
+                                        } / 1000
+                                    </div>
+
+                                </div>
+
+
+                                {/* ERROR */}
+
+                                {reviewError && (
+
+                                    <div
+                                        className="
+                                            mt-4
+                                            rounded-xl
+                                            bg-red-50
+                                            px-4
+                                            py-3
+                                            text-sm
+                                            text-red-600
+                                        "
+                                    >
+                                        {
+                                            reviewError
+                                        }
+                                    </div>
+
+                                )}
+
+
+                                {/* SUCCESS */}
+
+                                {reviewSuccess && (
+
+                                    <div
+                                        className="
+                                            mt-4
+                                            rounded-xl
+                                            bg-green-50
+                                            px-4
+                                            py-3
+                                            text-sm
+                                            text-green-600
+                                        "
+                                    >
+                                        {
+                                            reviewSuccess
+                                        }
+                                    </div>
+
+                                )}
+
+
+                                {/* SUBMIT */}
+
+                                <button
+                                    type="submit"
+                                    disabled={
+                                        reviewSubmitting
+                                    }
+                                    className="
+                                        mt-5
+                                        flex
+                                        w-full
+                                        items-center
+                                        justify-center
+                                        gap-2
+                                        rounded-xl
+                                        bg-[#FFA500]
+                                        px-5
+                                        py-3
+                                        font-semibold
+                                        text-white
+                                        shadow-sm
+                                        transition
+                                        hover:bg-orange-600
+                                        active:scale-[0.98]
+                                        disabled:cursor-not-allowed
+                                        disabled:opacity-60
+                                    "
+                                >
+
+                                    <Star
+                                        size={18}
+                                    />
+
+                                    {reviewSubmitting
+                                        ? "Отправка..."
+                                        : "Оставить отзыв"
+                                    }
+
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </section>
+
+
+                    {/* ================================================== */}
+                    {/* REVIEWS                                            */}
+                    {/* ================================================== */}
+
+                    <section>
+
+                        <div
+                            className="
+                                rounded-2xl
+                                border
+                                border-gray-200
+                                bg-white
+                                p-6
+                                shadow-sm
+                            "
+                        >
+
+                            {/* HEADER */}
+
+                            <div
+                                className="
+                                    mb-6
+                                    flex
+                                    flex-wrap
+                                    items-end
+                                    justify-between
+                                    gap-4
+                                "
+                            >
+
+                                <div>
+
+                                    <h2
+                                        className="
+                                            text-2xl
+                                            font-bold
+                                            text-gray-900
+                                        "
+                                    >
+                                        Отзывы покупателей
+                                    </h2>
+
+
+                                    <p
+                                        className="
+                                            mt-1
+                                            text-sm
+                                            text-gray-500
+                                        "
+                                    >
+                                        {product.reviews_count}{" "}
+                                        {product.reviews_count === 1
+                                            ? "отзыв"
+                                            : product.reviews_count >= 2 &&
+                                              product.reviews_count <= 4
+                                                ? "отзыва"
+                                                : "отзывов"
+                                        }
+                                        {" "}о товаре
+                                    </p>
+
+                                </div>
+
+
+                                {/* AVERAGE RATING */}
+
+                                <div
+                                    className="
+                                        flex
+                                        items-center
+                                        gap-3
+                                        rounded-xl
+                                        bg-yellow-50
+                                        px-4
+                                        py-3
+                                    "
+                                >
+
+                                    <div
+                                        className="
+                                            flex
+                                            items-center
+                                            gap-1
+                                        "
+                                    >
+
+                                        <Star
+                                            size={22}
+                                            className="
+                                                fill-yellow-400
+                                                text-yellow-400
+                                            "
+                                        />
+
+                                        <span
+                                            className="
+                                                text-lg
+                                                font-bold
+                                                text-gray-900
+                                            "
+                                        >
+                                            {product.avg_rating.toFixed(
+                                                1
+                                            )}
+                                        </span>
+
+                                    </div>
+
+
+                                    <span
+                                        className="
+                                            text-sm
+                                            text-gray-500
+                                        "
+                                    >
+                                        из 5
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            {/* REVIEWS LIST */}
+
+                            {product.reviews &&
+                            product.reviews.length > 0 ? (
+
+                                <div
+                                    className="
+                                        space-y-4
+                                    "
+                                >
+
+                                    {product.reviews.map(
+                                        (
+                                            review
+                                        ) => (
+
+                                            <article
+                                                key={
+                                                    review.id
+                                                }
+                                                className="
+                                                    rounded-xl
+                                                    border
+                                                    border-gray-200
+                                                    bg-gray-50
+                                                    p-5
+                                                    transition
+                                                    hover:border-gray-300
+                                                    hover:bg-white
+                                                "
+                                            >
+
+                                                {/* USER + RATING */}
+
+                                                <div
+                                                    className="
+                                                        flex
+                                                        items-start
+                                                        justify-between
+                                                        gap-4
+                                                    "
+                                                >
+
+                                                    <div>
+
+                                                        <div
+                                                            className="
+                                                                font-semibold
+                                                                text-gray-900
+                                                            "
+                                                        >
+                                                            {
+                                                                review.user_username
+                                                            }
+                                                        </div>
+
+
+                                                        <div
+                                                            className="
+                                                                mt-2
+                                                                flex
+                                                                items-center
+                                                                gap-0.5
+                                                            "
+                                                        >
+
+                                                            {Array.from(
+                                                                {
+                                                                    length: 5,
+                                                                }
+                                                            ).map(
+                                                                (
+                                                                    _,
+                                                                    index
+                                                                ) => (
+
+                                                                    <Star
+                                                                        key={
+                                                                            index
+                                                                        }
+                                                                        size={16}
+                                                                        className={
+                                                                            index <
+                                                                            review.rating
+                                                                                ? "fill-yellow-400 text-yellow-400"
+                                                                                : "text-gray-300"
+                                                                        }
+                                                                    />
+
+                                                                )
+                                                            )}
+
+                                                        </div>
+
+                                                    </div>
+
+
+                                                    <span
+                                                        className="
+                                                            shrink-0
+                                                            rounded-lg
+                                                            bg-white
+                                                            px-2.5
+                                                            py-1
+                                                            text-xs
+                                                            font-medium
+                                                            text-gray-500
+                                                        "
+                                                    >
+                                                        {review.rating}/5
+                                                    </span>
+
+                                                </div>
+
+
+                                                {/* COMMENT */}
+
+                                                {review.comment ? (
+
+                                                    <p
+                                                        className="
+                                                            mt-4
+                                                            whitespace-pre-line
+                                                            leading-7
+                                                            text-gray-600
+                                                        "
+                                                    >
+                                                        {
+                                                            review.comment
+                                                        }
+                                                    </p>
+
+                                                ) : (
+
+                                                    <p
+                                                        className="
+                                                            mt-4
+                                                            text-sm
+                                                            italic
+                                                            text-gray-400
+                                                        "
+                                                    >
+                                                        Пользователь оставил только оценку.
+                                                    </p>
+
+                                                )}
+
+                                            </article>
+
+                                        )
+                                    )}
+
+                                </div>
+
+                            ) : (
+
+                                <div
+                                    className="
+                                        rounded-xl
+                                        border
+                                        border-dashed
+                                        border-gray-300
+                                        bg-gray-50
+                                        px-6
+                                        py-12
+                                        text-center
+                                    "
+                                >
+
+                                    <Star
+                                        size={36}
+                                        className="
+                                            mx-auto
+                                            text-gray-300
+                                        "
+                                    />
+
+
+                                    <p
+                                        className="
+                                            mt-3
+                                            font-medium
+                                            text-gray-700
+                                        "
+                                    >
+                                        Пока нет отзывов
+                                    </p>
+
+
+                                    <p
+                                        className="
+                                            mt-1
+                                            text-sm
+                                            text-gray-500
+                                        "
+                                    >
+                                        Будьте первым, кто оставит отзыв
+                                    </p>
+
+                                </div>
+
+                            )}
+
+                        </div>
+
+                    </section>
 
                 </div>
 
