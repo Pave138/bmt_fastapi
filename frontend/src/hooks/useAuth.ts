@@ -4,8 +4,7 @@ import {
 } from "@tanstack/react-query";
 
 import {
-    getCurrentUser,
-    logout,
+    getCurrentUser
 } from "../api/auth";
 
 const ACCESS_TOKEN_KEY = "access_token";
