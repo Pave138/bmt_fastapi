@@ -1,32 +1,8 @@
 import { api } from "./client";
 
-export interface CartProduct {
-    id: number;
-    name: string;
-    price: string;
-}
-
-export interface CartItem {
-    product_id: number;
-    quantity: number;
-    subtotal: string;
-    product: CartProduct;
-}
-
-export interface CartCoupon {
-    code: string;
-    discount_type: string;
-    value: string;
-    min_order_amount: string | null;
-}
-
-export interface CartResponse {
-    id: number;
-    total_items: number;
-    total_price: string;
-    coupon: CartCoupon | null;
-    items: CartItem[];
-}
+import type {
+    Cart,
+} from "../types/Cart";
 
 export interface AddToCartRequest {
     product_id: number;
@@ -40,8 +16,8 @@ export interface UpdateCartItemRequest {
 /**
  * Получить корзину текущего пользователя
  */
-export async function getCart(): Promise<CartResponse> {
-    const response = await api.get<CartResponse>("/cart");
+export async function getCart(): Promise<Cart> {
+    const response = await api.get<Cart>("/cart");
 
     return response.data;
 }

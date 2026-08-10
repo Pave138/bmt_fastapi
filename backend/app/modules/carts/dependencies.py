@@ -6,6 +6,7 @@ from app.db.session import SessionDep
 from app.modules.cart_items.dependencies import CartItemRepositoryDep
 from app.modules.coupons.dependencies import CouponRepositoryDep
 from app.modules.products.dependencies import ProductRepositoryDep
+from app.services.minio import MinioServiceDep
 
 from .repositories import CartRepository
 from .services import CartService
@@ -27,13 +28,15 @@ async def get_cart_service(
     repository: CartRepositoryDep,
     cart_item_repository: CartItemRepositoryDep,
     product_repository: ProductRepositoryDep,
-    coupon_repository: CouponRepositoryDep
+    coupon_repository: CouponRepositoryDep,
+    minio_service: MinioServiceDep
 ) -> CartService:
     return CartService(
         repository,
         cart_item_repository,
         product_repository,
-        coupon_repository
+        coupon_repository,
+        minio_service
     )
 
 

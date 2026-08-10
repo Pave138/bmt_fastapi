@@ -6,7 +6,6 @@ from redis.asyncio import Redis
 
 from app.api.v1.routers import main_router
 from app.core.config import settings
-from app.core.constants import APP_DESCRIPTION
 from app.core.logger import setup_logging
 from app.db import models  # noqa
 from app.middlewares.latency import LatencyMiddleware

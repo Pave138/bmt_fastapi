@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
+from app.modules.product_images.schemas import ProductImageResponse
 from app.modules.products.schemas import CartProduct
 
 
@@ -23,3 +24,4 @@ class CartItemResponse(BaseModel):
     quantity: int
     subtotal: Decimal
     product: CartProduct
+    main_image: ProductImageResponse | None = None

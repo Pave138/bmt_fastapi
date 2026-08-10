@@ -1,14 +1,20 @@
-import type { CartItem as CartItemType } from "../api/cart";
+import type {
+    CartItem as CartItemType,
+} from "../types/Cart";
+
 
 interface CartItemProps {
     item: CartItemType;
 
     onIncrease: () => void;
+
     onDecrease: () => void;
+
     onRemove: () => void;
 
     disabled?: boolean;
 }
+
 
 export default function CartItem({
     item,
@@ -17,6 +23,7 @@ export default function CartItem({
     onRemove,
     disabled = false,
 }: CartItemProps) {
+
     return (
         <div
             className="
@@ -26,29 +33,47 @@ export default function CartItem({
                 p-5
             "
         >
-            <div className="flex gap-5">
-                <div className="min-w-0 flex-1">
-                    <h2
+            <div
+                className="
+                    flex
+                    items-start
+                    justify-between
+                    gap-4
+                "
+            >
+                <div>
+                    <h3
                         className="
-                            truncate
-                            text-lg
-                            font-semibold
+                            font-medium
+                            text-gray-900
                         "
                     >
                         {item.product.name}
-                    </h2>
+                    </h3>
 
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p
+                        className="
+                            mt-1
+                            text-sm
+                            text-gray-500
+                        "
+                    >
                         {item.product.price} ₽ / шт.
                     </p>
                 </div>
 
                 <div className="text-right">
-                    <div className="text-lg font-semibold">
+                    <div
+                        className="
+                            text-lg
+                            font-semibold
+                        "
+                    >
                         {item.subtotal} ₽
                     </div>
                 </div>
             </div>
+
 
             <div
                 className="
@@ -60,7 +85,13 @@ export default function CartItem({
                     pt-4
                 "
             >
-                <div className="flex items-center gap-3">
+                <div
+                    className="
+                        flex
+                        items-center
+                        gap-3
+                    "
+                >
                     <button
                         type="button"
                         onClick={onDecrease}
@@ -86,6 +117,7 @@ export default function CartItem({
                         −
                     </button>
 
+
                     <span
                         className="
                             w-8
@@ -95,6 +127,7 @@ export default function CartItem({
                     >
                         {item.quantity}
                     </span>
+
 
                     <button
                         type="button"
@@ -118,6 +151,7 @@ export default function CartItem({
                         +
                     </button>
                 </div>
+
 
                 <button
                     type="button"

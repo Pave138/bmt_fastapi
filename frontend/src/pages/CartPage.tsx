@@ -6,11 +6,17 @@ import {
     Tag,
     CheckCircle,
     AlertCircle,
+    Banknote,
+    CreditCard,
 } from "lucide-react";
 
 import {
     useState,
 } from "react";
+
+import {
+    useNavigate,
+} from "react-router-dom";
 
 import {
     useCart,
@@ -20,8 +26,22 @@ import {
     formatPrice,
 } from "../utils/formatPrice";
 
+import {
+    createOrder,
+    type PaymentMethod,
+} from "../api/orders";
+
 
 function CartPage() {
+
+    const navigate = useNavigate();
+
+
+    /*
+     * =========================
+     * CART
+     * =========================
+     */
 
     const {
         cart,
@@ -36,6 +56,12 @@ function CartPage() {
     } = useCart();
 
 
+    /*
+     * =========================
+     * COUPON
+     * =========================
+     */
+
     const [
         couponCode,
         setCouponCode,
@@ -48,18 +74,51 @@ function CartPage() {
     ] = useState(false);
 
 
+    /*
+     * =========================
+     * PAYMENT
+     * =========================
+     */
+
+    const [
+        paymentMethod,
+        setPaymentMethod,
+    ] = useState<PaymentMethod>("cash");
+
+
+    /*
+     * =========================
+     * ORDER
+     * =========================
+     */
+
+    const [
+        orderLoading,
+        setOrderLoading,
+    ] = useState(false);
+
+
+    const [
+        orderError,
+        setOrderError,
+    ] = useState<string | null>(null);
+
+
+    /*
+     * =========================
+     * COUPON ACTIONS
+     * =========================
+     */
+
     const handleApplyCoupon = async () => {
 
         const code = couponCode.trim();
-
 
         if (!code) {
             return;
         }
 
-
         setCouponSuccess(false);
-
 
         try {
 
@@ -87,7 +146,89 @@ function CartPage() {
     };
 
 
-    if (loading && !cart) {
+    /*
+     * =========================
+     * CREATE ORDER
+     * =========================
+     */
+
+    const handleCreateOrder = async () => {
+
+        if (
+            !cart ||
+            cart.items.length === 0
+        ) {
+            return;
+        }
+
+        setOrderError(null);
+        setOrderLoading(true);
+
+        try {
+
+            const order = await createOrder({
+                payment_method: paymentMethod,
+            });
+
+
+            /*
+             * =========================
+             * YOOKASSA
+             * =========================
+             */
+
+            if (
+                paymentMethod === "yookassa" &&
+                order.confirmation_url
+            ) {
+
+                window.location.href =
+                    order.confirmation_url;
+
+                return;
+            }
+
+
+            /*
+             * =========================
+             * CASH
+             * =========================
+             */
+
+            navigate(
+                `/orders/${order.id}`
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Не удалось оформить заказ:",
+                error
+            );
+
+            setOrderError(
+                "Не удалось оформить заказ. Попробуйте ещё раз."
+            );
+
+        } finally {
+
+            setOrderLoading(false);
+
+        }
+
+    };
+
+
+    /*
+     * =========================
+     * LOADING
+     * =========================
+     */
+
+    if (
+        loading &&
+        !cart
+    ) {
 
         return (
             <div
@@ -106,7 +247,16 @@ function CartPage() {
     }
 
 
-    if (!cart || cart.items.length === 0) {
+    /*
+     * =========================
+     * EMPTY CART
+     * =========================
+     */
+
+    if (
+        !cart ||
+        cart.items.length === 0
+    ) {
 
         return (
             <div
@@ -122,7 +272,9 @@ function CartPage() {
 
                 <ShoppingCart
                     size={64}
-                    className="text-gray-300"
+                    className="
+                        text-gray-300
+                    "
                 />
 
                 <h1
@@ -148,6 +300,12 @@ function CartPage() {
     }
 
 
+    /*
+     * =========================
+     * PAGE
+     * =========================
+     */
+
     return (
 
         <div
@@ -155,17 +313,26 @@ function CartPage() {
                 mx-auto
                 w-full
                 max-w-[1800px]
-                px-8
+                px-4
                 py-8
+                sm:px-6
+                lg:px-8
             "
         >
+
+            {/* ========================= */}
+            {/* HEADER */}
+            {/* ========================= */}
 
             <div
                 className="
                     mb-8
                     flex
-                    items-center
-                    justify-between
+                    flex-col
+                    gap-4
+                    sm:flex-row
+                    sm:items-center
+                    sm:justify-between
                 "
             >
 
@@ -197,6 +364,7 @@ function CartPage() {
                     onClick={clearCart}
                     className="
                         flex
+                        w-fit
                         items-center
                         gap-2
                         text-sm
@@ -215,6 +383,10 @@ function CartPage() {
             </div>
 
 
+            {/* ========================= */}
+            {/* CONTENT */}
+            {/* ========================= */}
+
             <div
                 className="
                     grid
@@ -224,7 +396,9 @@ function CartPage() {
                 "
             >
 
-                {/* ТОВАРЫ */}
+                {/* ================================================== */}
+                {/* PRODUCTS */}
+                {/* ================================================== */}
 
                 <div
                     className="
@@ -239,37 +413,120 @@ function CartPage() {
                                 key={item.product_id}
                                 className="
                                     flex
-                                    gap-5
+                                    gap-4
                                     rounded-2xl
                                     border
                                     border-gray-200
                                     bg-white
-                                    p-5
+                                    p-4
+                                    sm:gap-5
+                                    sm:p-5
                                 "
                             >
 
+                                {/* ========================= */}
+                                {/* IMAGE */}
+                                {/* ========================= */}
+
                                 <div
                                     className="
-                                        flex
-                                        h-28
-                                        w-28
+                                        h-24
+                                        w-24
                                         shrink-0
-                                        items-center
-                                        justify-center
+                                        overflow-hidden
                                         rounded-xl
                                         bg-gray-100
+                                        sm:h-28
+                                        sm:w-28
                                     "
                                 >
 
-                                    <ShoppingCart
-                                        size={32}
-                                        className="
-                                            text-gray-300
-                                        "
-                                    />
+                                    {item.main_image?.image_url ? (
+
+                                        <img
+                                            src={
+                                                item.main_image
+                                                    .image_url
+                                            }
+                                            alt={
+                                                item.product.name
+                                            }
+                                            className="
+                                                h-full
+                                                w-full
+                                                object-contain
+                                            "
+                                            loading="lazy"
+                                            onError={(
+                                                event
+                                            ) => {
+
+                                                event.currentTarget.style.display =
+                                                    "none";
+
+                                                const parent =
+                                                    event.currentTarget
+                                                        .parentElement;
+
+                                                if (
+                                                    parent
+                                                ) {
+
+                                                    parent.classList.add(
+                                                        "flex",
+                                                        "items-center",
+                                                        "justify-center"
+                                                    );
+
+                                                    const icon =
+                                                        document.createElement(
+                                                            "div"
+                                                        );
+
+                                                    icon.innerHTML =
+                                                        "🛒";
+
+                                                    icon.className =
+                                                        "text-2xl";
+
+                                                    parent.appendChild(
+                                                        icon
+                                                    );
+
+                                                }
+
+                                            }}
+                                        />
+
+                                    ) : (
+
+                                        <div
+                                            className="
+                                                flex
+                                                h-full
+                                                w-full
+                                                items-center
+                                                justify-center
+                                            "
+                                        >
+
+                                            <ShoppingCart
+                                                size={32}
+                                                className="
+                                                    text-gray-300
+                                                "
+                                            />
+
+                                        </div>
+
+                                    )}
 
                                 </div>
 
+
+                                {/* ========================= */}
+                                {/* INFO */}
+                                {/* ========================= */}
 
                                 <div
                                     className="
@@ -287,10 +544,14 @@ function CartPage() {
                                             className="
                                                 line-clamp-2
                                                 font-semibold
+                                                text-gray-900
                                             "
                                         >
-                                            {item.product.name}
+                                            {
+                                                item.product.name
+                                            }
                                         </h2>
+
 
                                         <p
                                             className="
@@ -301,20 +562,30 @@ function CartPage() {
                                         >
                                             {formatPrice(
                                                 item.product.price
-                                            )} ₽ / шт.
+                                            )}{" "}
+                                            ₽ / шт.
                                         </p>
 
                                     </div>
 
 
+                                    {/* ========================= */}
+                                    {/* QUANTITY + SUBTOTAL */}
+                                    {/* ========================= */}
+
                                     <div
                                         className="
                                             mt-4
                                             flex
-                                            items-center
-                                            justify-between
+                                            flex-col
+                                            gap-4
+                                            sm:flex-row
+                                            sm:items-center
+                                            sm:justify-between
                                         "
                                     >
+
+                                        {/* QUANTITY */}
 
                                         <div
                                             className="
@@ -327,12 +598,14 @@ function CartPage() {
                                             <button
                                                 type="button"
                                                 disabled={
-                                                    item.quantity <= 1
+                                                    item.quantity <=
+                                                    1
                                                 }
                                                 onClick={() =>
                                                     updateQuantity(
                                                         item.product_id,
-                                                        item.quantity - 1
+                                                        item.quantity -
+                                                            1
                                                     )
                                                 }
                                                 className="
@@ -350,7 +623,9 @@ function CartPage() {
                                                 "
                                             >
 
-                                                <Minus size={16} />
+                                                <Minus
+                                                    size={16}
+                                                />
 
                                             </button>
 
@@ -362,7 +637,9 @@ function CartPage() {
                                                     font-semibold
                                                 "
                                             >
-                                                {item.quantity}
+                                                {
+                                                    item.quantity
+                                                }
                                             </span>
 
 
@@ -371,7 +648,8 @@ function CartPage() {
                                                 onClick={() =>
                                                     updateQuantity(
                                                         item.product_id,
-                                                        item.quantity + 1
+                                                        item.quantity +
+                                                            1
                                                     )
                                                 }
                                                 className="
@@ -387,18 +665,24 @@ function CartPage() {
                                                 "
                                             >
 
-                                                <Plus size={16} />
+                                                <Plus
+                                                    size={16}
+                                                />
 
                                             </button>
 
                                         </div>
 
 
+                                        {/* SUBTOTAL */}
+
                                         <div
                                             className="
                                                 flex
                                                 items-center
+                                                justify-between
                                                 gap-5
+                                                sm:justify-end
                                             "
                                         >
 
@@ -410,7 +694,8 @@ function CartPage() {
                                             >
                                                 {formatPrice(
                                                     item.subtotal
-                                                )} ₽
+                                                )}{" "}
+                                                ₽
                                             </span>
 
 
@@ -428,7 +713,9 @@ function CartPage() {
                                                 "
                                             >
 
-                                                <Trash2 size={18} />
+                                                <Trash2
+                                                    size={18}
+                                                />
 
                                             </button>
 
@@ -446,7 +733,9 @@ function CartPage() {
                 </div>
 
 
-                {/* ИТОГО */}
+                {/* ================================================== */}
+                {/* SUMMARY */}
+                {/* ================================================== */}
 
                 <div
                     className="
@@ -472,7 +761,9 @@ function CartPage() {
                     </h2>
 
 
-                    {/* ПРОМОКОД */}
+                    {/* ================================================== */}
+                    {/* COUPON */}
+                    {/* ================================================== */}
 
                     <div
                         className="
@@ -522,22 +813,34 @@ function CartPage() {
                                             "
                                         />
 
+
                                         <input
                                             type="text"
-                                            value={couponCode}
-                                            onChange={(event) => {
+                                            value={
+                                                couponCode
+                                            }
+                                            onChange={(
+                                                event
+                                            ) => {
 
                                                 setCouponCode(
-                                                    event.target.value
+                                                    event
+                                                        .target
+                                                        .value
                                                 );
 
-                                                setCouponSuccess(false);
+                                                setCouponSuccess(
+                                                    false
+                                                );
 
                                             }}
-                                            onKeyDown={(event) => {
+                                            onKeyDown={(
+                                                event
+                                            ) => {
 
                                                 if (
-                                                    event.key === "Enter"
+                                                    event.key ===
+                                                    "Enter"
                                                 ) {
 
                                                     handleApplyCoupon();
@@ -546,7 +849,9 @@ function CartPage() {
 
                                             }}
                                             placeholder="Введите промокод"
-                                            disabled={couponLoading}
+                                            disabled={
+                                                couponLoading
+                                            }
                                             className="
                                                 h-11
                                                 w-full
@@ -571,7 +876,9 @@ function CartPage() {
 
                                     <button
                                         type="button"
-                                        onClick={handleApplyCoupon}
+                                        onClick={
+                                            handleApplyCoupon
+                                        }
                                         disabled={
                                             couponLoading ||
                                             !couponCode.trim()
@@ -601,7 +908,7 @@ function CartPage() {
                                 </div>
 
 
-                                {/* СТАТУС КУПОНА */}
+                                {/* SUCCESS */}
 
                                 {couponSuccess && (
 
@@ -639,6 +946,8 @@ function CartPage() {
                                 )}
 
 
+                                {/* ERROR */}
+
                                 {couponError && (
 
                                     <div
@@ -667,7 +976,9 @@ function CartPage() {
                                         />
 
                                         <span>
-                                            {couponError}
+                                            {
+                                                couponError
+                                            }
                                         </span>
 
                                     </div>
@@ -677,6 +988,8 @@ function CartPage() {
                             </>
 
                         ) : (
+
+                            /* APPLIED COUPON */
 
                             <div
                                 className="
@@ -707,6 +1020,7 @@ function CartPage() {
                                         "
                                     />
 
+
                                     <div>
 
                                         <p
@@ -716,8 +1030,13 @@ function CartPage() {
                                                 text-green-700
                                             "
                                         >
-                                            {cart.coupon.code}
+                                            {
+                                                cart
+                                                    .coupon
+                                                    .code
+                                            }
                                         </p>
+
 
                                         <p
                                             className="
@@ -735,8 +1054,12 @@ function CartPage() {
 
                                 <button
                                     type="button"
-                                    onClick={handleRemoveCoupon}
-                                    disabled={couponLoading}
+                                    onClick={
+                                        handleRemoveCoupon
+                                    }
+                                    disabled={
+                                        couponLoading
+                                    }
                                     className="
                                         text-sm
                                         font-medium
@@ -746,10 +1069,12 @@ function CartPage() {
                                         disabled:opacity-50
                                     "
                                 >
+
                                     {couponLoading
                                         ? "..."
                                         : "Удалить"
                                     }
+
                                 </button>
 
                             </div>
@@ -759,7 +1084,333 @@ function CartPage() {
                     </div>
 
 
-                    {/* СУММА */}
+                    {/* ================================================== */}
+                    {/* PAYMENT METHOD */}
+                    {/* ================================================== */}
+
+                    <div
+                        className="
+                            mb-6
+                        "
+                    >
+
+                        <h3
+                            className="
+                                mb-3
+                                text-sm
+                                font-semibold
+                                text-gray-900
+                            "
+                        >
+                            Способ оплаты
+                        </h3>
+
+
+                        <div
+                            className="
+                                space-y-3
+                            "
+                        >
+
+                            {/* CASH */}
+
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setPaymentMethod(
+                                        "cash"
+                                    )
+                                }
+                                className={`
+                                    w-full
+                                    rounded-xl
+                                    border
+                                    p-4
+                                    text-left
+                                    transition
+
+                                    ${
+                                        paymentMethod ===
+                                        "cash"
+                                            ? `
+                                                border-[#FFA500]
+                                                bg-orange-50
+                                                ring-2
+                                                ring-orange-100
+                                            `
+                                            : `
+                                                border-gray-200
+                                                bg-white
+                                                hover:border-gray-300
+                                            `
+                                    }
+                                `}
+                            >
+
+                                <div
+                                    className="
+                                        flex
+                                        items-center
+                                        gap-3
+                                    "
+                                >
+
+                                    <div
+                                        className={`
+                                            flex
+                                            h-10
+                                            w-10
+                                            shrink-0
+                                            items-center
+                                            justify-center
+                                            rounded-lg
+
+                                            ${
+                                                paymentMethod ===
+                                                "cash"
+                                                    ? "bg-orange-100"
+                                                    : "bg-gray-100"
+                                            }
+                                        `}
+                                    >
+
+                                        <Banknote
+                                            size={21}
+                                            className={
+                                                paymentMethod ===
+                                                "cash"
+                                                    ? "text-orange-600"
+                                                    : "text-gray-500"
+                                            }
+                                        />
+
+                                    </div>
+
+
+                                    <div
+                                        className="
+                                            min-w-0
+                                            flex-1
+                                        "
+                                    >
+
+                                        <p
+                                            className="
+                                                font-semibold
+                                                text-gray-900
+                                            "
+                                        >
+                                            Наличными
+                                        </p>
+
+
+                                        <p
+                                            className="
+                                                mt-0.5
+                                                text-xs
+                                                text-gray-500
+                                            "
+                                        >
+                                            Оплата при получении
+                                        </p>
+
+                                    </div>
+
+
+                                    <div
+                                        className={`
+                                            flex
+                                            h-5
+                                            w-5
+                                            shrink-0
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            border-2
+
+                                            ${
+                                                paymentMethod ===
+                                                "cash"
+                                                    ? "border-[#FFA500]"
+                                                    : "border-gray-300"
+                                            }
+                                        `}
+                                    >
+
+                                        {paymentMethod ===
+                                            "cash" && (
+
+                                            <div
+                                                className="
+                                                    h-2.5
+                                                    w-2.5
+                                                    rounded-full
+                                                    bg-[#FFA500]
+                                                "
+                                            />
+
+                                        )}
+
+                                    </div>
+
+                                </div>
+
+                            </button>
+
+
+                            {/* YOOKASSA */}
+
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setPaymentMethod(
+                                        "yookassa"
+                                    )
+                                }
+                                className={`
+                                    w-full
+                                    rounded-xl
+                                    border
+                                    p-4
+                                    text-left
+                                    transition
+
+                                    ${
+                                        paymentMethod ===
+                                        "yookassa"
+                                            ? `
+                                                border-[#FFA500]
+                                                bg-orange-50
+                                                ring-2
+                                                ring-orange-100
+                                            `
+                                            : `
+                                                border-gray-200
+                                                bg-white
+                                                hover:border-gray-300
+                                            `
+                                    }
+                                `}
+                            >
+
+                                <div
+                                    className="
+                                        flex
+                                        items-center
+                                        gap-3
+                                    "
+                                >
+
+                                    <div
+                                        className={`
+                                            flex
+                                            h-10
+                                            w-10
+                                            shrink-0
+                                            items-center
+                                            justify-center
+                                            rounded-lg
+
+                                            ${
+                                                paymentMethod ===
+                                                "yookassa"
+                                                    ? "bg-orange-100"
+                                                    : "bg-gray-100"
+                                            }
+                                        `}
+                                    >
+
+                                        <CreditCard
+                                            size={21}
+                                            className={
+                                                paymentMethod ===
+                                                "yookassa"
+                                                    ? "text-orange-600"
+                                                    : "text-gray-500"
+                                            }
+                                        />
+
+                                    </div>
+
+
+                                    <div
+                                        className="
+                                            min-w-0
+                                            flex-1
+                                        "
+                                    >
+
+                                        <p
+                                            className="
+                                                font-semibold
+                                                text-gray-900
+                                            "
+                                        >
+                                            ЮKassa
+                                        </p>
+
+
+                                        <p
+                                            className="
+                                                mt-0.5
+                                                text-xs
+                                                text-gray-500
+                                            "
+                                        >
+                                            Банковская карта или другой способ оплаты
+                                        </p>
+
+                                    </div>
+
+
+                                    <div
+                                        className={`
+                                            flex
+                                            h-5
+                                            w-5
+                                            shrink-0
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            border-2
+
+                                            ${
+                                                paymentMethod ===
+                                                "yookassa"
+                                                    ? "border-[#FFA500]"
+                                                    : "border-gray-300"
+                                            }
+                                        `}
+                                    >
+
+                                        {paymentMethod ===
+                                            "yookassa" && (
+
+                                            <div
+                                                className="
+                                                    h-2.5
+                                                    w-2.5
+                                                    rounded-full
+                                                    bg-[#FFA500]
+                                                "
+                                            />
+
+                                        )}
+
+                                    </div>
+
+                                </div>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    {/* ================================================== */}
+                    {/* TOTALS */}
+                    {/* ================================================== */}
 
                     <div
                         className="
@@ -779,10 +1430,12 @@ function CartPage() {
                                 Товары
                             </span>
 
+
                             <span>
                                 {formatPrice(
                                     cart.total_price
-                                )} ₽
+                                )}{" "}
+                                ₽
                             </span>
 
                         </div>
@@ -802,12 +1455,23 @@ function CartPage() {
                                     Скидка
                                 </span>
 
+
                                 <span>
-                                    -{cart.coupon.value}
-                                    {cart.coupon.discount_type === "percent"
-                                        ? "%"
-                                        : " ₽"
+
+                                    -
+                                    {
+                                        cart.coupon
+                                            .value
                                     }
+
+                                    {
+                                        cart.coupon
+                                            .discount_type ===
+                                        "percent"
+                                            ? "%"
+                                            : " ₽"
+                                    }
+
                                 </span>
 
                             </div>
@@ -841,6 +1505,7 @@ function CartPage() {
                                 К оплате
                             </span>
 
+
                             <span
                                 className="
                                     text-2xl
@@ -850,7 +1515,8 @@ function CartPage() {
                             >
                                 {formatPrice(
                                     cart.total_price
-                                )} ₽
+                                )}{" "}
+                                ₽
                             </span>
 
                         </div>
@@ -858,8 +1524,43 @@ function CartPage() {
                     </div>
 
 
+                    {/* ================================================== */}
+                    {/* ORDER ERROR */}
+                    {/* ================================================== */}
+
+                    {orderError && (
+
+                        <div
+                            className="
+                                mt-4
+                                rounded-xl
+                                border
+                                border-red-200
+                                bg-red-50
+                                px-4
+                                py-3
+                                text-sm
+                                text-red-600
+                            "
+                        >
+                            {orderError}
+                        </div>
+
+                    )}
+
+
+                    {/* ================================================== */}
+                    {/* CREATE ORDER */}
+                    {/* ================================================== */}
+
                     <button
                         type="button"
+                        onClick={
+                            handleCreateOrder
+                        }
+                        disabled={
+                            orderLoading
+                        }
                         className="
                             mt-6
                             w-full
@@ -870,9 +1571,19 @@ function CartPage() {
                             text-white
                             transition
                             hover:bg-orange-600
+                            disabled:cursor-not-allowed
+                            disabled:opacity-60
                         "
                     >
-                        Оформить заказ
+
+                        {orderLoading
+                            ? "Оформление..."
+                            : paymentMethod ===
+                              "yookassa"
+                                ? "Перейти к оплате"
+                                : "Оформить заказ"
+                        }
+
                     </button>
 
                 </div>

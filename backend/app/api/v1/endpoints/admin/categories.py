@@ -5,7 +5,6 @@ from app.modules.categories.dependencies import CategoryServiceDep
 from app.modules.categories.schemas import (
     CategoryCreate,
     CategoryDB,
-    CategoryResponse,
     CategoryUpdate,
 )
 

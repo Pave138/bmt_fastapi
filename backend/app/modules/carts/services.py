@@ -12,8 +12,10 @@ from app.modules.carts.repositories import CartRepository
 from app.modules.coupons.models import DiscountType
 from app.modules.coupons.repositories import CouponRepository
 from app.modules.coupons.schemas import CouponCartResponse
+from app.modules.product_images.schemas import ProductImageResponse
 from app.modules.products.repositories import ProductRepository
 from app.modules.products.schemas import CartProduct
+from app.services.minio import MinioService
 
 from .models import Cart
 from .schemas import ApplyCoupon, CartItemResponse, CartResponse
@@ -26,12 +28,14 @@ class CartService:
         repository: CartRepository,
         cart_item_repository: CartItemRepository,
         product_repository: ProductRepository,
-        coupon_repository: CouponRepository
+        coupon_repository: CouponRepository,
+        minio_service: MinioService
     ):
         self.repository = repository
         self.cart_item_repository = cart_item_repository
         self.product_repository = product_repository
         self.coupon_repository = coupon_repository
+        self.minio_service = minio_service
 
     async def get_cart(self, user_id: UUID) -> Cart:
         return await self.repository.get_or_create(user_id)
@@ -184,12 +188,35 @@ class CartService:
             total_price += subtotal
             total_items += item.quantity
 
+            main_image = next(
+                (
+                    image
+                    for image in item.product.images
+                    if image.is_main
+                ),
+                None
+            )
+            main_image_response = None
+
+            if main_image:
+                main_image_response = ProductImageResponse(
+                    id=main_image.id,
+                    product_id=main_image.product_id,
+                    original_filename=main_image.original_filename,
+                    content_type=main_image.content_type,
+                    file_size=main_image.file_size,
+                    width=main_image.width,
+                    height=main_image.height,
+                    is_main=main_image.is_main,
+                    image_url=self.minio_service.get_url(main_image.file_key),
+                )
             items.append(
                 CartItemResponse(
                     product_id=item.product.id,
                     quantity=item.quantity,
                     subtotal=subtotal,
                     product=CartProduct.model_validate(item.product),
+                    main_image=main_image_response
                 )
             )
 

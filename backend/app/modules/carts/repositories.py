@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.modules.cart_items.models import CartItem
 from app.modules.coupons.models import Coupon
+from app.modules.products.models import Product
 
 from .models import Cart
 
@@ -21,7 +22,9 @@ class CartRepository:
             .where(Cart.user_id == user_id)
             .options(
                 selectinload(Cart.items)
-                .selectinload(CartItem.product),
+                .selectinload(CartItem.product)
+                .selectinload(Product.images),
+
                 selectinload(Cart.coupon)
             )
         )

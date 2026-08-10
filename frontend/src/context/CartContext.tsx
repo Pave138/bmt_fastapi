@@ -26,7 +26,6 @@ import {
 
 
 interface CartContextValue {
-
     cart: Cart | null;
 
     loading: boolean;
@@ -39,22 +38,22 @@ interface CartContextValue {
 
     addToCart: (
         productId: number,
-        quantity?: number
+        quantity?: number,
     ) => Promise<void>;
 
     updateQuantity: (
         productId: number,
-        quantity: number
+        quantity: number,
     ) => Promise<void>;
 
     removeItem: (
-        productId: number
+        productId: number,
     ) => Promise<void>;
 
     clearCart: () => Promise<void>;
 
     applyCoupon: (
-        code: string
+        code: string,
     ) => Promise<void>;
 
     removeCoupon: () => Promise<void>;
@@ -67,9 +66,7 @@ const CartContext = createContext<
 
 
 interface CartProviderProps {
-
     children: ReactNode;
-
 }
 
 
@@ -122,7 +119,7 @@ export function CartProvider({
             }
 
         },
-        []
+        [],
     );
 
 
@@ -132,7 +129,7 @@ export function CartProvider({
     const addToCart = useCallback(
         async (
             productId: number,
-            quantity = 1
+            quantity = 1,
         ) => {
 
             if (quantity < 1) {
@@ -147,31 +144,30 @@ export function CartProvider({
             await loadCart();
 
         },
-        [loadCart]
+        [loadCart],
     );
 
 
     /*
      * Изменить количество товара
      *
-     * quantity === 0
+     * quantity <= 0
      * → товар удаляется из корзины
      */
     const updateQuantity = useCallback(
         async (
             productId: number,
-            quantity: number
+            quantity: number,
         ) => {
 
             /*
-             * Если уменьшаем количество
-             * товара с 1 до 0 —
-             * удаляем его из корзины.
+             * Если количество стало 0
+             * или меньше — удаляем товар.
              */
             if (quantity <= 0) {
 
                 await removeCartItemApi(
-                    productId
+                    productId,
                 );
 
                 await loadCart();
@@ -182,20 +178,19 @@ export function CartProvider({
 
 
             /*
-             * Обычное изменение количества
+             * Обычное изменение количества.
              */
             await updateCartItemApi(
                 productId,
                 {
                     quantity,
-                }
+                },
             );
-
 
             await loadCart();
 
         },
-        [loadCart]
+        [loadCart],
     );
 
 
@@ -204,17 +199,17 @@ export function CartProvider({
      */
     const removeItem = useCallback(
         async (
-            productId: number
+            productId: number,
         ) => {
 
             await removeCartItemApi(
-                productId
+                productId,
             );
 
             await loadCart();
 
         },
-        [loadCart]
+        [loadCart],
     );
 
 
@@ -229,7 +224,7 @@ export function CartProvider({
             await loadCart();
 
         },
-        [loadCart]
+        [loadCart],
     );
 
 
@@ -238,7 +233,7 @@ export function CartProvider({
      */
     const applyCoupon = useCallback(
         async (
-            code: string
+            code: string,
         ) => {
 
             const normalizedCode = code
@@ -249,7 +244,7 @@ export function CartProvider({
             if (!normalizedCode) {
 
                 setCouponError(
-                    "Введите код купона"
+                    "Введите код купона",
                 );
 
                 return;
@@ -265,13 +260,13 @@ export function CartProvider({
 
 
                 await applyCouponApi(
-                    normalizedCode
+                    normalizedCode,
                 );
 
 
                 /*
                  * После применения купона
-                 * получаем пересчитанную корзину
+                 * получаем пересчитанную корзину.
                  */
                 await loadCart();
 
@@ -285,7 +280,7 @@ export function CartProvider({
                 setCouponError(
                     typeof message === "string"
                         ? message
-                        : "Не удалось применить купон"
+                        : "Не удалось применить купон",
                 );
 
 
@@ -298,7 +293,7 @@ export function CartProvider({
             }
 
         },
-        [loadCart]
+        [loadCart],
     );
 
 
@@ -320,7 +315,7 @@ export function CartProvider({
 
                 /*
                  * После удаления купона
-                 * получаем пересчитанную корзину
+                 * получаем пересчитанную корзину.
                  */
                 await loadCart();
 
@@ -334,7 +329,7 @@ export function CartProvider({
                 setCouponError(
                     typeof message === "string"
                         ? message
-                        : "Не удалось удалить купон"
+                        : "Не удалось удалить купон",
                 );
 
 
@@ -347,7 +342,7 @@ export function CartProvider({
             }
 
         },
-        [loadCart]
+        [loadCart],
     );
 
 
@@ -362,7 +357,6 @@ export function CartProvider({
 
 
     return (
-
         <CartContext.Provider
             value={{
                 cart,
@@ -388,32 +382,27 @@ export function CartProvider({
                 removeCoupon,
             }}
         >
-
             {children}
-
         </CartContext.Provider>
-
     );
-
 }
 
 
 export function useCart() {
 
     const context = useContext(
-        CartContext
+        CartContext,
     );
 
 
     if (!context) {
 
         throw new Error(
-            "useCart must be used inside CartProvider"
+            "useCart must be used inside CartProvider",
         );
 
     }
 
 
     return context;
-
 }

@@ -24,6 +24,7 @@ from app.services.cache.keys import (
     get_category_products_key,
 )
 from app.services.minio import MinioService
+from app.services.slugify import generate_slug
 
 from .models import Category
 from .schemas import (
@@ -33,7 +34,6 @@ from .schemas import (
     CategoryUpdate,
     categories_list_adapter,
 )
-from ...services.slugify import generate_slug
 
 logger = structlog.get_logger()
 
