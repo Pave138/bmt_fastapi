@@ -86,6 +86,18 @@ class ProductRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_by_slug(
+        self,
+        product_slug: str
+    ) -> Product | None:
+        result = await self.session.execute(
+            select(Product)
+            .where(
+                Product.slug == product_slug
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def get_by_id_with_all(
         self,
         product_id: int

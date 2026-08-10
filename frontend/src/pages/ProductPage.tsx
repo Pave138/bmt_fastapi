@@ -383,7 +383,7 @@ function ProductPage() {
 
                 return {
                     text:
-                        `Средне: ${stock} шт.`,
+                        `Достаточно: ${stock} шт.`,
 
                     className:
                         "text-yellow-600",

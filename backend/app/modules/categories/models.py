@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.constants import CATEGORY_NAME_MAX_LENGTH
+from app.core.constants import CATEGORY_NAME_MAX_LENGTH, SLUG_FIELD_MAX_LENGTH
 from app.db.base import Base
 from app.db.mixins import CommonMixin
 
@@ -20,6 +20,12 @@ class Category(CommonMixin, Base):
         nullable=False,
         index=True,
         unique=True
+    )
+    slug: Mapped[str] = mapped_column(
+        String(SLUG_FIELD_MAX_LENGTH),
+        nullable=True,
+        unique=True,
+        index=True
     )
     parent_id: Mapped[int | None] = mapped_column(
         Integer,

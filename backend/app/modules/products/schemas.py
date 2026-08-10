@@ -81,10 +81,12 @@ class ProductUpdate(BaseModel):
         ge=PRODUCT_STOCK_GE
     )
     is_active: bool | None = None
+    slug: str | None = None
 
 
 class ProductDB(ProductFields):
     id: int
+    slug: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

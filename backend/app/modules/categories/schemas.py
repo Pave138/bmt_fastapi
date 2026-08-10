@@ -45,6 +45,7 @@ class CategoryUpdate(BaseModel):
 class CategoryDB(CategoryFields):
     id: int
     name: str
+    slug: str | None = None
     parent_id: int | None = None
     products: List[ProductResponse]
 
@@ -53,6 +54,7 @@ class CategoryDB(CategoryFields):
 
 class CategoryResponse(CategoryFields):
     id: int
+    slug: str | None = None
     children: List['CategoryResponse'] = Field(
         default_factory=list
     )

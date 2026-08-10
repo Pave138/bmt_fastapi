@@ -32,6 +32,7 @@ from app.services.cache.keys import (
 )
 from app.services.cache.service import CacheService
 from app.services.minio import MinioService
+from app.services.slugify import generate_slug
 
 from .repositories import ProductRepository
 from .schemas import (
@@ -76,6 +77,18 @@ class ProductService(BaseService):
                 image.file_key
             )
         )
+
+    async def _generate_unique_slug(self, name: str) -> str:
+        base_slug = generate_slug(name)
+
+        slug = base_slug
+        counter = 2
+
+        while await self.repository.get_by_slug(slug):
+            slug = f'{base_slug}-{counter}'
+            counter += 1
+
+        return slug
 
     async def get_all(
         self,
@@ -166,10 +179,13 @@ class ProductService(BaseService):
                 CATEGORY_NOT_FOUND_MSG
             )
 
+        create_data = data.model_dump()
+        create_data['slug'] = await self._generate_unique_slug(
+            create_data['name']
+        )
+
         try:
-            product = await self.repository.create({
-                **data.model_dump()
-            })
+            product = await self.repository.create(create_data)
             await self.repository.session.commit()
 
             await self.cache_service.invalidate_product_cache()

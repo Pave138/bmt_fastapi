@@ -11,6 +11,8 @@ APP_DESCRIPTION = (
 
 API_V1_PREFIX = '/api/v1'
 
+SLUG_FIELD_MAX_LENGTH = 255
+
 
 # ===== Auth =====
 

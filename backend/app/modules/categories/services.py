@@ -33,6 +33,7 @@ from .schemas import (
     CategoryUpdate,
     categories_list_adapter,
 )
+from ...services.slugify import generate_slug
 
 logger = structlog.get_logger()
 
@@ -58,7 +59,10 @@ class CategoryService(BaseService):
                     f'Подкатегория {data.parent_id} не найдена'
                 )
         try:
-            category = await self.repository.create(data.model_dump())
+            category = await self.repository.create({
+                **data.model_dump(),
+                'slug': generate_slug(data.name)
+            })
             await self.repository.session.commit()
             await self.repository.session.refresh(category)
             logger.debug(
@@ -94,6 +98,7 @@ class CategoryService(BaseService):
             category.id: CategoryResponse(
                 id=category.id,
                 name=category.name,
+                slug=category.slug,
                 parent_id=category.parent_id,
                 children=[],
             )
@@ -146,12 +151,16 @@ class CategoryService(BaseService):
         self,
         category_id: int,
         data: CategoryUpdate
-    ) -> CategoryResponse:
+    ) -> None:
 
         category = await self.get_by_id(category_id)
         update_data = data.model_dump(exclude_unset=True)
+
         if 'parent_id' in update_data:
             await self.get_by_id(update_data['parent_id'])
+
+        if 'name' in update_data:
+            update_data['slug'] = generate_slug(update_data['name'])
 
         await self.redis.incr(CATEGORIES_CACHE_VERSION_KEY)
 
@@ -160,7 +169,7 @@ class CategoryService(BaseService):
             category_id=category_id
         )
 
-        return await self.update_model(
+        await self.update_model(
             category,
             update_data,
             self.repository.session

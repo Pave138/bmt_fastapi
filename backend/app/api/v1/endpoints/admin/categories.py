@@ -27,7 +27,7 @@ async def create_category(
 
 @router.patch(
     '/{category_id}',
-    response_model=CategoryResponse,
+    status_code=status.HTTP_204_NO_CONTENT,
     summary='Изменить категорию по ID',
     dependencies=[Depends(current_superuser)]
 )
@@ -35,8 +35,8 @@ async def update_category(
     category_id: int,
     data: CategoryUpdate,
     service: CategoryServiceDep
-) -> CategoryResponse:
-    return await service.update(category_id, data)
+) -> None:
+    await service.update(category_id, data)
 
 
 @router.delete(

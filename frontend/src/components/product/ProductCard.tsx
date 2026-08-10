@@ -124,7 +124,7 @@ function ProductCard({
         }
 
 
-        if (stock <= 10) {
+        if (stock <= 20) {
 
             return {
                 text: `Достаточно: ${stock} шт.`,

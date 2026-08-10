@@ -22,6 +22,7 @@ from app.core.constants import (
     MONEY_PRECISION,
     MONEY_SCALE,
     PRODUCT_NAME_MAX_LENGTH,
+    SLUG_FIELD_MAX_LENGTH,
 )
 from app.db.base import Base
 from app.db.mixins import CommonMixin, TimestampMixin
@@ -39,6 +40,12 @@ class Product(CommonMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(
         String(length=PRODUCT_NAME_MAX_LENGTH),
         nullable=False,
+        index=True
+    )
+    slug: Mapped[str] = mapped_column(
+        String(SLUG_FIELD_MAX_LENGTH),
+        nullable=True,
+        unique=True,
         index=True
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
