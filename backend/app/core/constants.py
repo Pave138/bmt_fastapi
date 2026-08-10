@@ -95,7 +95,7 @@ REVIEW_NOT_FOUND_MSG = 'Отзыв не найден.'
 REVIEW_RATING_GE = 1
 REVIEW_RATING_LE = 5
 
-REVIEW_COMMENT_MAX_LENGTH = 512
+REVIEW_COMMENT_MAX_LENGTH = 1000
 REVIEW_EXAMPLE_COMMENT = (
     'Все хорошо, приехал, купил, работает!'
 )
