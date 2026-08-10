@@ -142,7 +142,7 @@ function ProductCard({
 
                 return {
                     text:
-                        `Средне: ${stock} шт.`,
+                        `Достаточно: ${stock} шт.`,
 
                     className:
                         "text-yellow-600",
