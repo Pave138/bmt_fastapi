@@ -45,7 +45,7 @@ class CategoryUpdate(BaseModel):
 class CategoryDB(CategoryFields):
     id: int
     name: str
-    slug: str | None = None
+    slug: str
     parent_id: int | None = None
     products: List[ProductResponse]
 

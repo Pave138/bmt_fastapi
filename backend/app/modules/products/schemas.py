@@ -86,7 +86,7 @@ class ProductUpdate(BaseModel):
 
 class ProductDB(ProductFields):
     id: int
-    slug: str | None = None
+    slug: str
 
     model_config = ConfigDict(from_attributes=True)
 

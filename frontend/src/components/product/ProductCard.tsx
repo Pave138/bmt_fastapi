@@ -11,6 +11,10 @@ import {
 } from "react-router-dom";
 
 import {
+    useMemo,
+} from "react";
+
+import {
     formatPrice,
 } from "../../utils/formatPrice";
 
@@ -22,13 +26,21 @@ import {
     useCart,
 } from "../../context/CartContext";
 
+
 interface Props {
     product: Product;
 }
 
+
 function ProductCard({
     product,
 }: Props) {
+
+    /*
+     * =========================
+     * CART
+     * =========================
+     */
 
     const {
         cart,
@@ -38,17 +50,25 @@ function ProductCard({
 
 
     /*
-     * Товар в корзине
+     * =========================
+     * CART ITEM
+     * =========================
      */
-    const cartItem = cart?.items.find(
-        (item) =>
-            item.product_id === product.id
-    );
+
+    const cartItem =
+        cart?.items.find(
+            (item) =>
+                item.product_id ===
+                product.id
+        );
 
 
     /*
-     * Количество товара в корзине
+     * =========================
+     * QUANTITY
+     * =========================
      */
+
     const quantity =
         cartItem?.quantity ?? 0;
 
@@ -58,31 +78,104 @@ function ProductCard({
 
 
     /*
-     * Остаток товара
+     * =========================
+     * STOCK
+     * =========================
      */
+
     const stock =
-        Number(product.stock ?? 0);
+        Number(
+            product.stock ?? 0
+        );
 
 
-    /*
-     * Проверка наличия
-     */
     const isOutOfStock =
         stock <= 0;
 
 
-    /*
-     * Можно ли увеличить количество
-     */
     const canIncrease =
         quantity < stock;
 
 
     /*
-     * Скидка
+     * =========================
+     * STOCK STATUS
+     * =========================
      */
+
+    const stockStatus =
+        useMemo(() => {
+
+            if (stock <= 0) {
+
+                return {
+                    text:
+                        "Нет в наличии",
+
+                    className:
+                        "text-red-500",
+
+                    dotClass:
+                        "bg-red-500",
+                };
+
+            }
+
+
+            if (stock <= 5) {
+
+                return {
+                    text:
+                        `Мало: ${stock} шт.`,
+
+                    className:
+                        "text-red-500",
+
+                    dotClass:
+                        "bg-red-500",
+                };
+
+            }
+
+
+            if (stock <= 20) {
+
+                return {
+                    text:
+                        `Средне: ${stock} шт.`,
+
+                    className:
+                        "text-yellow-600",
+
+                    dotClass:
+                        "bg-yellow-500",
+                };
+
+            }
+
+
+            return {
+                text:
+                    `Много: ${stock} шт.`,
+
+                className:
+                    "text-green-600",
+
+                dotClass:
+                    "bg-green-500",
+            };
+
+        }, [stock]);
+
+
+    /*
+     * =========================
+     * DISCOUNT
+     * =========================
+     */
+
     const hasDiscount =
-        product.old_price &&
+        product.old_price !== null &&
         Number(product.old_price) >
             Number(product.price);
 
@@ -93,117 +186,78 @@ function ProductCard({
                   (
                       1 -
                       Number(product.price) /
-                          Number(product.old_price)
+                          Number(
+                              product.old_price
+                          )
                   ) * 100
               )
             : null;
 
 
     /*
-     * Статус остатка
+     * =========================
+     * ADD TO CART
+     * =========================
      */
-    const getStockStatus = () => {
 
-        if (stock <= 0) {
+    const handleAddToCart =
+        async () => {
 
-            return {
-                text: "Нет в наличии",
-                className: "text-red-500",
-            };
-
-        }
+            if (isOutOfStock) {
+                return;
+            }
 
 
-        if (stock <= 5) {
+            await addToCart(
+                product.id,
+                1
+            );
 
-            return {
-                text: `Мало: ${stock} шт.`,
-                className: "text-red-500",
-            };
-
-        }
-
-
-        if (stock <= 20) {
-
-            return {
-                text: `Достаточно: ${stock} шт.`,
-                className: "text-yellow-600",
-            };
-
-        }
-
-
-        return {
-            text: `Много: ${stock} шт.`,
-            className: "text-green-600",
         };
 
-    };
+
+    /*
+     * =========================
+     * INCREASE
+     * =========================
+     */
+
+    const handleIncrease =
+        async () => {
+
+            if (!canIncrease) {
+                return;
+            }
 
 
-    const stockStatus =
-        getStockStatus();
+            await updateQuantity(
+                product.id,
+                quantity + 1
+            );
+
+        };
 
 
     /*
-     * Добавить в корзину
+     * =========================
+     * DECREASE
+     * =========================
      */
-    const handleAddToCart = async () => {
 
-        if (isOutOfStock) {
-            return;
-        }
+    const handleDecrease =
+        async () => {
 
-
-        await addToCart(
-            product.id,
-            1
-        );
-
-    };
+            if (quantity <= 0) {
+                return;
+            }
 
 
-    /*
-     * Увеличить количество
-     */
-    const handleIncrease = async () => {
+            await updateQuantity(
+                product.id,
+                quantity - 1
+            );
 
-        if (!canIncrease) {
-            return;
-        }
-
-
-        await updateQuantity(
-            product.id,
-            quantity + 1
-        );
-
-    };
-
-
-    /*
-     * Уменьшить количество
-     *
-     * Если quantity === 1,
-     * передаём 0.
-     *
-     * CartContext должен удалить
-     * товар из корзины.
-     */
-    const handleDecrease = async () => {
-
-        if (quantity <= 0) {
-            return;
-        }
-
-
-        await updateQuantity(
-            product.id,
-            quantity - 1
-        );
-
-    };
+        };
 
 
     return (
@@ -218,11 +272,9 @@ function ProductCard({
                 border
                 border-gray-200
                 bg-white
-
                 transition-all
                 duration-300
                 ease-out
-
                 hover:border-orange-200
                 hover:shadow-[0_16px_40px_rgba(255,165,0,0.12)]
             "
@@ -248,16 +300,13 @@ function ProductCard({
                             left-3
                             top-3
                             z-20
-
                             rounded-lg
                             bg-red-500
                             px-2
                             py-1
-
                             text-xs
                             font-semibold
                             text-white
-
                             shadow-sm
                         "
                     >
@@ -276,20 +325,17 @@ function ProductCard({
                         right-3
                         top-3
                         z-20
-
                         rounded-full
                         bg-white
                         p-2
-
                         shadow-sm
-
                         transition-all
                         duration-200
-
                         hover:scale-110
                         hover:bg-red-50
                         hover:text-red-500
                     "
+                    aria-label="Добавить в избранное"
                 >
 
                     <Heart
@@ -323,9 +369,7 @@ function ProductCard({
 
                             <img
                                 src={
-                                    product
-                                        .main_image
-                                        .image_url
+                                    product.main_image.image_url
                                 }
                                 alt={
                                     product.name
@@ -334,10 +378,8 @@ function ProductCard({
                                     h-full
                                     w-full
                                     object-cover
-
                                     transition-opacity
                                     duration-200
-
                                     group-hover:opacity-90
                                 "
                             />
@@ -350,7 +392,6 @@ function ProductCard({
                                     h-full
                                     items-center
                                     justify-center
-
                                     text-gray-400
                                 "
                             >
@@ -384,7 +425,6 @@ function ProductCard({
                         flex
                         items-center
                         gap-1
-
                         text-sm
                         text-gray-500
                     "
@@ -417,14 +457,11 @@ function ProductCard({
                         block
                         line-clamp-2
                         min-h-[56px]
-
                         text-base
                         font-semibold
                         text-gray-900
-
                         transition-colors
                         duration-200
-
                         hover:text-[#FFA500]
                     "
                 >
@@ -434,15 +471,34 @@ function ProductCard({
 
                 {/* STOCK */}
 
-                <p
-                    className={`
-                        text-sm
-                        font-medium
-                        ${stockStatus.className}
-                    `}
+                <div
+                    className="
+                        flex
+                        items-center
+                        gap-2
+                    "
                 >
-                    ✓ {stockStatus.text}
-                </p>
+
+                    <span
+                        className={`
+                            h-2.5
+                            w-2.5
+                            rounded-full
+                            ${stockStatus.dotClass}
+                        `}
+                    />
+
+                    <span
+                        className={`
+                            text-sm
+                            font-medium
+                            ${stockStatus.className}
+                        `}
+                    >
+                        {stockStatus.text}
+                    </span>
+
+                </div>
 
 
                 {/* PRICE */}
@@ -507,24 +563,17 @@ function ProductCard({
                             items-center
                             justify-center
                             gap-2
-
                             rounded-xl
-
                             bg-[#FFA500]
                             py-3
-
                             font-semibold
                             text-white
-
                             shadow-sm
-
                             transition-all
                             duration-200
-
                             hover:bg-orange-600
                             hover:shadow-md
                             active:scale-[0.98]
-
                             disabled:cursor-not-allowed
                             disabled:bg-gray-300
                             disabled:shadow-none
@@ -570,20 +619,15 @@ function ProductCard({
                                 shrink-0
                                 items-center
                                 justify-center
-
                                 rounded-xl
-
                                 border
                                 border-gray-300
                                 bg-white
-
                                 transition-all
                                 duration-200
-
                                 hover:border-gray-400
                                 hover:bg-gray-100
                                 active:scale-95
-
                                 disabled:cursor-not-allowed
                                 disabled:opacity-50
                             "
@@ -606,19 +650,13 @@ function ProductCard({
                                 items-center
                                 justify-center
                                 gap-2
-
                                 rounded-xl
-
                                 bg-green-600
-
                                 font-semibold
                                 text-white
-
                                 shadow-sm
-
                                 transition-colors
                                 duration-200
-
                                 group-hover:bg-green-700
                             "
                         >
@@ -651,20 +689,15 @@ function ProductCard({
                                 shrink-0
                                 items-center
                                 justify-center
-
                                 rounded-xl
-
                                 border
                                 border-gray-300
                                 bg-white
-
                                 transition-all
                                 duration-200
-
                                 hover:border-gray-400
                                 hover:bg-gray-100
                                 active:scale-95
-
                                 disabled:cursor-not-allowed
                                 disabled:opacity-40
                             "
@@ -687,5 +720,6 @@ function ProductCard({
     );
 
 }
+
 
 export default ProductCard;
