@@ -1,23 +1,35 @@
-import { useSearchParams } from "react-router-dom";
+import {
+    useSearchParams,
+} from "react-router-dom";
 
-import CategoryTree from "../components/catalog/CategoryTree";
 import ProductGrid from "../components/catalog/ProductGrid";
 import CatalogToolbar from "../components/catalog/CatalogToolbar";
 
-import { useCategories } from "../hooks/useCategories";
-import { useProducts } from "../hooks/useProducts";
+import {
+    useProducts,
+} from "../hooks/useProducts";
+
 
 function CatalogPage() {
-    const { categories } = useCategories();
 
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [
+        searchParams,
+    ] = useSearchParams();
 
-    const categoryParam = searchParams.get("category");
-    const search = searchParams.get("search") ?? undefined;
 
-    const selectedCategory = categoryParam
-        ? Number(categoryParam)
-        : null;
+    const categoryParam =
+        searchParams.get("category");
+
+    const search =
+        searchParams.get("search")
+        ?? undefined;
+
+
+    const selectedCategory =
+        categoryParam
+            ? Number(categoryParam)
+            : null;
+
 
     const {
         data: products = [],
@@ -29,99 +41,107 @@ function CatalogPage() {
         search,
     );
 
-    function handleCategorySelect(
-        categoryId: number | null,
-    ) {
-        const params = new URLSearchParams(searchParams);
-
-        if (categoryId === null) {
-            params.delete("category");
-        } else {
-            params.set(
-                "category",
-                String(categoryId),
-            );
-        }
-
-        setSearchParams(params);
-    }
 
     if (isError) {
+
         console.error(error);
 
+
         return (
-            <div className="flex h-64 items-center justify-center">
-                <p className="text-red-500">
+            <div
+                className="
+                    flex
+                    h-64
+                    items-center
+                    justify-center
+                "
+            >
+                <p
+                    className="
+                        text-red-500
+                    "
+                >
                     Не удалось загрузить товары
                 </p>
             </div>
         );
     }
 
+
     return (
-        <div
+        <main
             className="
                 w-full
-                px-8
-                py-8
+                px-6
+                py-6
+                lg:px-8
             "
         >
+
             <div
                 className="
                     mx-auto
-                    grid
                     w-full
                     max-w-[1800px]
-                    grid-cols-1
-                    gap-8
-                    lg:grid-cols-[300px_1fr]
                 "
             >
-                {/* Категории */}
+
+                {/* ==========================================
+                    HEADER
+                    ========================================== */}
 
                 <div
                     className="
-                        sticky
-                        top-6
-                        h-fit
+                        mb-6
                     "
                 >
-                    <CategoryTree
-                        categories={categories}
-                        selectedCategory={selectedCategory}
-                        onSelect={handleCategorySelect}
-                    />
+
                 </div>
 
-                {/* Товары */}
 
-                <main className="min-w-0">
-                    <CatalogToolbar
-                        total={products.length}
-                    />
+                {/* ==========================================
+                    PRODUCTS
+                    ========================================== */}
 
-                    {loadingProducts ? (
-                        <div
+                <CatalogToolbar
+                    total={
+                        products.length
+                    }
+                />
+
+
+                {loadingProducts ? (
+
+                    <div
+                        className="
+                            flex
+                            h-64
+                            items-center
+                            justify-center
+                        "
+                    >
+                        <p
                             className="
-                                flex
-                                h-64
-                                items-center
-                                justify-center
+                                text-gray-500
                             "
                         >
-                            <p className="text-gray-500">
-                                Загрузка товаров...
-                            </p>
-                        </div>
-                    ) : (
-                        <ProductGrid
-                            products={products}
-                        />
-                    )}
-                </main>
+                            Загрузка товаров...
+                        </p>
+                    </div>
+
+                ) : (
+
+                    <ProductGrid
+                        products={products}
+                    />
+
+                )}
+
             </div>
-        </div>
+
+        </main>
     );
 }
+
 
 export default CatalogPage;

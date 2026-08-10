@@ -196,18 +196,18 @@ function CartPage() {
              */
 
             navigate(
-                `/orders/${order.id}`
+                `/orders/${order.id}`,
             );
 
         } catch (error) {
 
             console.error(
                 "Не удалось оформить заказ:",
-                error
+                error,
             );
 
             setOrderError(
-                "Не удалось оформить заказ. Попробуйте ещё раз."
+                "Не удалось оформить заказ. Попробуйте ещё раз.",
             );
 
         } finally {
@@ -298,6 +298,18 @@ function CartPage() {
         );
 
     }
+
+
+    /*
+     * =========================
+     * COUPON DISCOUNT
+     * =========================
+     */
+
+    const discountPercent =
+        cart.coupon?.discount_type === "percent"
+            ? Number(cart.coupon.value)
+            : 0;
 
 
     /*
@@ -407,317 +419,479 @@ function CartPage() {
                 >
 
                     {cart.items.map(
-                        (item) => (
+                        (item) => {
 
-                            <div
-                                key={item.product_id}
-                                className="
-                                    flex
-                                    gap-4
-                                    rounded-2xl
-                                    border
-                                    border-gray-200
-                                    bg-white
-                                    p-4
-                                    sm:gap-5
-                                    sm:p-5
-                                "
-                            >
+                            /*
+                             * Цена товара за единицу
+                             */
 
-                                {/* ========================= */}
-                                {/* IMAGE */}
-                                {/* ========================= */}
-
-                                <div
-                                    className="
-                                        h-24
-                                        w-24
-                                        shrink-0
-                                        overflow-hidden
-                                        rounded-xl
-                                        bg-gray-100
-                                        sm:h-28
-                                        sm:w-28
-                                    "
-                                >
-
-                                    {item.main_image?.image_url ? (
-
-                                        <img
-                                            src={
-                                                item.main_image
-                                                    .image_url
-                                            }
-                                            alt={
-                                                item.product.name
-                                            }
-                                            className="
-                                                h-full
-                                                w-full
-                                                object-contain
-                                            "
-                                            loading="lazy"
-                                            onError={(
-                                                event
-                                            ) => {
-
-                                                event.currentTarget.style.display =
-                                                    "none";
-
-                                                const parent =
-                                                    event.currentTarget
-                                                        .parentElement;
-
-                                                if (
-                                                    parent
-                                                ) {
-
-                                                    parent.classList.add(
-                                                        "flex",
-                                                        "items-center",
-                                                        "justify-center"
-                                                    );
-
-                                                    const icon =
-                                                        document.createElement(
-                                                            "div"
-                                                        );
-
-                                                    icon.innerHTML =
-                                                        "🛒";
-
-                                                    icon.className =
-                                                        "text-2xl";
-
-                                                    parent.appendChild(
-                                                        icon
-                                                    );
-
-                                                }
-
-                                            }}
-                                        />
-
-                                    ) : (
-
-                                        <div
-                                            className="
-                                                flex
-                                                h-full
-                                                w-full
-                                                items-center
-                                                justify-center
-                                            "
-                                        >
-
-                                            <ShoppingCart
-                                                size={32}
-                                                className="
-                                                    text-gray-300
-                                                "
-                                            />
-
-                                        </div>
-
-                                    )}
-
-                                </div>
+                            const productPrice =
+                                Number(
+                                    item.product.price,
+                                );
 
 
-                                {/* ========================= */}
-                                {/* INFO */}
-                                {/* ========================= */}
+                            /*
+                             * Старая сумма позиции
+                             */
+
+                            const originalSubtotal =
+                                productPrice *
+                                item.quantity;
+
+
+                            /*
+                             * Текущая сумма позиции
+                             *
+                             * Backend уже возвращает
+                             * item.subtotal с учётом
+                             * купона.
+                             */
+
+                            const currentSubtotal =
+                                Number(
+                                    item.subtotal,
+                                );
+
+
+                            /*
+                             * Есть ли скидка
+                             */
+
+                            const hasDiscount =
+                                discountPercent > 0 &&
+                                currentSubtotal <
+                                    originalSubtotal;
+
+
+                            /*
+                             * Цена одной единицы
+                             * со скидкой
+                             */
+
+                            const discountedUnitPrice =
+                                hasDiscount
+                                    ? currentSubtotal /
+                                      item.quantity
+                                    : productPrice;
+
+
+                            return (
 
                                 <div
+                                    key={
+                                        item.product_id
+                                    }
                                     className="
                                         flex
-                                        min-w-0
-                                        flex-1
-                                        flex-col
-                                        justify-between
+                                        gap-4
+                                        rounded-2xl
+                                        border
+                                        border-gray-200
+                                        bg-white
+                                        p-4
+                                        sm:gap-5
+                                        sm:p-5
                                     "
                                 >
 
-                                    <div>
-
-                                        <h2
-                                            className="
-                                                line-clamp-2
-                                                font-semibold
-                                                text-gray-900
-                                            "
-                                        >
-                                            {
-                                                item.product.name
-                                            }
-                                        </h2>
-
-
-                                        <p
-                                            className="
-                                                mt-1
-                                                text-sm
-                                                text-gray-500
-                                            "
-                                        >
-                                            {formatPrice(
-                                                item.product.price
-                                            )}{" "}
-                                            ₽ / шт.
-                                        </p>
-
-                                    </div>
-
-
                                     {/* ========================= */}
-                                    {/* QUANTITY + SUBTOTAL */}
+                                    {/* IMAGE */}
                                     {/* ========================= */}
 
                                     <div
                                         className="
-                                            mt-4
-                                            flex
-                                            flex-col
-                                            gap-4
-                                            sm:flex-row
-                                            sm:items-center
-                                            sm:justify-between
+                                            h-24
+                                            w-24
+                                            shrink-0
+                                            overflow-hidden
+                                            rounded-xl
+                                            bg-gray-100
+                                            sm:h-28
+                                            sm:w-28
                                         "
                                     >
 
-                                        {/* QUANTITY */}
+                                        {item.main_image?.image_url ? (
 
-                                        <div
-                                            className="
-                                                flex
-                                                items-center
-                                                gap-3
-                                            "
-                                        >
-
-                                            <button
-                                                type="button"
-                                                disabled={
-                                                    item.quantity <=
-                                                    1
+                                            <img
+                                                src={
+                                                    item.main_image
+                                                        .image_url
                                                 }
-                                                onClick={() =>
-                                                    updateQuantity(
-                                                        item.product_id,
-                                                        item.quantity -
-                                                            1
-                                                    )
+                                                alt={
+                                                    item.product.name
                                                 }
                                                 className="
+                                                    h-full
+                                                    w-full
+                                                    object-contain
+                                                "
+                                                loading="lazy"
+                                                onError={(
+                                                    event,
+                                                ) => {
+
+                                                    event.currentTarget.style.display =
+                                                        "none";
+
+                                                    const parent =
+                                                        event
+                                                            .currentTarget
+                                                            .parentElement;
+
+                                                    if (
+                                                        parent
+                                                    ) {
+
+                                                        parent.classList.add(
+                                                            "flex",
+                                                            "items-center",
+                                                            "justify-center",
+                                                        );
+
+                                                        const icon =
+                                                            document.createElement(
+                                                                "div",
+                                                            );
+
+                                                        icon.innerHTML =
+                                                            "🛒";
+
+                                                        icon.className =
+                                                            "text-2xl";
+
+                                                        parent.appendChild(
+                                                            icon,
+                                                        );
+
+                                                    }
+
+                                                }}
+                                            />
+
+                                        ) : (
+
+                                            <div
+                                                className="
                                                     flex
-                                                    h-9
-                                                    w-9
+                                                    h-full
+                                                    w-full
                                                     items-center
                                                     justify-center
-                                                    rounded-lg
-                                                    border
-                                                    transition
-                                                    hover:bg-gray-100
-                                                    disabled:cursor-not-allowed
-                                                    disabled:opacity-40
                                                 "
                                             >
 
-                                                <Minus
-                                                    size={16}
+                                                <ShoppingCart
+                                                    size={32}
+                                                    className="
+                                                        text-gray-300
+                                                    "
                                                 />
 
-                                            </button>
+                                            </div>
+
+                                        )}
+
+                                    </div>
 
 
-                                            <span
+                                    {/* ========================= */}
+                                    {/* INFO */}
+                                    {/* ========================= */}
+
+                                    <div
+                                        className="
+                                            flex
+                                            min-w-0
+                                            flex-1
+                                            flex-col
+                                            justify-between
+                                        "
+                                    >
+
+                                        <div>
+
+                                            <h2
                                                 className="
-                                                    min-w-[24px]
-                                                    text-center
+                                                    line-clamp-2
                                                     font-semibold
+                                                    text-gray-900
                                                 "
                                             >
                                                 {
-                                                    item.quantity
+                                                    item.product.name
                                                 }
-                                            </span>
+                                            </h2>
 
 
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    updateQuantity(
-                                                        item.product_id,
-                                                        item.quantity +
-                                                            1
-                                                    )
-                                                }
+                                            {/* ========================= */}
+                                            {/* PRICE PER UNIT */}
+                                            {/* ========================= */}
+
+                                            <div
                                                 className="
+                                                    mt-1
                                                     flex
-                                                    h-9
-                                                    w-9
+                                                    flex-wrap
                                                     items-center
-                                                    justify-center
-                                                    rounded-lg
-                                                    border
-                                                    transition
-                                                    hover:bg-gray-100
+                                                    gap-2
                                                 "
                                             >
 
-                                                <Plus
-                                                    size={16}
-                                                />
+                                                {hasDiscount ? (
 
-                                            </button>
+                                                    <>
+
+                                                        <span
+                                                            className="
+                                                                text-sm
+                                                                text-gray-400
+                                                                line-through
+                                                            "
+                                                        >
+                                                            {formatPrice(
+                                                                productPrice,
+                                                            )}{" "}
+                                                            ₽
+                                                        </span>
+
+
+                                                        <span
+                                                            className="
+                                                                text-sm
+                                                                font-semibold
+                                                                text-green-600
+                                                            "
+                                                        >
+                                                            {formatPrice(
+                                                                discountedUnitPrice,
+                                                            )}{" "}
+                                                            ₽ / шт.
+                                                        </span>
+
+
+                                                        <span
+                                                            className="
+                                                                rounded-md
+                                                                bg-green-100
+                                                                px-1.5
+                                                                py-0.5
+                                                                text-xs
+                                                                font-semibold
+                                                                text-green-700
+                                                            "
+                                                        >
+                                                            -{discountPercent}%
+                                                        </span>
+
+                                                    </>
+
+                                                ) : (
+
+                                                    <span
+                                                        className="
+                                                            text-sm
+                                                            text-gray-500
+                                                        "
+                                                    >
+                                                        {formatPrice(
+                                                            productPrice,
+                                                        )}{" "}
+                                                        ₽ / шт.
+                                                    </span>
+
+                                                )}
+
+                                            </div>
 
                                         </div>
 
 
-                                        {/* SUBTOTAL */}
+                                        {/* ========================= */}
+                                        {/* QUANTITY + SUBTOTAL */}
+                                        {/* ========================= */}
 
                                         <div
                                             className="
+                                                mt-4
                                                 flex
-                                                items-center
-                                                justify-between
-                                                gap-5
-                                                sm:justify-end
+                                                flex-col
+                                                gap-4
+                                                sm:flex-row
+                                                sm:items-center
+                                                sm:justify-between
                                             "
                                         >
 
-                                            <span
-                                                className="
-                                                    text-lg
-                                                    font-bold
-                                                "
-                                            >
-                                                {formatPrice(
-                                                    item.subtotal
-                                                )}{" "}
-                                                ₽
-                                            </span>
+                                            {/* QUANTITY */}
 
-
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    removeItem(
-                                                        item.product_id
-                                                    )
-                                                }
+                                            <div
                                                 className="
-                                                    text-gray-400
-                                                    transition
-                                                    hover:text-red-500
+                                                    flex
+                                                    items-center
+                                                    gap-3
                                                 "
                                             >
 
-                                                <Trash2
-                                                    size={18}
-                                                />
+                                                <button
+                                                    type="button"
+                                                    disabled={
+                                                        item.quantity <=
+                                                        1
+                                                    }
+                                                    onClick={() =>
+                                                        updateQuantity(
+                                                            item.product_id,
+                                                            item.quantity -
+                                                                1,
+                                                        )
+                                                    }
+                                                    className="
+                                                        flex
+                                                        h-9
+                                                        w-9
+                                                        items-center
+                                                        justify-center
+                                                        rounded-lg
+                                                        border
+                                                        transition
+                                                        hover:bg-gray-100
+                                                        disabled:cursor-not-allowed
+                                                        disabled:opacity-40
+                                                    "
+                                                >
 
-                                            </button>
+                                                    <Minus
+                                                        size={16}
+                                                    />
+
+                                                </button>
+
+
+                                                <span
+                                                    className="
+                                                        min-w-[24px]
+                                                        text-center
+                                                        font-semibold
+                                                    "
+                                                >
+                                                    {
+                                                        item.quantity
+                                                    }
+                                                </span>
+
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        updateQuantity(
+                                                            item.product_id,
+                                                            item.quantity +
+                                                                1,
+                                                        )
+                                                    }
+                                                    className="
+                                                        flex
+                                                        h-9
+                                                        w-9
+                                                        items-center
+                                                        justify-center
+                                                        rounded-lg
+                                                        border
+                                                        transition
+                                                        hover:bg-gray-100
+                                                    "
+                                                >
+
+                                                    <Plus
+                                                        size={16}
+                                                    />
+
+                                                </button>
+
+                                            </div>
+
+
+                                            {/* SUBTOTAL */}
+
+                                            <div
+                                                className="
+                                                    flex
+                                                    items-center
+                                                    justify-between
+                                                    gap-5
+                                                    sm:justify-end
+                                                "
+                                            >
+
+                                                <div
+                                                    className="
+                                                        flex
+                                                        flex-col
+                                                        items-end
+                                                    "
+                                                >
+
+                                                    {hasDiscount && (
+
+                                                        <span
+                                                            className="
+                                                                text-sm
+                                                                text-gray-400
+                                                                line-through
+                                                            "
+                                                        >
+                                                            {formatPrice(
+                                                                originalSubtotal,
+                                                            )}{" "}
+                                                            ₽
+                                                        </span>
+
+                                                    )}
+
+
+                                                    <span
+                                                        className={`
+                                                            text-lg
+                                                            font-bold
+                                                            ${
+                                                                hasDiscount
+                                                                    ? "text-green-600"
+                                                                    : "text-gray-900"
+                                                            }
+                                                        `}
+                                                    >
+                                                        {formatPrice(
+                                                            currentSubtotal,
+                                                        )}{" "}
+                                                        ₽
+                                                    </span>
+
+                                                </div>
+
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        removeItem(
+                                                            item.product_id,
+                                                        )
+                                                    }
+                                                    className="
+                                                        text-gray-400
+                                                        transition
+                                                        hover:text-red-500
+                                                    "
+                                                >
+
+                                                    <Trash2
+                                                        size={18}
+                                                    />
+
+                                                </button>
+
+                                            </div>
 
                                         </div>
 
@@ -725,9 +899,9 @@ function CartPage() {
 
                                 </div>
 
-                            </div>
+                            );
 
-                        )
+                        },
                     )}
 
                 </div>
@@ -820,22 +994,22 @@ function CartPage() {
                                                 couponCode
                                             }
                                             onChange={(
-                                                event
+                                                event,
                                             ) => {
 
                                                 setCouponCode(
                                                     event
                                                         .target
-                                                        .value
+                                                        .value,
                                                 );
 
                                                 setCouponSuccess(
-                                                    false
+                                                    false,
                                                 );
 
                                             }}
                                             onKeyDown={(
-                                                event
+                                                event,
                                             ) => {
 
                                                 if (
@@ -1118,7 +1292,7 @@ function CartPage() {
                                 type="button"
                                 onClick={() =>
                                     setPaymentMethod(
-                                        "cash"
+                                        "cash",
                                     )
                                 }
                                 className={`
@@ -1264,7 +1438,7 @@ function CartPage() {
                                 type="button"
                                 onClick={() =>
                                     setPaymentMethod(
-                                        "yookassa"
+                                        "yookassa",
                                     )
                                 }
                                 className={`
@@ -1433,7 +1607,7 @@ function CartPage() {
 
                             <span>
                                 {formatPrice(
-                                    cart.total_price
+                                    cart.total_price,
                                 )}{" "}
                                 ₽
                             </span>
@@ -1458,18 +1632,12 @@ function CartPage() {
 
                                 <span>
 
-                                    -
-                                    {
-                                        cart.coupon
-                                            .value
-                                    }
-
-                                    {
-                                        cart.coupon
-                                            .discount_type ===
-                                        "percent"
-                                            ? "%"
-                                            : " ₽"
+                                    {cart.coupon.discount_type ===
+                                    "percent"
+                                        ? `-${cart.coupon.value}%`
+                                        : `-${formatPrice(
+                                              cart.coupon.value,
+                                          )} ₽`
                                     }
 
                                 </span>
@@ -1514,7 +1682,7 @@ function CartPage() {
                                 "
                             >
                                 {formatPrice(
-                                    cart.total_price
+                                    cart.total_price,
                                 )}{" "}
                                 ₽
                             </span>
@@ -1591,9 +1759,7 @@ function CartPage() {
             </div>
 
         </div>
-
     );
-
 }
 
 

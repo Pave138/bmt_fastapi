@@ -24,6 +24,10 @@ import {
     updateCartItem as updateCartItemApi,
 } from "../api/cart";
 
+import {
+    useAuth,
+} from "../hooks/useAuth";
+
 
 interface CartContextValue {
     cart: Cart | null;
@@ -74,6 +78,22 @@ export function CartProvider({
     children,
 }: CartProviderProps) {
 
+    /*
+     * =========================
+     * AUTH
+     * =========================
+     */
+    const {
+        isAuthenticated,
+        isLoading: authLoading,
+    } = useAuth();
+
+
+    /*
+     * =========================
+     * CART STATE
+     * =========================
+     */
     const [
         cart,
         setCart,
@@ -99,16 +119,31 @@ export function CartProvider({
 
 
     /*
-     * Загрузка корзины
+     * =========================
+     * LOAD CART
+     * =========================
      */
     const loadCart = useCallback(
         async () => {
+
+            /*
+             * Если пользователь не авторизован,
+             * корзину не запрашиваем.
+             */
+            if (!isAuthenticated) {
+
+                setCart(null);
+
+                return;
+            }
+
 
             try {
 
                 setLoading(true);
 
-                const data = await getCart();
+                const data =
+                    await getCart();
 
                 setCart(data);
 
@@ -119,12 +154,44 @@ export function CartProvider({
             }
 
         },
-        [],
+        [
+            isAuthenticated,
+        ],
     );
 
 
     /*
-     * Добавить товар в корзину
+     * =========================
+     * LOAD CART AFTER AUTH
+     * =========================
+     *
+     * Этот effect срабатывает:
+     *
+     * 1. после первоначальной проверки auth;
+     * 2. после login, когда
+     *    isAuthenticated становится true;
+     * 3. после logout, когда
+     *    isAuthenticated становится false.
+     */
+    useEffect(() => {
+
+        if (authLoading) {
+            return;
+        }
+
+
+        loadCart();
+
+    }, [
+        authLoading,
+        loadCart,
+    ]);
+
+
+    /*
+     * =========================
+     * ADD TO CART
+     * =========================
      */
     const addToCart = useCallback(
         async (
@@ -132,27 +199,34 @@ export function CartProvider({
             quantity = 1,
         ) => {
 
-            if (quantity < 1) {
+            if (
+                !isAuthenticated ||
+                quantity < 1
+            ) {
                 return;
             }
+
 
             await addToCartApi({
                 product_id: productId,
                 quantity,
             });
 
+
             await loadCart();
 
         },
-        [loadCart],
+        [
+            isAuthenticated,
+            loadCart,
+        ],
     );
 
 
     /*
-     * Изменить количество товара
-     *
-     * quantity <= 0
-     * → товар удаляется из корзины
+     * =========================
+     * UPDATE QUANTITY
+     * =========================
      */
     const updateQuantity = useCallback(
         async (
@@ -160,9 +234,14 @@ export function CartProvider({
             quantity: number,
         ) => {
 
+            if (!isAuthenticated) {
+                return;
+            }
+
+
             /*
-             * Если количество стало 0
-             * или меньше — удаляем товар.
+             * Если количество стало 0,
+             * удаляем товар.
              */
             if (quantity <= 0) {
 
@@ -170,10 +249,10 @@ export function CartProvider({
                     productId,
                 );
 
+
                 await loadCart();
 
                 return;
-
             }
 
 
@@ -187,58 +266,86 @@ export function CartProvider({
                 },
             );
 
+
             await loadCart();
 
         },
-        [loadCart],
+        [
+            isAuthenticated,
+            loadCart,
+        ],
     );
 
 
     /*
-     * Удалить товар из корзины
+     * =========================
+     * REMOVE ITEM
+     * =========================
      */
     const removeItem = useCallback(
         async (
             productId: number,
         ) => {
 
+            if (!isAuthenticated) {
+                return;
+            }
+
+
             await removeCartItemApi(
                 productId,
             );
 
+
             await loadCart();
 
         },
-        [loadCart],
+        [
+            isAuthenticated,
+            loadCart,
+        ],
     );
 
 
     /*
-     * Очистить корзину
+     * =========================
+     * CLEAR CART
+     * =========================
      */
     const clearCart = useCallback(
         async () => {
+
+            if (!isAuthenticated) {
+                return;
+            }
+
 
             await clearCartApi();
 
             await loadCart();
 
         },
-        [loadCart],
+        [
+            isAuthenticated,
+            loadCart,
+        ],
     );
 
 
     /*
-     * Применить купон
+     * =========================
+     * APPLY COUPON
+     * =========================
      */
     const applyCoupon = useCallback(
         async (
             code: string,
         ) => {
 
-            const normalizedCode = code
-                .trim()
-                .toUpperCase();
+            const normalizedCode =
+                code
+                    .trim()
+                    .toUpperCase();
 
 
             if (!normalizedCode) {
@@ -248,7 +355,6 @@ export function CartProvider({
                 );
 
                 return;
-
             }
 
 
@@ -264,17 +370,14 @@ export function CartProvider({
                 );
 
 
-                /*
-                 * После применения купона
-                 * получаем пересчитанную корзину.
-                 */
                 await loadCart();
 
             } catch (error: any) {
 
                 const message =
                     error?.response?.data?.detail
-                    ?? "Не удалось применить купон";
+                    ??
+                    "Не удалось применить купон";
 
 
                 setCouponError(
@@ -293,12 +396,16 @@ export function CartProvider({
             }
 
         },
-        [loadCart],
+        [
+            loadCart,
+        ],
     );
 
 
     /*
-     * Удалить купон
+     * =========================
+     * REMOVE COUPON
+     * =========================
      */
     const removeCoupon = useCallback(
         async () => {
@@ -313,17 +420,14 @@ export function CartProvider({
                 await removeCouponApi();
 
 
-                /*
-                 * После удаления купона
-                 * получаем пересчитанную корзину.
-                 */
                 await loadCart();
 
             } catch (error: any) {
 
                 const message =
                     error?.response?.data?.detail
-                    ?? "Не удалось удалить купон";
+                    ??
+                    "Не удалось удалить купон";
 
 
                 setCouponError(
@@ -342,20 +446,17 @@ export function CartProvider({
             }
 
         },
-        [loadCart],
+        [
+            loadCart,
+        ],
     );
 
 
     /*
-     * Первичная загрузка корзины
+     * =========================
+     * CONTEXT
+     * =========================
      */
-    useEffect(() => {
-
-        loadCart();
-
-    }, [loadCart]);
-
-
     return (
         <CartContext.Provider
             value={{
@@ -390,9 +491,10 @@ export function CartProvider({
 
 export function useCart() {
 
-    const context = useContext(
-        CartContext,
-    );
+    const context =
+        useContext(
+            CartContext,
+        );
 
 
     if (!context) {

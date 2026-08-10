@@ -13,35 +13,33 @@ import type {
     LoginCredentials,
 } from "../api/auth";
 
-const ACCESS_TOKEN_KEY =
+
+export const ACCESS_TOKEN_KEY =
     "access_token";
 
-const CURRENT_USER_QUERY_KEY =
+
+export const CURRENT_USER_QUERY_KEY =
     ["current-user"];
 
+
 export function useAuth() {
+
     const queryClient =
         useQueryClient();
 
 
     /*
      * =========================
-     * TOKEN
-     * =========================
-     */
-
-    const token =
-        localStorage.getItem(
-            ACCESS_TOKEN_KEY
-        );
-
-
-    /*
-     * =========================
      * CURRENT USER
      * =========================
+     *
+     * Не сохраняем token в переменную
+     * на уровне render и не используем
+     * его как источник React-состояния.
+     *
+     * Проверяем localStorage непосредственно
+     * при выполнении query.
      */
-
     const {
         data: user,
         isLoading,
@@ -54,7 +52,11 @@ export function useAuth() {
             getCurrentUser,
 
         enabled:
-            Boolean(token),
+            Boolean(
+                localStorage.getItem(
+                    ACCESS_TOKEN_KEY,
+                ),
+            ),
 
         retry: false,
     });
@@ -65,39 +67,39 @@ export function useAuth() {
      * LOGIN
      * =========================
      */
-
     const loginMutation =
         useMutation({
             mutationFn:
                 (
-                    credentials:
-                        LoginCredentials
+                    credentials: LoginCredentials,
                 ) =>
                     loginRequest(
-                        credentials
+                        credentials,
                     ),
 
-            onSuccess: async (
-                data
-            ) => {
+            onSuccess:
+                async (data) => {
 
-                localStorage.setItem(
-                    ACCESS_TOKEN_KEY,
-                    data.access_token
-                );
+                    localStorage.setItem(
+                        ACCESS_TOKEN_KEY,
+                        data.access_token,
+                    );
 
 
-                /*
-                 * После записи токена
-                 * получаем пользователя.
-                 */
+                    /*
+                     * После установки токена
+                     * заново запрашиваем текущего
+                     * пользователя.
+                     */
+                    await queryClient
+                        .fetchQuery({
+                            queryKey:
+                                CURRENT_USER_QUERY_KEY,
 
-                await queryClient
-                    .invalidateQueries({
-                        queryKey:
-                            CURRENT_USER_QUERY_KEY,
-                    });
-            },
+                            queryFn:
+                                getCurrentUser,
+                        });
+                },
         });
 
 
@@ -106,17 +108,16 @@ export function useAuth() {
      * LOGIN HANDLER
      * =========================
      */
-
     async function login(
         username: string,
-        password: string
+        password: string,
     ) {
 
-        await loginMutation.mutateAsync({
-            username,
-            password,
-        });
-
+        await loginMutation
+            .mutateAsync({
+                username,
+                password,
+            });
     }
 
 
@@ -125,17 +126,16 @@ export function useAuth() {
      * LOGOUT
      * =========================
      */
-
     function logout() {
 
         localStorage.removeItem(
-            ACCESS_TOKEN_KEY
+            ACCESS_TOKEN_KEY,
         );
 
 
         queryClient.setQueryData(
             CURRENT_USER_QUERY_KEY,
-            null
+            null,
         );
 
 
@@ -143,7 +143,6 @@ export function useAuth() {
             queryKey:
                 CURRENT_USER_QUERY_KEY,
         });
-
     }
 
 

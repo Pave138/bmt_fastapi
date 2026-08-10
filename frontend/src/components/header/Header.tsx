@@ -1,20 +1,82 @@
-import { Link } from "react-router-dom";
+import {
+    Link,
+    useNavigate,
+} from "react-router-dom";
 
 import Logo from "../Logo";
 import Search from "./Search";
-import CartButton from "./CartButton.tsx";
+import CartButton from "./CartButton";
+
+import CatalogMenu from "../catalog/CatalogMenu";
 
 import { useAuth } from "../../hooks/useAuth";
+import { useCategories } from "../../hooks/useCategories";
+
 
 function Header() {
+
     const {
         user,
         isAuthenticated,
         logout,
     } = useAuth();
 
+
+    const {
+        categories,
+    } = useCategories();
+
+
+    const navigate =
+        useNavigate();
+
+
+    /*
+     * =========================
+     * CATEGORY NAVIGATION
+     * =========================
+     */
+
+    function handleCategorySelect(
+        categoryId: number | null,
+    ) {
+
+        /*
+         * Каталог находится на "/"
+         */
+
+        if (categoryId === null) {
+
+            navigate("/");
+
+            return;
+        }
+
+
+        /*
+         * Передаём выбранную
+         * категорию через query parameter.
+         *
+         * Например:
+         *
+         * /?category=1
+         */
+
+        navigate(
+            `/?category=${categoryId}`,
+        );
+    }
+
+
     return (
-        <header className="border-b border-gray-200 bg-white">
+        <header
+            className="
+                border-b
+                border-gray-200
+                bg-white
+            "
+        >
+
             <div
                 className="
                     mx-auto
@@ -23,12 +85,16 @@ function Header() {
                     w-full
                     max-w-[1800px]
                     items-center
-                    gap-6
+                    gap-4
                     px-6
+                    lg:gap-5
                     lg:px-8
                 "
             >
-                {/* Логотип */}
+
+                {/* =================================
+                    ЛОГОТИП
+                    ================================= */}
 
                 <Link
                     to="/"
@@ -42,7 +108,33 @@ function Header() {
                 </Link>
 
 
-                {/* Поиск */}
+                {/* =================================
+                    КАТАЛОГ
+                    ================================= */}
+
+                <div
+                    className="
+                        hidden
+                        shrink-0
+                        lg:block
+                    "
+                >
+
+                    <CatalogMenu
+                        categories={
+                            categories
+                        }
+                        onSelect={
+                            handleCategorySelect
+                        }
+                    />
+
+                </div>
+
+
+                {/* =================================
+                    ПОИСК
+                    ================================= */}
 
                 <div
                     className="
@@ -52,11 +144,15 @@ function Header() {
                         justify-center
                     "
                 >
+
                     <Search />
+
                 </div>
 
 
-                {/* Навигация */}
+                {/* =================================
+                    НАВИГАЦИЯ
+                    ================================= */}
 
                 <nav
                     className="
@@ -67,19 +163,7 @@ function Header() {
                         xl:flex
                     "
                 >
-                    <Link
-                        to="/"
-                        className="
-                            text-sm
-                            font-medium
-                            text-gray-700
-                            transition
-                            hover:text-orange-500
-                        "
-                    >
-                        Каталог
-                    </Link>
-
+                    
                     <Link
                         to="/promotions"
                         className="
@@ -93,6 +177,7 @@ function Header() {
                         Акции
                     </Link>
 
+
                     <Link
                         to="/contacts"
                         className="
@@ -105,10 +190,13 @@ function Header() {
                     >
                         Контакты
                     </Link>
+
                 </nav>
 
 
-                {/* Авторизация + корзина */}
+                {/* =================================
+                    АВТОРИЗАЦИЯ + КОРЗИНА
+                    ================================= */}
 
                 <div
                     className="
@@ -118,9 +206,14 @@ function Header() {
                         gap-2
                     "
                 >
+
                     {isAuthenticated && user ? (
+
                         <>
-                            {/* Профиль */}
+
+                            {/* =================================
+                                ПРОФИЛЬ
+                                ================================= */}
 
                             <Link
                                 to="/profile"
@@ -135,10 +228,8 @@ function Header() {
                                     font-medium
                                     text-gray-700
                                     transition
-
                                     hover:border-orange-400
                                     hover:text-orange-500
-
                                     sm:block
                                 "
                             >
@@ -146,7 +237,9 @@ function Header() {
                             </Link>
 
 
-                            {/* Выход */}
+                            {/* =================================
+                                ВЫХОД
+                                ================================= */}
 
                             <button
                                 type="button"
@@ -160,10 +253,8 @@ function Header() {
                                     font-medium
                                     text-gray-500
                                     transition
-
                                     hover:bg-red-50
                                     hover:text-red-500
-
                                     lg:block
                                 "
                             >
@@ -171,13 +262,21 @@ function Header() {
                             </button>
 
 
-                            {/* Корзина */}
+                            {/* =================================
+                                КОРЗИНА
+                                ================================= */}
 
                             <CartButton />
+
                         </>
+
                     ) : (
+
                         <>
-                            {/* Вход */}
+
+                            {/* =================================
+                                ВХОД
+                                ================================= */}
 
                             <Link
                                 to="/login"
@@ -189,7 +288,6 @@ function Header() {
                                     font-medium
                                     text-gray-700
                                     transition
-
                                     hover:bg-gray-100
                                     hover:text-orange-500
                                 "
@@ -198,7 +296,9 @@ function Header() {
                             </Link>
 
 
-                            {/* Регистрация */}
+                            {/* =================================
+                                РЕГИСТРАЦИЯ
+                                ================================= */}
 
                             <Link
                                 to="/register"
@@ -213,21 +313,25 @@ function Header() {
                                     text-white
                                     shadow-sm
                                     transition
-
                                     hover:bg-orange-600
                                     hover:shadow
-
                                     sm:block
                                 "
                             >
                                 Регистрация
                             </Link>
+
                         </>
+
                     )}
+
                 </div>
+
             </div>
+
         </header>
     );
 }
+
 
 export default Header;
