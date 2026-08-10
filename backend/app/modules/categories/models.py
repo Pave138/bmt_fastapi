@@ -23,7 +23,7 @@ class Category(CommonMixin, Base):
     )
     slug: Mapped[str] = mapped_column(
         String(SLUG_FIELD_MAX_LENGTH),
-        nullable=True,
+        nullable=False,
         unique=True,
         index=True
     )
