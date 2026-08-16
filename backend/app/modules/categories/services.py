@@ -197,15 +197,15 @@ class CategoryService(BaseService):
             await self.repository.session.rollback()
             raise
 
-    async def get_category_products_by_id(
+    async def get_category_products_by_slug(
             self,
-            category_id: int,
+            category_slug: str,
             limit: int,
             offset: int
     ) -> list[ProductListResponse]:
         cache_key = await get_category_products_key(
             self.redis,
-            category_id,
+            category_slug,
             limit,
             offset
         )
@@ -216,21 +216,21 @@ class CategoryService(BaseService):
             logger.debug(
                 'category_products.loaded',
                 source='cache',
-                category_id=category_id,
+                category_slug=category_slug,
                 limit=limit,
                 offset=offset
             )
             return products_list_adapter.validate_json(cached)
 
-        products = await self.product_repository.get_all_by_category_id(
-            category_id=category_id,
+        products = await self.product_repository.get_all_by_category_slug(
+            category_slug=category_slug,
             limit=limit,
             offset=offset
         )
         logger.debug(
             'category_products.loaded',
             source='db',
-            category_id=category_id,
+            category_slug=category_slug,
             limit=limit,
             offset=offset
         )

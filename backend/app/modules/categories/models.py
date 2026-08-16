@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from app.db.models import Category, Product
 
 
-## Slug field in future.
 class Category(CommonMixin, Base):
     name: Mapped[str] = mapped_column(
         String(length=CATEGORY_NAME_MAX_LENGTH),

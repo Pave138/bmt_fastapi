@@ -1,3 +1,5 @@
+from datetime import datetime as dt
+
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 from app.core.constants import (
@@ -17,12 +19,10 @@ class ReviewFields(BaseModel):
 
 
 class ReviewCreate(ReviewFields):
-    product_id: int
 
     model_config = ConfigDict(
         json_schema_extra={
             'example': {
-                'product_id': 1,
                 'rating': REVIEW_RATING_LE,
                 'comment': REVIEW_EXAMPLE_COMMENT
             }
@@ -54,8 +54,16 @@ class ReviewUpdate(BaseModel):
 class ReviewResponse(ReviewFields):
     id: int
     user_username: str
+    is_owner: bool
+    created_at: dt
+    updated_at: dt
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ReviewListResponse(BaseModel):
+    items: list[ReviewResponse]
+    total: int
 
 
 class ReviewDB(ReviewResponse):

@@ -5,7 +5,7 @@ from .orders import router as order_router
 from .product_images import router as product_image_router
 from .product_specifications import router as product_specification_router
 from .products import router as product_router
-from .reviews import router as review_router
+from .reviews import product_review_router, review_router
 from .users import router as user_router
 
 __all__ = [
@@ -16,6 +16,7 @@ __all__ = [
     'product_router',
     'product_specification_router',
     'product_image_router',
+    'product_review_router',
     'review_router',
     'user_router'
 ]

@@ -23,7 +23,6 @@ from app.modules.product_images.schemas import (
 from app.modules.product_specifications.schemas import (
     spec_list_adapter_response,
 )
-from app.modules.reviews.schemas import reviews_list_adapter_response
 from app.services.base_service import BaseService
 from app.services.cache.keys import (
     get_category_products_key,
@@ -92,14 +91,14 @@ class ProductService(BaseService):
 
     async def get_all(
         self,
-        category_id: int | None,
+        category_slug: str | None,
         search: str | None,
         limit: int,
         offset: int
     ) -> list[ProductListResponse]:
         cache_key = await get_products_key(
             self.redis,
-            category_id,
+            category_slug,
             search,
             limit,
             offset
@@ -129,7 +128,7 @@ class ProductService(BaseService):
                 )
 
         products = await self.repository.get_all(
-            category_id=category_id,
+            category_slug=category_slug,
             search=search,
             limit=limit,
             offset=offset
@@ -214,11 +213,11 @@ class ProductService(BaseService):
                 )
             )
 
-    async def get_by_id(
+    async def get_by_slug(
             self,
-            product_id: int
+            product_slug: str
     ) -> ProductResponse:
-        cache_key = await get_product_key(self.redis, product_id)
+        cache_key = await get_product_key(self.redis, product_slug)
         cached_product = await self.redis.get(
             cache_key
         )
@@ -226,7 +225,7 @@ class ProductService(BaseService):
             try:
                 logger.info(
                     'product.loaded',
-                    product_id=product_id,
+                    product_slug=product_slug,
                     source='redis'
                 )
                 return ProductResponse.model_validate_json(
@@ -236,14 +235,14 @@ class ProductService(BaseService):
             except Exception:
                 logger.exception(
                     'invalid.product.cache',
-                    product_id=product_id
+                    product_slug=product_slug
                 )
                 await self.redis.delete(
                     cache_key
                 )
 
-        row = await self.repository.get_by_id_with_all(
-            product_id
+        row = await self.repository.get_by_slug_with_all(
+            product_slug
         )
 
         product, avg_rating, reviews_count = row
@@ -251,7 +250,7 @@ class ProductService(BaseService):
         if product is None:
             logger.warning(
                 'product.not_found',
-                product_id=product_id
+                product_slug=product_slug
             )
             raise NotFoundException(
                 PRODUCT_NOT_FOUND_MSG
@@ -272,10 +271,7 @@ class ProductService(BaseService):
             ),
             avg_rating=float(avg_rating),
             reviews_count=reviews_count,
-            images=images,
-            reviews=reviews_list_adapter_response.validate_python(
-                product.reviews
-            )
+            images=images
         )
 
         await self.redis.set(
@@ -285,7 +281,7 @@ class ProductService(BaseService):
         )
         logger.info(
             'product.loaded',
-            product_id=product_id,
+            product_slug=product_slug,
             source='db'
         )
         return response

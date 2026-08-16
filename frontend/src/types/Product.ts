@@ -3,13 +3,6 @@ export interface ProductImage {
     image_url: string;
 }
 
-export interface ProductReview {
-    id: number;
-    user_username: string;
-    rating: number;
-    comment: string | null;
-}
-
 export interface ProductSpecification {
     id: number;
     name: string;
@@ -18,6 +11,7 @@ export interface ProductSpecification {
 
 export interface Product {
     id: number;
+    slug: string;
     name: string;
     description: string | null;
 
@@ -36,6 +30,4 @@ export interface Product {
     images: ProductImage[];
 
     specifications: ProductSpecification[];
-
-    reviews: ProductReview[];
 }

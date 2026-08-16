@@ -4,9 +4,11 @@ import {
     ChevronRight,
     Heart,
     Minus,
+    Pencil,
     Plus,
     ShoppingCart,
     Star,
+    Trash2,
 } from "lucide-react";
 
 import {
@@ -38,16 +40,53 @@ import {
 } from "../context/CartContext";
 
 import {
+    useAuth,
+} from "../hooks/useAuth";
+
+import {
     formatPrice,
 } from "../utils/formatPrice";
 
 import {
-    getProductById,
+    getProductBySlug,
 } from "../api/products";
 
 import {
-    createReview,
+    createProductReview,
+    getProductReviews,
+    updateReview,
+    deleteReview,
+    type Review,
 } from "../api/reviews";
+
+
+function getReviewWord(
+    count: number,
+): string {
+
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+
+    if (
+        mod10 === 1 &&
+        mod100 !== 11
+    ) {
+        return "отзыв";
+    }
+
+    if (
+        mod10 >= 2 &&
+        mod10 <= 4 &&
+        (
+            mod100 < 10 ||
+            mod100 >= 20
+        )
+    ) {
+        return "отзыва";
+    }
+
+    return "отзывов";
+}
 
 
 function ProductPage() {
@@ -59,8 +98,19 @@ function ProductPage() {
      */
 
     const {
-        id,
+        slug,
     } = useParams();
+
+
+    /*
+     * =========================
+     * AUTH
+     * =========================
+     */
+
+    const {
+        user,
+    } = useAuth();
 
 
     /*
@@ -87,17 +137,49 @@ function ProductPage() {
         setProduct,
     ] = useState<Product | null>(null);
 
-
     const [
         loading,
         setLoading,
     ] = useState(true);
 
-
     const [
         error,
         setError,
     ] = useState<string | null>(null);
+
+
+    /*
+     * =========================
+     * REVIEWS
+     * =========================
+     */
+
+    const [
+        reviews,
+        setReviews,
+    ] = useState<Review[]>([]);
+
+    const [
+        reviewsTotal,
+        setReviewsTotal,
+    ] = useState(0);
+
+    const [
+        reviewsLoading,
+        setReviewsLoading,
+    ] = useState(true);
+
+
+    /*
+     * =========================
+     * REVIEW STATS
+     * =========================
+     */
+
+    const [
+        averageRating,
+        setAverageRating,
+    ] = useState(0);
 
 
     /*
@@ -110,7 +192,6 @@ function ProductPage() {
         currentImage,
         setCurrentImage,
     ] = useState(0);
-
 
     const [
         imageDirection,
@@ -129,29 +210,69 @@ function ProductPage() {
         setReviewRating,
     ] = useState(5);
 
-
     const [
         reviewComment,
         setReviewComment,
     ] = useState("");
-
 
     const [
         reviewSubmitting,
         setReviewSubmitting,
     ] = useState(false);
 
-
     const [
         reviewError,
         setReviewError,
     ] = useState<string | null>(null);
 
-
     const [
         reviewSuccess,
         setReviewSuccess,
     ] = useState<string | null>(null);
+
+
+    /*
+     * =========================
+     * REVIEW EDIT
+     * =========================
+     */
+
+    const [
+        editingReview,
+        setEditingReview,
+    ] = useState(false);
+
+    const [
+        editRating,
+        setEditRating,
+    ] = useState(5);
+
+    const [
+        editComment,
+        setEditComment,
+    ] = useState("");
+
+    const [
+        editSubmitting,
+        setEditSubmitting,
+    ] = useState(false);
+
+    const [
+        editError,
+        setEditError,
+    ] = useState<string | null>(null);
+
+
+    /*
+     * =========================
+     * REVIEW DELETE
+     * =========================
+     */
+
+    const [
+        deletingReview,
+        setDeletingReview,
+    ] = useState(false);
 
 
     /*
@@ -162,10 +283,12 @@ function ProductPage() {
 
     useEffect(() => {
 
-        if (!id) {
+        if (!slug) {
+
+            setProduct(null);
 
             setError(
-                "Товар не найден"
+                "Товар не найден",
             );
 
             setLoading(false);
@@ -174,50 +297,169 @@ function ProductPage() {
         }
 
 
-        const loadProduct =
-            async () => {
+        const loadProduct = async () => {
 
-                try {
+            try {
 
-                    setLoading(true);
+                setLoading(true);
 
-                    setError(null);
+                setError(null);
 
-                    setCurrentImage(0);
-
-
-                    const data =
-                        await getProductById(
-                            Number(id)
-                        );
+                setCurrentImage(0);
 
 
-                    setProduct(data);
-
-                } catch (error) {
-
-                    console.error(
-                        error
+                const data =
+                    await getProductBySlug(
+                        slug,
                     );
 
-                    setProduct(null);
 
-                    setError(
-                        "Не удалось загрузить товар"
-                    );
+                setProduct(data);
 
-                } finally {
+            } catch (error) {
 
-                    setLoading(false);
+                console.error(error);
 
-                }
+                setProduct(null);
 
-            };
+                setError(
+                    "Не удалось загрузить товар",
+                );
+
+            } finally {
+
+                setLoading(false);
+
+            }
+
+        };
 
 
         loadProduct();
 
-    }, [id]);
+    }, [slug]);
+
+
+    /*
+     * =========================
+     * LOAD REVIEWS
+     * =========================
+     */
+
+    const loadReviews = async () => {
+
+        if (!slug) {
+            return;
+        }
+
+
+        try {
+
+            setReviewsLoading(true);
+
+
+            /*
+             * Загружаем до 100 отзывов.
+             *
+             * Это позволяет найти отзыв
+             * текущего пользователя среди
+             * существующих отзывов.
+             */
+
+            const data =
+                await getProductReviews(
+                    slug,
+                    100,
+                    0,
+                );
+
+
+            setReviews(
+                data.items,
+            );
+
+
+            setReviewsTotal(
+                data.total,
+            );
+
+
+            if (data.items.length > 0) {
+
+                const totalRating =
+                    data.items.reduce(
+                        (
+                            sum,
+                            review,
+                        ) =>
+                            sum +
+                            review.rating,
+                        0,
+                    );
+
+
+                setAverageRating(
+                    totalRating /
+                    data.items.length,
+                );
+
+            } else {
+
+                setAverageRating(0);
+
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
+            setReviews([]);
+
+            setReviewsTotal(0);
+
+            setAverageRating(0);
+
+        } finally {
+
+            setReviewsLoading(false);
+
+        }
+
+    };
+
+
+    useEffect(() => {
+
+        loadReviews();
+
+    }, [slug]);
+
+
+    /*
+     * =========================
+     * CURRENT USER REVIEW
+     * =========================
+     */
+
+    const myReview = useMemo(() => {
+
+        if (!user) {
+            return null;
+        }
+
+
+        return (
+            reviews.find(
+                (review) =>
+                    review.user_username ===
+                    user.username,
+            ) ?? null
+        );
+
+    }, [
+        reviews,
+        user,
+    ]);
 
 
     /*
@@ -278,7 +520,7 @@ function ProductPage() {
             ? cart?.items.find(
                   (item) =>
                       item.product_id ===
-                      product.id
+                      product.id,
               )
             : undefined;
 
@@ -299,7 +541,7 @@ function ProductPage() {
 
     const stock =
         Number(
-            product?.stock ?? 0
+            product?.stock ?? 0,
         );
 
 
@@ -331,9 +573,9 @@ function ProductPage() {
                       1 -
                       Number(product.price) /
                           Number(
-                              product.old_price
+                              product.old_price,
                           )
-                  ) * 100
+                  ) * 100,
               )
             : null;
 
@@ -415,29 +657,24 @@ function ProductPage() {
      * =========================
      */
 
-    const goToImage =
-        (
-            index: number,
-            direction: number
-        ) => {
+    const goToImage = (
+        index: number,
+        direction: number,
+    ) => {
 
-            if (
-                images.length <= 1 ||
-                index === currentImage
-            ) {
-                return;
-            }
+        if (
+            images.length <= 1 ||
+            index === currentImage
+        ) {
+            return;
+        }
 
 
-            setImageDirection(
-                direction
-            );
+        setImageDirection(direction);
 
-            setCurrentImage(
-                index
-            );
+        setCurrentImage(index);
 
-        };
+    };
 
 
     const previousImage = () => {
@@ -447,16 +684,14 @@ function ProductPage() {
         }
 
 
-        setImageDirection(
-            -1
-        );
+        setImageDirection(-1);
 
 
         setCurrentImage(
             (current) =>
                 current === 0
                     ? images.length - 1
-                    : current - 1
+                    : current - 1,
         );
 
     };
@@ -469,15 +704,13 @@ function ProductPage() {
         }
 
 
-        setImageDirection(
-            1
-        );
+        setImageDirection(1);
 
 
         setCurrentImage(
             (current) =>
                 (current + 1) %
-                images.length
+                images.length,
         );
 
     };
@@ -489,49 +722,41 @@ function ProductPage() {
      * =========================
      */
 
-    const handleDragEnd =
-        (
-            _event: MouseEvent | TouchEvent | PointerEvent,
-            info: {
-                offset: {
-                    x: number;
-                };
-            }
-        ) => {
+    const handleDragEnd = (
+        _event:
+            MouseEvent |
+            TouchEvent |
+            PointerEvent,
+        info: {
+            offset: {
+                x: number;
+            };
+        },
+    ) => {
 
-            if (
-                images.length <= 1
-            ) {
-                return;
-            }
-
-
-            const swipeDistance =
-                Math.abs(
-                    info.offset.x
-                );
+        if (images.length <= 1) {
+            return;
+        }
 
 
-            if (
-                swipeDistance < 50
-            ) {
-                return;
-            }
+        if (
+            Math.abs(info.offset.x) < 50
+        ) {
+            return;
+        }
 
 
-            if (
-                info.offset.x < 0
-            ) {
+        if (info.offset.x < 0) {
 
-                nextImage();
+            nextImage();
 
-            } else {
+        } else {
 
-                previousImage();
+            previousImage();
 
-            }
+        }
 
-        };
+    };
 
 
     /*
@@ -555,7 +780,7 @@ function ProductPage() {
 
             await addToCart(
                 product.id,
-                1
+                1,
             );
 
         };
@@ -576,7 +801,7 @@ function ProductPage() {
 
             await updateQuantity(
                 product.id,
-                quantity + 1
+                quantity + 1,
             );
 
         };
@@ -597,7 +822,7 @@ function ProductPage() {
 
             await updateQuantity(
                 product.id,
-                quantity - 1
+                quantity - 1,
             );
 
         };
@@ -605,19 +830,24 @@ function ProductPage() {
 
     /*
      * =========================
-     * REVIEW SUBMIT
+     * CREATE REVIEW
      * =========================
      */
 
     const handleReviewSubmit =
         async (
-            event: FormEvent<HTMLFormElement>
+            event:
+                FormEvent<HTMLFormElement>,
         ) => {
 
             event.preventDefault();
 
 
-            if (!product) {
+            if (
+                !user ||
+                !product ||
+                !slug
+            ) {
                 return;
             }
 
@@ -631,60 +861,203 @@ function ProductPage() {
 
             try {
 
-                await createReview({
-                    product_id:
-                        product.id,
+                await createProductReview(
+                    slug,
+                    {
+                        rating:
+                            reviewRating,
 
-                    rating:
-                        reviewRating,
-
-                    comment:
-                        reviewComment.trim()
-                            ? reviewComment.trim()
-                            : null,
-                });
-
-
-                const updatedProduct =
-                    await getProductById(
-                        product.id
-                    );
-
-
-                setProduct(
-                    updatedProduct
+                        comment:
+                            reviewComment.trim()
+                                ? reviewComment.trim()
+                                : null,
+                    },
                 );
 
 
-                setReviewRating(
-                    5
-                );
+                await loadReviews();
 
-                setReviewComment(
-                    ""
-                );
+
+                setReviewRating(5);
+
+                setReviewComment("");
 
 
                 setReviewSuccess(
-                    "Спасибо! Ваш отзыв успешно добавлен."
+                    "Спасибо! Ваш отзыв успешно добавлен.",
                 );
 
             } catch (error) {
 
-                console.error(
-                    error
-                );
+                console.error(error);
 
 
                 setReviewError(
-                    "Не удалось добавить отзыв. Возможно, вы уже оставляли отзыв на этот товар."
+                    "Не удалось добавить отзыв. Возможно, вы уже оставляли отзыв на этот товар.",
                 );
 
             } finally {
 
-                setReviewSubmitting(
-                    false
+                setReviewSubmitting(false);
+
+            }
+
+        };
+
+
+    /*
+     * =========================
+     * START EDIT REVIEW
+     * =========================
+     */
+
+    const handleStartEditReview = () => {
+
+        if (!myReview) {
+            return;
+        }
+
+
+        setEditRating(
+            myReview.rating,
+        );
+
+        setEditComment(
+            myReview.comment ?? "",
+        );
+
+        setEditError(null);
+
+        setEditingReview(true);
+
+    };
+
+
+    /*
+     * =========================
+     * CANCEL EDIT
+     * =========================
+     */
+
+    const handleCancelEditReview = () => {
+
+        setEditingReview(false);
+
+        setEditError(null);
+
+    };
+
+
+    /*
+     * =========================
+     * UPDATE REVIEW
+     * =========================
+     */
+
+    const handleUpdateReview =
+        async (
+            event:
+                FormEvent<HTMLFormElement>,
+        ) => {
+
+            event.preventDefault();
+
+
+            if (!myReview) {
+                return;
+            }
+
+
+            setEditError(null);
+
+            setEditSubmitting(true);
+
+
+            try {
+
+                await updateReview(
+                    myReview.id,
+                    {
+                        rating:
+                            editRating,
+
+                        comment:
+                            editComment.trim()
+                                ? editComment.trim()
+                                : null,
+                    },
                 );
+
+
+                await loadReviews();
+
+                setEditingReview(false);
+
+            } catch (error) {
+
+                console.error(error);
+
+                setEditError(
+                    "Не удалось изменить отзыв.",
+                );
+
+            } finally {
+
+                setEditSubmitting(false);
+
+            }
+
+        };
+
+
+    /*
+     * =========================
+     * DELETE REVIEW
+     * =========================
+     */
+
+    const handleDeleteReview =
+        async () => {
+
+            if (!myReview) {
+                return;
+            }
+
+
+            const confirmed =
+                window.confirm(
+                    "Вы действительно хотите удалить свой отзыв?",
+                );
+
+
+            if (!confirmed) {
+                return;
+            }
+
+
+            try {
+
+                setDeletingReview(true);
+
+
+                await deleteReview(
+                    myReview.id,
+                );
+
+
+                await loadReviews();
+
+            } catch (error) {
+
+                console.error(error);
+
+                setEditError(
+                    "Не удалось удалить отзыв.",
+                );
+
+            } finally {
+
+                setDeletingReview(false);
 
             }
 
@@ -724,7 +1097,10 @@ function ProductPage() {
      * =========================
      */
 
-    if (error || !product) {
+    if (
+        error ||
+        !product
+    ) {
 
         return (
 
@@ -843,9 +1219,7 @@ function ProductPage() {
                 "
             >
 
-                {/* ========================= */}
                 {/* GALLERY */}
-                {/* ========================= */}
 
                 <div>
 
@@ -859,8 +1233,6 @@ function ProductPage() {
                             bg-gray-100
                         "
                     >
-
-                        {/* DISCOUNT */}
 
                         {hasDiscount && (
 
@@ -886,8 +1258,6 @@ function ProductPage() {
                         )}
 
 
-                        {/* IMAGE */}
-
                         <div
                             className="
                                 relative
@@ -900,9 +1270,7 @@ function ProductPage() {
 
                                 <AnimatePresence
                                     initial={false}
-                                    custom={
-                                        imageDirection
-                                    }
+                                    custom={imageDirection}
                                     mode="wait"
                                 >
 
@@ -948,8 +1316,7 @@ function ProductPage() {
                                             ],
                                         }}
                                         drag={
-                                            images.length >
-                                            1
+                                            images.length > 1
                                                 ? "x"
                                                 : false
                                         }
@@ -994,84 +1361,74 @@ function ProductPage() {
                             )}
 
 
-                            {/* PREVIOUS */}
-
                             {images.length > 1 && (
 
-                                <button
-                                    type="button"
-                                    onClick={
-                                        previousImage
-                                    }
-                                    className="
-                                        absolute
-                                        left-4
-                                        top-1/2
-                                        z-20
-                                        flex
-                                        h-11
-                                        w-11
-                                        -translate-y-1/2
-                                        items-center
-                                        justify-center
-                                        rounded-full
-                                        bg-white/95
-                                        shadow-md
-                                        backdrop-blur-sm
-                                        transition
-                                        hover:bg-white
-                                        hover:shadow-lg
-                                        active:scale-95
-                                    "
-                                    aria-label="Предыдущее изображение"
-                                >
+                                <>
 
-                                    <ChevronLeft
-                                        size={22}
-                                    />
-
-                                </button>
-
-                            )}
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            previousImage
+                                        }
+                                        className="
+                                            absolute
+                                            left-4
+                                            top-1/2
+                                            z-20
+                                            flex
+                                            h-11
+                                            w-11
+                                            -translate-y-1/2
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            bg-white/95
+                                            shadow-md
+                                            transition
+                                            hover:bg-white
+                                            hover:shadow-lg
+                                            active:scale-95
+                                        "
+                                        aria-label="Предыдущее изображение"
+                                    >
+                                        <ChevronLeft
+                                            size={22}
+                                        />
+                                    </button>
 
 
-                            {/* NEXT */}
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            nextImage
+                                        }
+                                        className="
+                                            absolute
+                                            right-4
+                                            top-1/2
+                                            z-20
+                                            flex
+                                            h-11
+                                            w-11
+                                            -translate-y-1/2
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            bg-white/95
+                                            shadow-md
+                                            transition
+                                            hover:bg-white
+                                            hover:shadow-lg
+                                            active:scale-95
+                                        "
+                                        aria-label="Следующее изображение"
+                                    >
+                                        <ChevronRight
+                                            size={22}
+                                        />
+                                    </button>
 
-                            {images.length > 1 && (
-
-                                <button
-                                    type="button"
-                                    onClick={
-                                        nextImage
-                                    }
-                                    className="
-                                        absolute
-                                        right-4
-                                        top-1/2
-                                        z-20
-                                        flex
-                                        h-11
-                                        w-11
-                                        -translate-y-1/2
-                                        items-center
-                                        justify-center
-                                        rounded-full
-                                        bg-white/95
-                                        shadow-md
-                                        backdrop-blur-sm
-                                        transition
-                                        hover:bg-white
-                                        hover:shadow-lg
-                                        active:scale-95
-                                    "
-                                    aria-label="Следующее изображение"
-                                >
-
-                                    <ChevronRight
-                                        size={22}
-                                    />
-
-                                </button>
+                                </>
 
                             )}
 
@@ -1079,8 +1436,6 @@ function ProductPage() {
 
                     </div>
 
-
-                    {/* THUMBNAILS */}
 
                     {images.length > 1 && (
 
@@ -1097,7 +1452,7 @@ function ProductPage() {
                             {images.map(
                                 (
                                     image,
-                                    index
+                                    index,
                                 ) => (
 
                                     <motion.button
@@ -1111,7 +1466,7 @@ function ProductPage() {
                                                 index >
                                                     currentImage
                                                     ? 1
-                                                    : -1
+                                                    : -1,
                                             )
                                         }
                                         whileHover={{
@@ -1128,13 +1483,11 @@ function ProductPage() {
                                             rounded-xl
                                             border-2
                                             bg-gray-100
-                                            transition
-                                            duration-200
 
                                             ${
                                                 index ===
                                                 currentImage
-                                                    ? "border-[#FFA500] shadow-sm"
+                                                    ? "border-[#FFA500]"
                                                     : "border-transparent hover:border-gray-300"
                                             }
                                         `}
@@ -1157,28 +1510,9 @@ function ProductPage() {
 
                                     </motion.button>
 
-                                )
+                                ),
                             )}
 
-                        </div>
-
-                    )}
-
-
-                    {/* IMAGE COUNTER */}
-
-                    {images.length > 1 && (
-
-                        <div
-                            className="
-                                mt-2
-                                text-center
-                                text-xs
-                                text-gray-400
-                            "
-                        >
-                            {currentImage + 1} /{" "}
-                            {images.length}
                         </div>
 
                     )}
@@ -1186,9 +1520,7 @@ function ProductPage() {
                 </div>
 
 
-                {/* ========================= */}
                 {/* INFORMATION */}
-                {/* ========================= */}
 
                 <div
                     className="
@@ -1211,44 +1543,35 @@ function ProductPage() {
                         "
                     >
 
-                        <div
+                        <Star
+                            size={18}
                             className="
-                                flex
-                                items-center
-                                gap-1
+                                fill-yellow-400
+                                text-yellow-400
+                            "
+                        />
+
+                        <span
+                            className="
+                                font-semibold
+                                text-gray-900
                             "
                         >
-
-                            <Star
-                                size={18}
-                                className="
-                                    fill-yellow-400
-                                    text-yellow-400
-                                "
-                            />
-
-                            <span
-                                className="
-                                    font-semibold
-                                    text-gray-900
-                                "
-                            >
-                                {product.avg_rating.toFixed(
-                                    1
-                                )}
-                            </span>
-
-                        </div>
+                            {averageRating.toFixed(1)}
+                        </span>
 
 
                         <span>
-                            {product.reviews_count} отзывов
+                            {reviewsTotal}{" "}
+                            {
+                                getReviewWord(
+                                    reviewsTotal,
+                                )
+                            }
                         </span>
 
                     </div>
 
-
-                    {/* NAME */}
 
                     <h1
                         className="
@@ -1283,7 +1606,7 @@ function ProductPage() {
                             "
                         >
                             {formatPrice(
-                                product.price
+                                product.price,
                             )} ₽
                         </span>
 
@@ -1298,7 +1621,7 @@ function ProductPage() {
                                 "
                             >
                                 {formatPrice(
-                                    product.old_price!
+                                    product.old_price!,
                                 )} ₽
                             </span>
 
@@ -1326,7 +1649,6 @@ function ProductPage() {
                                 ${stockStatus.dotClass}
                             `}
                         />
-
 
                         <span
                             className={`
@@ -1372,9 +1694,7 @@ function ProductPage() {
                                     text-gray-600
                                 "
                             >
-                                {
-                                    product.description
-                                }
+                                {product.description}
                             </p>
 
                         </div>
@@ -1464,14 +1784,11 @@ function ProductPage() {
                                         bg-white
                                         transition
                                         hover:bg-gray-100
-                                        active:scale-95
                                     "
                                 >
-
                                     <Minus
                                         size={18}
                                     />
-
                                 </button>
 
 
@@ -1520,16 +1837,13 @@ function ProductPage() {
                                         bg-white
                                         transition
                                         hover:bg-gray-100
-                                        active:scale-95
                                         disabled:cursor-not-allowed
                                         disabled:opacity-40
                                     "
                                 >
-
                                     <Plus
                                         size={18}
                                     />
-
                                 </button>
 
                             </div>
@@ -1557,11 +1871,9 @@ function ProductPage() {
                             "
                             aria-label="Добавить в избранное"
                         >
-
                             <Heart
                                 size={20}
                             />
-
                         </button>
 
                     </div>
@@ -1572,7 +1884,7 @@ function ProductPage() {
 
 
             {/* ================================================== */}
-            {/* TECHNICAL SPECIFICATIONS + RIGHT COLUMN            */}
+            {/* SPECIFICATIONS + REVIEWS                          */}
             {/* ================================================== */}
 
             <div
@@ -1586,9 +1898,7 @@ function ProductPage() {
                 "
             >
 
-                {/* ================================================== */}
-                {/* LEFT: SPECIFICATIONS                              */}
-                {/* ================================================== */}
+                {/* SPECIFICATIONS */}
 
                 <section>
 
@@ -1603,34 +1913,26 @@ function ProductPage() {
                         "
                     >
 
-                        <div
+                        <h2
                             className="
-                                mb-6
+                                text-2xl
+                                font-bold
+                                text-gray-900
                             "
                         >
-
-                            <h2
-                                className="
-                                    text-2xl
-                                    font-bold
-                                    text-gray-900
-                                "
-                            >
-                                Технические характеристики
-                            </h2>
+                            Технические характеристики
+                        </h2>
 
 
-                            <p
-                                className="
-                                    mt-1
-                                    text-sm
-                                    text-gray-500
-                                "
-                            >
-                                Основные характеристики товара
-                            </p>
-
-                        </div>
+                        <p
+                            className="
+                                mt-1
+                                text-sm
+                                text-gray-500
+                            "
+                        >
+                            Основные характеристики товара
+                        </p>
 
 
                         {product.specifications &&
@@ -1638,6 +1940,7 @@ function ProductPage() {
 
                             <div
                                 className="
+                                    mt-6
                                     overflow-hidden
                                     rounded-xl
                                     border
@@ -1648,7 +1951,7 @@ function ProductPage() {
                                 {product.specifications.map(
                                     (
                                         specification,
-                                        index
+                                        index,
                                     ) => (
 
                                         <div
@@ -1703,7 +2006,7 @@ function ProductPage() {
 
                                         </div>
 
-                                    )
+                                    ),
                                 )}
 
                             </div>
@@ -1712,6 +2015,7 @@ function ProductPage() {
 
                             <div
                                 className="
+                                    mt-6
                                     rounded-xl
                                     border
                                     border-dashed
@@ -1734,9 +2038,7 @@ function ProductPage() {
                 </section>
 
 
-                {/* ================================================== */}
-                {/* RIGHT COLUMN                                       */}
-                {/* ================================================== */}
+                {/* REVIEWS */}
 
                 <div
                     className="
@@ -1745,23 +2047,737 @@ function ProductPage() {
                 >
 
                     {/* ================================================== */}
-                    {/* CREATE REVIEW                                       */}
+                    {/* MY REVIEW / CREATE REVIEW                           */}
                     {/* ================================================== */}
 
                     <section>
 
-                        <div
-                            className="
-                                rounded-2xl
-                                border
-                                border-gray-200
-                                bg-white
-                                p-6
-                                shadow-sm
-                            "
-                        >
+                        {!user ? (
 
-                            <div>
+                            /*
+                             * ============================================
+                             * ПОЛЬЗОВАТЕЛЬ НЕ АВТОРИЗОВАН
+                             * ============================================
+                             */
+
+                            <div
+                                className="
+                                    rounded-2xl
+                                    border
+                                    border-gray-200
+                                    bg-white
+                                    p-6
+                                    shadow-sm
+                                "
+                            >
+
+                                <div
+                                    className="
+                                        flex
+                                        items-center
+                                        gap-3
+                                    "
+                                >
+
+                                    <div
+                                        className="
+                                            flex
+                                            h-10
+                                            w-10
+                                            shrink-0
+                                            items-center
+                                            justify-center
+                                            rounded-xl
+                                            bg-gray-100
+                                        "
+                                    >
+                                        <Star
+                                            size={21}
+                                            className="text-gray-400"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <h2
+                                            className="
+                                                text-2xl
+                                                font-bold
+                                                text-gray-900
+                                            "
+                                        >
+                                            Оставить отзыв
+                                        </h2>
+
+                                        <p
+                                            className="
+                                                mt-1
+                                                text-sm
+                                                text-gray-500
+                                            "
+                                        >
+                                            Войдите в аккаунт, чтобы оставить отзыв
+                                            о товаре
+                                        </p>
+                                    </div>
+
+                                </div>
+
+                                <div
+                                    className="
+                                        mt-6
+                                        flex
+                                        items-center
+                                        justify-between
+                                        gap-4
+                                        rounded-xl
+                                        bg-gray-50
+                                        px-5
+                                        py-4
+                                    "
+                                >
+                                    <p className="text-sm text-gray-600">
+                                        Авторизуйтесь, чтобы поделиться своим мнением
+                                    </p>
+
+                                    <Link
+                                        to="/login"
+                                        className="
+                                            shrink-0
+                                            rounded-xl
+                                            bg-gray-900
+                                            px-5
+                                            py-2.5
+                                            text-sm
+                                            font-semibold
+                                            text-white
+                                            transition
+                                            hover:bg-gray-800
+                                        "
+                                    >
+                                        Войти
+                                    </Link>
+                                </div>
+
+                            </div>
+
+                        ) : myReview ? (
+
+                            /*
+                             * ============================================
+                             * У ПОЛЬЗОВАТЕЛЯ УЖЕ ЕСТЬ ОТЗЫВ
+                             * ============================================
+                             */
+
+                            <div
+                                className="
+                                    rounded-2xl
+                                    border
+                                    border-gray-200
+                                    bg-white
+                                    p-6
+                                    shadow-sm
+                                "
+                            >
+
+                                {!editingReview ? (
+
+                                    <>
+
+                                        <div
+                                            className="
+                                                flex
+                                                items-start
+                                                justify-between
+                                                gap-4
+                                            "
+                                        >
+
+                                            <div
+                                                className="
+                                                    flex
+                                                    items-center
+                                                    gap-3
+                                                "
+                                            >
+
+                                                <div
+                                                    className="
+                                                        flex
+                                                        h-10
+                                                        w-10
+                                                        items-center
+                                                        justify-center
+                                                        rounded-xl
+                                                        bg-green-50
+                                                    "
+                                                >
+
+                                                    <Star
+                                                        size={21}
+                                                        className="
+                                                            fill-yellow-400
+                                                            text-yellow-400
+                                                        "
+                                                    />
+
+                                                </div>
+
+
+                                                <div>
+
+                                                    <h2
+                                                        className="
+                                                            text-2xl
+                                                            font-bold
+                                                            text-gray-900
+                                                        "
+                                                    >
+                                                        Ваш отзыв
+                                                    </h2>
+
+
+                                                    <p
+                                                        className="
+                                                            mt-1
+                                                            text-sm
+                                                            text-gray-500
+                                                        "
+                                                    >
+                                                        Вы уже оставляли отзыв на этот товар
+                                                    </p>
+
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+
+
+                                        {/* RATING */}
+
+                                        <div
+                                            className="
+                                                mt-6
+                                                flex
+                                                items-center
+                                                gap-1
+                                            "
+                                        >
+
+                                            {Array.from({
+                                                length: 5,
+                                            }).map(
+                                                (
+                                                    _,
+                                                    index,
+                                                ) => (
+
+                                                    <Star
+                                                        key={
+                                                            index
+                                                        }
+                                                        size={25}
+                                                        className={
+                                                            index <
+                                                            myReview.rating
+                                                                ? "fill-yellow-400 text-yellow-400"
+                                                                : "text-gray-300"
+                                                        }
+                                                    />
+
+                                                ),
+                                            )}
+
+                                        </div>
+
+
+                                        <div
+                                            className="
+                                                mt-1
+                                                text-sm
+                                                font-medium
+                                                text-gray-500
+                                            "
+                                        >
+                                            {myReview.rating} из 5
+                                        </div>
+
+
+                                        {/* COMMENT */}
+
+                                        {myReview.comment ? (
+
+                                            <p
+                                                className="
+                                                    mt-5
+                                                    whitespace-pre-line
+                                                    leading-7
+                                                    text-gray-600
+                                                "
+                                            >
+                                                {
+                                                    myReview.comment
+                                                }
+                                            </p>
+
+                                        ) : (
+
+                                            <p
+                                                className="
+                                                    mt-5
+                                                    text-sm
+                                                    italic
+                                                    text-gray-400
+                                                "
+                                            >
+                                                Вы оставили только оценку.
+                                            </p>
+
+                                        )}
+
+
+                                        {/* ACTIONS */}
+
+                                        <div
+                                            className="
+                                                mt-6
+                                                flex
+                                                gap-3
+                                            "
+                                        >
+
+                                            <button
+                                                type="button"
+                                                onClick={
+                                                    handleStartEditReview
+                                                }
+                                                className="
+                                                    flex
+                                                    flex-1
+                                                    items-center
+                                                    justify-center
+                                                    gap-2
+                                                    rounded-xl
+                                                    border
+                                                    border-gray-300
+                                                    bg-white
+                                                    px-4
+                                                    py-3
+                                                    text-sm
+                                                    font-semibold
+                                                    text-gray-700
+                                                    transition
+                                                    hover:bg-gray-50
+                                                "
+                                            >
+
+                                                <Pencil
+                                                    size={17}
+                                                />
+
+                                                Изменить
+
+                                            </button>
+
+
+                                            <button
+                                                type="button"
+                                                onClick={
+                                                    handleDeleteReview
+                                                }
+                                                disabled={
+                                                    deletingReview
+                                                }
+                                                className="
+                                                    flex
+                                                    items-center
+                                                    justify-center
+                                                    gap-2
+                                                    rounded-xl
+                                                    border
+                                                    border-red-200
+                                                    bg-red-50
+                                                    px-4
+                                                    py-3
+                                                    text-sm
+                                                    font-semibold
+                                                    text-red-600
+                                                    transition
+                                                    hover:bg-red-100
+                                                    disabled:cursor-not-allowed
+                                                    disabled:opacity-60
+                                                "
+                                            >
+
+                                                <Trash2
+                                                    size={17}
+                                                />
+
+                                                {deletingReview
+                                                    ? "Удаление..."
+                                                    : "Удалить"
+                                                }
+
+                                            </button>
+
+                                        </div>
+
+
+                                        {editError && (
+
+                                            <div
+                                                className="
+                                                    mt-4
+                                                    rounded-xl
+                                                    bg-red-50
+                                                    px-4
+                                                    py-3
+                                                    text-sm
+                                                    text-red-600
+                                                "
+                                            >
+                                                {editError}
+                                            </div>
+
+                                        )}
+
+                                    </>
+
+                                ) : (
+
+                                    /*
+                                     * ====================================
+                                     * РЕДАКТИРОВАНИЕ СВОЕГО ОТЗЫВА
+                                     * ====================================
+                                     */
+
+                                    <form
+                                        onSubmit={
+                                            handleUpdateReview
+                                        }
+                                    >
+
+                                        <div
+                                            className="
+                                                flex
+                                                items-center
+                                                gap-3
+                                            "
+                                        >
+
+                                            <div
+                                                className="
+                                                    flex
+                                                    h-10
+                                                    w-10
+                                                    items-center
+                                                    justify-center
+                                                    rounded-xl
+                                                    bg-yellow-50
+                                                "
+                                            >
+
+                                                <Pencil
+                                                    size={20}
+                                                    className="
+                                                        text-yellow-500
+                                                    "
+                                                />
+
+                                            </div>
+
+
+                                            <div>
+
+                                                <h2
+                                                    className="
+                                                        text-2xl
+                                                        font-bold
+                                                        text-gray-900
+                                                    "
+                                                >
+                                                    Изменить отзыв
+                                                </h2>
+
+
+                                                <p
+                                                    className="
+                                                        mt-1
+                                                        text-sm
+                                                        text-gray-500
+                                                    "
+                                                >
+                                                    Измените свою оценку или комментарий
+                                                </p>
+
+                                            </div>
+
+                                        </div>
+
+
+                                        {/* RATING */}
+
+                                        <label
+                                            className="
+                                                mt-6
+                                                block
+                                                text-sm
+                                                font-semibold
+                                                text-gray-900
+                                            "
+                                        >
+                                            Ваша оценка
+                                        </label>
+
+
+                                        <div
+                                            className="
+                                                mt-3
+                                                flex
+                                                items-center
+                                                gap-1
+                                            "
+                                        >
+
+                                            {Array.from({
+                                                length: 5,
+                                            }).map(
+                                                (
+                                                    _,
+                                                    index,
+                                                ) => {
+
+                                                    const rating =
+                                                        index + 1;
+
+                                                    return (
+
+                                                        <button
+                                                            key={
+                                                                rating
+                                                            }
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setEditRating(
+                                                                    rating,
+                                                                )
+                                                            }
+                                                            className="
+                                                                rounded-lg
+                                                                p-1
+                                                                transition
+                                                                hover:scale-110
+                                                            "
+                                                            aria-label={
+                                                                `Оценка ${rating}`
+                                                            }
+                                                        >
+
+                                                            <Star
+                                                                size={30}
+                                                                className={
+                                                                    rating <=
+                                                                    editRating
+                                                                        ? "fill-yellow-400 text-yellow-400"
+                                                                        : "text-gray-300"
+                                                                }
+                                                            />
+
+                                                        </button>
+
+                                                    );
+
+                                                },
+                                            )}
+
+                                        </div>
+
+
+                                        <p
+                                            className="
+                                                mt-1
+                                                text-xs
+                                                text-gray-500
+                                            "
+                                        >
+                                            {editRating} из 5
+                                        </p>
+
+
+                                        {/* COMMENT */}
+
+                                        <div
+                                            className="
+                                                mt-5
+                                            "
+                                        >
+
+                                            <label
+                                                htmlFor="edit-review-comment"
+                                                className="
+                                                    block
+                                                    text-sm
+                                                    font-semibold
+                                                    text-gray-900
+                                                "
+                                            >
+                                                Комментарий
+                                            </label>
+
+
+                                            <textarea
+                                                id="edit-review-comment"
+                                                value={
+                                                    editComment
+                                                }
+                                                onChange={(
+                                                    event,
+                                                ) =>
+                                                    setEditComment(
+                                                        event.target.value,
+                                                    )
+                                                }
+                                                maxLength={1000}
+                                                rows={6}
+                                                className="
+                                                    mt-2
+                                                    w-full
+                                                    resize-none
+                                                    rounded-xl
+                                                    border
+                                                    border-gray-300
+                                                    bg-gray-50
+                                                    px-4
+                                                    py-3
+                                                    text-sm
+                                                    text-gray-900
+                                                    outline-none
+                                                    transition
+                                                    placeholder:text-gray-400
+                                                    focus:border-[#FFA500]
+                                                    focus:bg-white
+                                                    focus:ring-2
+                                                    focus:ring-orange-100
+                                                "
+                                            />
+
+
+                                            <div
+                                                className="
+                                                    mt-1
+                                                    text-right
+                                                    text-xs
+                                                    text-gray-400
+                                                "
+                                            >
+                                                {editComment.length} / 1000
+                                            </div>
+
+                                        </div>
+
+
+                                        {editError && (
+
+                                            <div
+                                                className="
+                                                    mt-4
+                                                    rounded-xl
+                                                    bg-red-50
+                                                    px-4
+                                                    py-3
+                                                    text-sm
+                                                    text-red-600
+                                                "
+                                            >
+                                                {editError}
+                                            </div>
+
+                                        )}
+
+
+                                        <div
+                                            className="
+                                                mt-5
+                                                flex
+                                                gap-3
+                                            "
+                                        >
+
+                                            <button
+                                                type="button"
+                                                onClick={
+                                                    handleCancelEditReview
+                                                }
+                                                className="
+                                                    flex-1
+                                                    rounded-xl
+                                                    border
+                                                    border-gray-300
+                                                    bg-white
+                                                    px-5
+                                                    py-3
+                                                    font-semibold
+                                                    text-gray-700
+                                                    transition
+                                                    hover:bg-gray-50
+                                                "
+                                            >
+                                                Отмена
+                                            </button>
+
+
+                                            <button
+                                                type="submit"
+                                                disabled={
+                                                    editSubmitting
+                                                }
+                                                className="
+                                                    flex-1
+                                                    rounded-xl
+                                                    bg-[#FFA500]
+                                                    px-5
+                                                    py-3
+                                                    font-semibold
+                                                    text-white
+                                                    shadow-sm
+                                                    transition
+                                                    hover:bg-orange-600
+                                                    disabled:cursor-not-allowed
+                                                    disabled:opacity-60
+                                                "
+                                            >
+                                                {editSubmitting
+                                                    ? "Сохранение..."
+                                                    : "Сохранить"
+                                                }
+                                            </button>
+
+                                        </div>
+
+                                    </form>
+
+                                )}
+
+                            </div>
+
+                        ) : (
+
+                            /*
+                             * ============================================
+                             * ФОРМА НОВОГО ОТЗЫВА
+                             * ============================================
+                             */
+
+                            <div
+                                className="
+                                    rounded-2xl
+                                    border
+                                    border-gray-200
+                                    bg-white
+                                    p-6
+                                    shadow-sm
+                                "
+                            >
 
                                 <div
                                     className="
@@ -1821,21 +2837,17 @@ function ProductPage() {
 
                                 </div>
 
-                            </div>
 
+                                <form
+                                    onSubmit={
+                                        handleReviewSubmit
+                                    }
+                                    className="
+                                        mt-6
+                                    "
+                                >
 
-                            <form
-                                onSubmit={
-                                    handleReviewSubmit
-                                }
-                                className="
-                                    mt-6
-                                "
-                            >
-
-                                {/* RATING */}
-
-                                <div>
+                                    {/* RATING */}
 
                                     <label
                                         className="
@@ -1858,19 +2870,16 @@ function ProductPage() {
                                         "
                                     >
 
-                                        {Array.from(
-                                            {
-                                                length: 5,
-                                            }
-                                        ).map(
+                                        {Array.from({
+                                            length: 5,
+                                        }).map(
                                             (
                                                 _,
-                                                index
+                                                index,
                                             ) => {
 
                                                 const rating =
                                                     index + 1;
-
 
                                                 return (
 
@@ -1881,7 +2890,7 @@ function ProductPage() {
                                                         type="button"
                                                         onClick={() =>
                                                             setReviewRating(
-                                                                rating
+                                                                rating,
                                                             )
                                                         }
                                                         className="
@@ -1909,7 +2918,7 @@ function ProductPage() {
 
                                                 );
 
-                                            }
+                                            },
                                         )}
 
                                     </div>
@@ -1925,179 +2934,167 @@ function ProductPage() {
                                         {reviewRating} из 5
                                     </p>
 
-                                </div>
 
+                                    {/* COMMENT */}
 
-                                {/* COMMENT */}
-
-                                <div
-                                    className="
-                                        mt-5
-                                    "
-                                >
-
-                                    <label
-                                        htmlFor="review-comment"
+                                    <div
                                         className="
-                                            block
-                                            text-sm
-                                            font-semibold
-                                            text-gray-900
+                                            mt-5
                                         "
                                     >
-                                        Комментарий
-                                    </label>
+
+                                        <label
+                                            htmlFor="review-comment"
+                                            className="
+                                                block
+                                                text-sm
+                                                font-semibold
+                                                text-gray-900
+                                            "
+                                        >
+                                            Комментарий
+                                        </label>
 
 
-                                    <textarea
-                                        id="review-comment"
-                                        value={
-                                            reviewComment
+                                        <textarea
+                                            id="review-comment"
+                                            value={
+                                                reviewComment
+                                            }
+                                            onChange={(
+                                                event,
+                                            ) =>
+                                                setReviewComment(
+                                                    event.target.value,
+                                                )
+                                            }
+                                            placeholder="Расскажите, что вам понравилось или не понравилось..."
+                                            maxLength={1000}
+                                            rows={6}
+                                            className="
+                                                mt-2
+                                                w-full
+                                                resize-none
+                                                rounded-xl
+                                                border
+                                                border-gray-300
+                                                bg-gray-50
+                                                px-4
+                                                py-3
+                                                text-sm
+                                                text-gray-900
+                                                outline-none
+                                                transition
+                                                placeholder:text-gray-400
+                                                focus:border-[#FFA500]
+                                                focus:bg-white
+                                                focus:ring-2
+                                                focus:ring-orange-100
+                                            "
+                                        />
+
+
+                                        <div
+                                            className="
+                                                mt-1
+                                                text-right
+                                                text-xs
+                                                text-gray-400
+                                            "
+                                        >
+                                            {reviewComment.length} / 1000
+                                        </div>
+
+                                    </div>
+
+
+                                    {reviewError && (
+
+                                        <div
+                                            className="
+                                                mt-4
+                                                rounded-xl
+                                                bg-red-50
+                                                px-4
+                                                py-3
+                                                text-sm
+                                                text-red-600
+                                            "
+                                        >
+                                            {reviewError}
+                                        </div>
+
+                                    )}
+
+
+                                    {reviewSuccess && (
+
+                                        <div
+                                            className="
+                                                mt-4
+                                                rounded-xl
+                                                bg-green-50
+                                                px-4
+                                                py-3
+                                                text-sm
+                                                text-green-600
+                                            "
+                                        >
+                                            {reviewSuccess}
+                                        </div>
+
+                                    )}
+
+
+                                    <button
+                                        type="submit"
+                                        disabled={
+                                            reviewSubmitting
                                         }
-                                        onChange={(
-                                            event
-                                        ) =>
-                                            setReviewComment(
-                                                event.target.value
-                                            )
-                                        }
-                                        placeholder="Расскажите, что вам понравилось или не понравилось..."
-                                        maxLength={1000}
-                                        rows={6}
                                         className="
-                                            mt-2
+                                            mt-5
+                                            flex
                                             w-full
-                                            resize-none
+                                            items-center
+                                            justify-center
+                                            gap-2
                                             rounded-xl
-                                            border
-                                            border-gray-300
-                                            bg-gray-50
-                                            px-4
+                                            bg-[#FFA500]
+                                            px-5
                                             py-3
-                                            text-sm
-                                            text-gray-900
-                                            outline-none
+                                            font-semibold
+                                            text-white
+                                            shadow-sm
                                             transition
-                                            placeholder:text-gray-400
-                                            focus:border-[#FFA500]
-                                            focus:bg-white
-                                            focus:ring-2
-                                            focus:ring-orange-100
-                                        "
-                                    />
-
-
-                                    <div
-                                        className="
-                                            mt-1
-                                            text-right
-                                            text-xs
-                                            text-gray-400
+                                            hover:bg-orange-600
+                                            active:scale-[0.98]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-60
                                         "
                                     >
-                                        {
-                                            reviewComment.length
-                                        } / 1000
-                                    </div>
 
-                                </div>
+                                        <Star
+                                            size={18}
+                                        />
 
-
-                                {/* ERROR */}
-
-                                {reviewError && (
-
-                                    <div
-                                        className="
-                                            mt-4
-                                            rounded-xl
-                                            bg-red-50
-                                            px-4
-                                            py-3
-                                            text-sm
-                                            text-red-600
-                                        "
-                                    >
-                                        {
-                                            reviewError
+                                        {reviewSubmitting
+                                            ? "Отправка..."
+                                            : "Оставить отзыв"
                                         }
-                                    </div>
 
-                                )}
+                                    </button>
 
+                                </form>
 
-                                {/* SUCCESS */}
+                            </div>
 
-                                {reviewSuccess && (
-
-                                    <div
-                                        className="
-                                            mt-4
-                                            rounded-xl
-                                            bg-green-50
-                                            px-4
-                                            py-3
-                                            text-sm
-                                            text-green-600
-                                        "
-                                    >
-                                        {
-                                            reviewSuccess
-                                        }
-                                    </div>
-
-                                )}
-
-
-                                {/* SUBMIT */}
-
-                                <button
-                                    type="submit"
-                                    disabled={
-                                        reviewSubmitting
-                                    }
-                                    className="
-                                        mt-5
-                                        flex
-                                        w-full
-                                        items-center
-                                        justify-center
-                                        gap-2
-                                        rounded-xl
-                                        bg-[#FFA500]
-                                        px-5
-                                        py-3
-                                        font-semibold
-                                        text-white
-                                        shadow-sm
-                                        transition
-                                        hover:bg-orange-600
-                                        active:scale-[0.98]
-                                        disabled:cursor-not-allowed
-                                        disabled:opacity-60
-                                    "
-                                >
-
-                                    <Star
-                                        size={18}
-                                    />
-
-                                    {reviewSubmitting
-                                        ? "Отправка..."
-                                        : "Оставить отзыв"
-                                    }
-
-                                </button>
-
-                            </form>
-
-                        </div>
+                        )}
 
                     </section>
 
 
                     {/* ================================================== */}
-                    {/* REVIEWS                                            */}
+                    {/* REVIEWS LIST                                       */}
                     {/* ================================================== */}
 
                     <section>
@@ -2112,8 +3109,6 @@ function ProductPage() {
                                 shadow-sm
                             "
                         >
-
-                            {/* HEADER */}
 
                             <div
                                 className="
@@ -2146,21 +3141,17 @@ function ProductPage() {
                                             text-gray-500
                                         "
                                     >
-                                        {product.reviews_count}{" "}
-                                        {product.reviews_count === 1
-                                            ? "отзыв"
-                                            : product.reviews_count >= 2 &&
-                                              product.reviews_count <= 4
-                                                ? "отзыва"
-                                                : "отзывов"
-                                        }
-                                        {" "}о товаре
+                                        {reviewsTotal}{" "}
+                                        {
+                                            getReviewWord(
+                                                reviewsTotal,
+                                            )
+                                        }{" "}
+                                        о товаре
                                     </p>
 
                                 </div>
 
-
-                                {/* AVERAGE RATING */}
 
                                 <div
                                     className="
@@ -2174,35 +3165,24 @@ function ProductPage() {
                                     "
                                 >
 
-                                    <div
+                                    <Star
+                                        size={22}
                                         className="
-                                            flex
-                                            items-center
-                                            gap-1
+                                            fill-yellow-400
+                                            text-yellow-400
+                                        "
+                                    />
+
+
+                                    <span
+                                        className="
+                                            text-lg
+                                            font-bold
+                                            text-gray-900
                                         "
                                     >
-
-                                        <Star
-                                            size={22}
-                                            className="
-                                                fill-yellow-400
-                                                text-yellow-400
-                                            "
-                                        />
-
-                                        <span
-                                            className="
-                                                text-lg
-                                                font-bold
-                                                text-gray-900
-                                            "
-                                        >
-                                            {product.avg_rating.toFixed(
-                                                1
-                                            )}
-                                        </span>
-
-                                    </div>
+                                        {averageRating.toFixed(1)}
+                                    </span>
 
 
                                     <span
@@ -2219,10 +3199,23 @@ function ProductPage() {
                             </div>
 
 
-                            {/* REVIEWS LIST */}
+                            {reviewsLoading ? (
 
-                            {product.reviews &&
-                            product.reviews.length > 0 ? (
+                                <div
+                                    className="
+                                        rounded-xl
+                                        bg-gray-50
+                                        px-6
+                                        py-12
+                                        text-center
+                                        text-sm
+                                        text-gray-500
+                                    "
+                                >
+                                    Загрузка отзывов...
+                                </div>
+
+                            ) : reviews.length > 0 ? (
 
                                 <div
                                     className="
@@ -2230,9 +3223,9 @@ function ProductPage() {
                                     "
                                 >
 
-                                    {product.reviews.map(
+                                    {reviews.map(
                                         (
-                                            review
+                                            review,
                                         ) => (
 
                                             <article
@@ -2250,8 +3243,6 @@ function ProductPage() {
                                                     hover:bg-white
                                                 "
                                             >
-
-                                                {/* USER + RATING */}
 
                                                 <div
                                                     className="
@@ -2285,14 +3276,12 @@ function ProductPage() {
                                                             "
                                                         >
 
-                                                            {Array.from(
-                                                                {
-                                                                    length: 5,
-                                                                }
-                                                            ).map(
+                                                            {Array.from({
+                                                                length: 5,
+                                                            }).map(
                                                                 (
                                                                     _,
-                                                                    index
+                                                                    index,
                                                                 ) => (
 
                                                                     <Star
@@ -2308,7 +3297,7 @@ function ProductPage() {
                                                                         }
                                                                     />
 
-                                                                )
+                                                                ),
                                                             )}
 
                                                         </div>
@@ -2333,8 +3322,6 @@ function ProductPage() {
 
                                                 </div>
 
-
-                                                {/* COMMENT */}
 
                                                 {review.comment ? (
 
@@ -2368,7 +3355,7 @@ function ProductPage() {
 
                                             </article>
 
-                                        )
+                                        ),
                                     )}
 
                                 </div>

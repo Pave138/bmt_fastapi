@@ -14,7 +14,7 @@ router = APIRouter()
 )
 async def get_products(
     service: ProductServiceDep,
-    category_id: int | None = Query(
+    category_slug: str | None = Query(
         None,
         description='Товары определенной категории'
     ),
@@ -26,7 +26,7 @@ async def get_products(
     offset: int = OFFSET_PRODUCTS
 ) -> list[ProductListResponse]:
     return await service.get_all(
-        category_id=category_id,
+        category_slug=category_slug,
         search=search,
         limit=limit,
         offset=offset
@@ -34,12 +34,12 @@ async def get_products(
 
 
 @router.get(
-    '/{product_id}',
-    summary='Получить товар по ID',
+    '/{product_slug}',
+    summary='Получить товар',
     response_model=ProductResponse
 )
 async def get_by_id(
     service: ProductServiceDep,
-    product_id: int
+    product_slug: str
 ) -> ProductResponse:
-    return await service.get_by_id(product_id)
+    return await service.get_by_slug(product_slug)

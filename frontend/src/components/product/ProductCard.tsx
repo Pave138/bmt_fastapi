@@ -72,7 +72,6 @@ function ProductCard({
     const quantity =
         cartItem?.quantity ?? 0;
 
-
     const isInCart =
         quantity > 0;
 
@@ -88,10 +87,8 @@ function ProductCard({
             product.stock ?? 0
         );
 
-
     const isOutOfStock =
         stock <= 0;
-
 
     const canIncrease =
         quantity < stock;
@@ -207,7 +204,6 @@ function ProductCard({
                 return;
             }
 
-
             await addToCart(
                 product.id,
                 1
@@ -229,7 +225,6 @@ function ProductCard({
                 return;
             }
 
-
             await updateQuantity(
                 product.id,
                 quantity + 1
@@ -250,7 +245,6 @@ function ProductCard({
             if (quantity <= 0) {
                 return;
             }
-
 
             await updateQuantity(
                 product.id,
@@ -357,7 +351,7 @@ function ProductCard({
                 >
 
                     <Link
-                        to={`/products/${product.id}`}
+                        to={`/products/${product.slug}`}
                         className="
                             block
                             h-full
@@ -452,7 +446,7 @@ function ProductCard({
                 {/* NAME */}
 
                 <Link
-                    to={`/products/${product.id}`}
+                    to={`/products/${product.slug}`}
                     className="
                         block
                         line-clamp-2

@@ -1,17 +1,18 @@
 import structlog
 from redis.asyncio import Redis
-from sqlalchemy.exc import IntegrityError
 
 from app.core.constants import (
     CACHE_TTL,
+    PRODUCT_NOT_FOUND_MSG,
     REVIEW_NOT_FOUND_MSG,
 )
 from app.core.exceptions import (
+    ConflictException,
     ForbiddenException,
     NotFoundException,
     ValidationException,
 )
-from app.modules.products.services import ProductService
+from app.modules.products.repositories import ProductRepository
 from app.modules.users.models import User
 from app.services.base_service import BaseService
 from app.services.cache.keys import get_product_reviews_key
@@ -22,6 +23,8 @@ from .repositories import ReviewRepository
 from .schemas import (
     ReviewCreate,
     ReviewDB,
+    ReviewListResponse,
+    ReviewResponse,
     ReviewUpdate,
     reviews_list_adapter_response,
 )
@@ -34,14 +37,109 @@ class ReviewService(BaseService):
     def __init__(
         self,
         repository: ReviewRepository,
-        product_service: ProductService,
+        product_repository: ProductRepository,
         redis: Redis,
         cache_service: CacheService
     ):
         self.repository = repository
-        self.product_service = product_service
+        self.product_repository = product_repository
         self.redis = redis
         self.cache_service = cache_service
+
+    async def get_by_product_slug(
+        self,
+        product_slug: str,
+        user: User | None,
+        offset: int,
+        limit: int
+    ) -> ReviewListResponse:
+        product = await self.product_repository.get_by_slug(product_slug)
+        
+        if product is None:
+            raise NotFoundException(
+                PRODUCT_NOT_FOUND_MSG
+            )
+
+        reviews = await self.repository.get_by_product_id(
+            product.id,
+            offset,
+            limit
+        )
+        
+        current_username = (
+            user.username
+            if user is not None
+            else None
+        )
+        
+        items = [
+            ReviewResponse(
+                id=review.id,
+                user_username=review.user_username,
+                rating=review.rating,
+                comment=review.comment,
+                is_owner=current_username == review.user_username,
+                created_at=review.created_at,
+                updated_at=review.updated_at
+            )
+            for review in reviews
+        ]
+        
+        total = await self.repository.count_by_product_id(
+            product.id
+        )
+
+        return ReviewListResponse(
+            items=items,
+            total=total
+        )
+
+    async def create(
+        self,
+        product_slug: str,
+        user: User,
+        data: ReviewCreate
+    ):
+        product = await self.product_repository.get_by_slug(product_slug)
+
+        if product is None:
+            raise NotFoundException(
+                PRODUCT_NOT_FOUND_MSG
+            )
+
+        existing_review = await self.repository.get_by_user_and_product(
+            user.username,
+            product.id
+        )
+        
+        if existing_review is not None:
+            raise ConflictException(
+                'Вы уже оставляли отзыв на этот товар'
+            )
+
+        review = await self.repository.create(
+            {
+                'user_username': user.username,
+                'product_id': product.id,
+                'rating': data.rating,
+                'comment': data.comment
+            }
+        )
+        await self.repository.session.commit()
+
+        return ReviewResponse(
+            id=review.id,
+            user_username=review.user_username,
+            rating=review.rating,
+            comment=review.comment,
+            is_owner=True,
+            created_at=review.created_at,
+            updated_at=review.updated_at
+        )
+
+
+
+
 
     async def get_by_id(self, review_id: int) -> Review:
 
@@ -100,45 +198,12 @@ class ReviewService(BaseService):
         )
         return response
 
-    async def create(
-        self,
-        user: User,
-        data: ReviewCreate
-    ) -> ReviewDB:
-
-        await self.product_service.get_by_id(data.product_id)
-
-        try:
-            review = await self.repository.create({
-                **data.model_dump(),
-                'user_username': user.username
-            })
-
-            await self.repository.session.commit()
-            await self.repository.session.refresh(review)
-            logger.debug(
-                'review.create',
-                review_id=review.id
-            )
-
-            await self.cache_service.invalidate_product_cache()
-
-            return ReviewDB.model_validate(review)
-        except IntegrityError:
-            await self.repository.session.rollback()
-            logger.exception(
-                'review.create_failed'
-            )
-            raise ValidationException(
-                'Вы уже оставляли отзыв на этот товар'
-            )
-
     async def update(
         self,
         review_id: int,
         user: User,
         data: ReviewUpdate
-    ) -> ReviewDB:
+    ) -> ReviewResponse:
         review = await self.get_by_id(review_id)
 
         if user.username != review.user_username:
@@ -155,10 +220,20 @@ class ReviewService(BaseService):
 
         await self.cache_service.invalidate_product_cache()
 
-        return await self.update_model(
+        review = await self.update_model(
             review,
             update_data,
             self.repository.session
+        )
+
+        return ReviewResponse(
+            id=review.id,
+            user_username=review.user_username,
+            rating=review.rating,
+            comment=review.comment,
+            is_owner=True,
+            created_at=review.created_at,
+            updated_at=review.updated_at,
         )
 
     async def delete(

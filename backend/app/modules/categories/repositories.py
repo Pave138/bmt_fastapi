@@ -14,23 +14,38 @@ class CategoryRepository:
         self.session = session
 
     @staticmethod
-    def descendants_cte(category_id: int):
+    def descendants_cte(
+        category_slug: str,
+    ):
+        category_alias = aliased(Category)
+
+        # Корневая категория по slug
         category_tree = (
-            select(Category.id)
-            .where(Category.id == category_id)
+            select(
+                Category.id,
+                Category.slug,
+            )
+            .where(
+                Category.slug == category_slug,
+            )
             .cte(
-                name="category_tree",
+                "category_tree",
                 recursive=True,
             )
         )
 
-        category_alias = aliased(Category)
-
-        return category_tree.union_all(
-            select(category_alias.id).where(
-                category_alias.parent_id == category_tree.c.id
+        # Дочерние категории
+        category_tree = category_tree.union_all(
+            select(
+                category_alias.id,
+                category_alias.slug,
+            ).join(
+                category_tree,
+                category_alias.parent_id == category_tree.c.id,
             )
         )
+
+        return category_tree
 
     async def get_all(self) -> list[Category]:
         result = await self.session.scalars(select(Category))

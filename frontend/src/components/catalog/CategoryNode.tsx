@@ -7,13 +7,15 @@ import {
     useState,
 } from "react";
 
-import type { Category } from "../../types/Category";
+import type {
+    Category,
+} from "../../types/Category";
 
 
 interface Props {
     category: Category;
-    selectedCategory: number | null;
-    onSelect: (id: number | null) => void;
+    selectedCategory: string | null;
+    onSelect: (slug: string | null) => void;
 }
 
 
@@ -23,8 +25,10 @@ function CategoryNode({
     onSelect,
 }: Props) {
 
-
-    const [open, setOpen] = useState(false);
+    const [
+        open,
+        setOpen,
+    ] = useState(false);
 
 
     const hasChildren =
@@ -32,23 +36,38 @@ function CategoryNode({
 
 
     const active =
-        selectedCategory === category.id;
+        selectedCategory === category.slug;
 
+
+    const handleClick = () => {
+
+        onSelect(
+            active
+                ? null
+                : category.slug,
+        );
+
+
+        if (hasChildren) {
+            setOpen(
+                current => !current,
+            );
+        }
+    };
 
 
     return (
         <div>
 
-
             <div
                 className={`
                     flex
+                    cursor-pointer
                     items-center
                     justify-between
                     rounded-lg
                     px-3
                     py-2
-                    cursor-pointer
                     transition
 
                     ${
@@ -57,23 +76,17 @@ function CategoryNode({
                             : "hover:bg-gray-100"
                     }
                 `}
-                onClick={() => {
-                    onSelect(category.id);
-
-                    if (hasChildren) {
-                        setOpen(!open);
-                    }
-                }}
+                onClick={handleClick}
             >
-
 
                 <span
                     className={`
                         text-sm
+
                         ${
                             active
-                            ? "font-semibold"
-                            : ""
+                                ? "font-semibold"
+                                : ""
                         }
                     `}
                 >
@@ -81,53 +94,53 @@ function CategoryNode({
                 </span>
 
 
+                {hasChildren && (
 
-                {
-                    hasChildren && (
-
-                        open
-                            ?
-                            <ChevronDown size={16}/>
-                            :
-                            <ChevronRight size={16}/>
-
+                    open ? (
+                        <ChevronDown
+                            size={16}
+                        />
+                    ) : (
+                        <ChevronRight
+                            size={16}
+                        />
                     )
-                }
 
+                )}
 
             </div>
 
 
+            {hasChildren && open && (
 
-            {
-                hasChildren && open && (
+                <div
+                    className="
+                        ml-4
+                        mt-1
+                        space-y-1
+                    "
+                >
 
-                    <div
-                        className="
-                            ml-4
-                            mt-1
-                            space-y-1
-                        "
-                    >
+                    {category.children.map(
+                        child => (
 
-                        {
-                            category.children.map(child => (
+                            <CategoryNode
+                                key={child.slug}
+                                category={child}
+                                selectedCategory={
+                                    selectedCategory
+                                }
+                                onSelect={
+                                    onSelect
+                                }
+                            />
 
-                                <CategoryNode
-                                    key={child.id}
-                                    category={child}
-                                    selectedCategory={selectedCategory}
-                                    onSelect={onSelect}
-                                />
+                        ),
+                    )}
 
-                            ))
-                        }
+                </div>
 
-                    </div>
-
-                )
-            }
-
+            )}
 
         </div>
     );

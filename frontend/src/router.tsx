@@ -19,7 +19,7 @@ export const router =
                     element: <CatalogPage />,
                 },
                 {
-                    path: "/products/:id",
+                    path: "/products/:slug",
                     element: <ProductPage />,
                 },
                 {

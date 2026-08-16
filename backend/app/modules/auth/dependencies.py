@@ -14,11 +14,13 @@ fastapi_users = FastAPIUsers[User, UUID](
 )
 
 current_user = fastapi_users.current_user()
+current_optional_user = fastapi_users.current_user(optional=True)
 current_superuser = fastapi_users.current_user(superuser=True)
 current_verified_user = fastapi_users.current_user(verified=True)
 current_active_user = fastapi_users.current_user(active=True)
 
 CurrentUserDep = Annotated[User, Depends(current_user)]
+OptionalUserDep = Annotated[User | None, Depends(current_optional_user)]
 CurrentSuperuserDep = Annotated[User, Depends(current_superuser)]
 CurrentVerifiedUserDep = Annotated[User, Depends(current_verified_user)]
 CurrentActiveUserDep = Annotated[User, Depends(current_active_user)]

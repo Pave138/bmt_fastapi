@@ -6,28 +6,22 @@ import {
     getProducts,
 } from "../api/products";
 
-import type { Product } from "../types/Product";
-
 
 export function useProducts(
-    categoryId?: number | null,
-    search?: string
+    categorySlug?: string,
+    search?: string,
 ) {
-
-    return useQuery<Product[]>({
-
+    return useQuery({
         queryKey: [
             "products",
-            categoryId,
+            categorySlug,
             search,
         ],
 
-
         queryFn: () =>
             getProducts(
-                categoryId ?? undefined,
-                search
+                categorySlug,
+                search,
             ),
-
     });
 }

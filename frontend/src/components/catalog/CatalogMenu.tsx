@@ -8,6 +8,7 @@ import {
 interface Category {
     id: number;
     name: string;
+    slug: string;
     children?: Category[];
 }
 
@@ -16,7 +17,7 @@ interface CatalogMenuProps {
     categories: Category[];
 
     onSelect: (
-        categoryId: number | null,
+        categorySlug: string | null,
     ) => void;
 }
 
@@ -96,8 +97,8 @@ export default function CatalogMenu({
             activeCategory &&
             !categories.some(
                 (category) =>
-                    category.id ===
-                    activeCategory.id,
+                    category.slug ===
+                    activeCategory.slug,
             )
         ) {
 
@@ -279,12 +280,12 @@ export default function CatalogMenu({
      */
 
     function handleSelect(
-        categoryId: number | null,
+        categorySlug: string | null,
     ) {
 
         setIsOpen(false);
 
-        onSelect(categoryId);
+        onSelect(categorySlug);
 
     }
 
@@ -336,6 +337,7 @@ export default function CatalogMenu({
                     text-sm
                     font-semibold
                     transition
+
                     ${
                         isOpen
                             ? "bg-gray-900 text-white"
@@ -381,6 +383,7 @@ export default function CatalogMenu({
                         h-4
                         w-4
                         transition-transform
+
                         ${
                             isOpen
                                 ? "rotate-180"
@@ -479,8 +482,8 @@ export default function CatalogMenu({
                                     ) => {
 
                                         const isActive =
-                                            activeCategory?.id ===
-                                            category.id;
+                                            activeCategory?.slug ===
+                                            category.slug;
 
 
                                         const hasChildren =
@@ -496,7 +499,7 @@ export default function CatalogMenu({
 
                                             <button
                                                 key={
-                                                    category.id
+                                                    category.slug
                                                 }
                                                 type="button"
                                                 onMouseEnter={() =>
@@ -506,7 +509,7 @@ export default function CatalogMenu({
                                                 }
                                                 onClick={() =>
                                                     handleSelect(
-                                                        category.id,
+                                                        category.slug,
                                                     )
                                                 }
                                                 className={`
@@ -522,6 +525,7 @@ export default function CatalogMenu({
                                                     text-left
                                                     text-sm
                                                     transition
+
                                                     ${
                                                         isActive
                                                             ? "bg-gray-100 font-semibold text-gray-900"
@@ -554,6 +558,7 @@ export default function CatalogMenu({
                                                             w-4
                                                             shrink-0
                                                             transition
+
                                                             ${
                                                                 isActive
                                                                     ? "text-gray-900"
@@ -651,7 +656,7 @@ export default function CatalogMenu({
                                                 type="button"
                                                 onClick={() =>
                                                     handleSelect(
-                                                        activeCategory.id,
+                                                        activeCategory.slug,
                                                     )
                                                 }
                                                 className="
@@ -701,12 +706,12 @@ export default function CatalogMenu({
 
                                                         <button
                                                             key={
-                                                                child.id
+                                                                child.slug
                                                             }
                                                             type="button"
                                                             onClick={() =>
                                                                 handleSelect(
-                                                                    child.id,
+                                                                    child.slug,
                                                                 )
                                                             }
                                                             className="

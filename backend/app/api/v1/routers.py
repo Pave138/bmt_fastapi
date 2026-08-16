@@ -8,6 +8,7 @@ from .endpoints import (
     category_router,
     order_router,
     product_image_router,
+    product_review_router,
     product_router,
     product_specification_router,
     review_router,
@@ -56,6 +57,12 @@ main_router.include_router(
     product_image_router,
     prefix="/products",
     tags=["Изображения товаров"]
+)
+
+main_router.include_router(
+    product_review_router,
+    prefix='/products/{product_slug}/reviews',
+    tags=['Отзывы']
 )
 
 main_router.include_router(

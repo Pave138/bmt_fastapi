@@ -106,19 +106,79 @@ function CartPage() {
 
     /*
      * =========================
+     * TOTALS
+     * =========================
+     *
+     * Сумма всех товаров
+     * без учёта купона.
+     */
+
+    const totalBeforeDiscount = cart
+        ? cart.items.reduce(
+              (
+                  total,
+                  item,
+              ) =>
+                  total +
+                  Number(
+                      item.product.price,
+                  ) *
+                      item.quantity,
+              0,
+          )
+        : 0;
+
+
+    /*
+     * Итоговая сумма корзины
+     *
+     * Backend уже возвращает
+     * total_price с учётом купона.
+     */
+
+    const totalAfterDiscount = cart
+        ? Number(cart.total_price)
+        : 0;
+
+
+    /*
+     * =========================
+     * DISCOUNT
+     * =========================
+     */
+
+    const discountAmount =
+        Math.max(
+            0,
+            totalBeforeDiscount -
+                totalAfterDiscount,
+        );
+
+
+    const hasDiscount =
+        Boolean(cart?.coupon) &&
+        discountAmount > 0;
+
+
+    /*
+     * =========================
      * COUPON ACTIONS
      * =========================
      */
 
     const handleApplyCoupon = async () => {
 
-        const code = couponCode.trim();
+        const code =
+            couponCode.trim();
+
 
         if (!code) {
             return;
         }
 
+
         setCouponSuccess(false);
+
 
         try {
 
@@ -161,14 +221,19 @@ function CartPage() {
             return;
         }
 
+
         setOrderError(null);
+
         setOrderLoading(true);
+
 
         try {
 
-            const order = await createOrder({
-                payment_method: paymentMethod,
-            });
+            const order =
+                await createOrder({
+                    payment_method:
+                        paymentMethod,
+                });
 
 
             /*
@@ -178,7 +243,8 @@ function CartPage() {
              */
 
             if (
-                paymentMethod === "yookassa" &&
+                paymentMethod ===
+                    "yookassa" &&
                 order.confirmation_url
             ) {
 
@@ -205,6 +271,7 @@ function CartPage() {
                 "Не удалось оформить заказ:",
                 error,
             );
+
 
             setOrderError(
                 "Не удалось оформить заказ. Попробуйте ещё раз.",
@@ -277,6 +344,7 @@ function CartPage() {
                     "
                 />
 
+
                 <h1
                     className="
                         text-2xl
@@ -285,6 +353,7 @@ function CartPage() {
                 >
                     Корзина пуста
                 </h1>
+
 
                 <p
                     className="
@@ -298,18 +367,6 @@ function CartPage() {
         );
 
     }
-
-
-    /*
-     * =========================
-     * COUPON DISCOUNT
-     * =========================
-     */
-
-    const discountPercent =
-        cart.coupon?.discount_type === "percent"
-            ? Number(cart.coupon.value)
-            : 0;
 
 
     /*
@@ -358,6 +415,7 @@ function CartPage() {
                     >
                         Корзина
                     </h1>
+
 
                     <p
                         className="
@@ -421,59 +479,29 @@ function CartPage() {
                     {cart.items.map(
                         (item) => {
 
-                            /*
-                             * Цена товара за единицу
-                             */
-
-                            const productPrice =
+                            const itemPrice =
                                 Number(
                                     item.product.price,
                                 );
 
 
-                            /*
-                             * Старая сумма позиции
-                             */
-
-                            const originalSubtotal =
-                                productPrice *
+                            const itemTotalBeforeDiscount =
+                                itemPrice *
                                 item.quantity;
 
 
-                            /*
-                             * Текущая сумма позиции
-                             *
-                             * Backend уже возвращает
-                             * item.subtotal с учётом
-                             * купона.
-                             */
-
-                            const currentSubtotal =
+                            const itemTotalAfterDiscount =
                                 Number(
                                     item.subtotal,
                                 );
 
 
-                            /*
-                             * Есть ли скидка
-                             */
-
-                            const hasDiscount =
-                                discountPercent > 0 &&
-                                currentSubtotal <
-                                    originalSubtotal;
-
-
-                            /*
-                             * Цена одной единицы
-                             * со скидкой
-                             */
-
-                            const discountedUnitPrice =
-                                hasDiscount
-                                    ? currentSubtotal /
-                                      item.quantity
-                                    : productPrice;
+                            const itemHasDiscount =
+                                Boolean(
+                                    cart.coupon,
+                                ) &&
+                                itemTotalBeforeDiscount >
+                                    itemTotalAfterDiscount;
 
 
                             return (
@@ -535,10 +563,11 @@ function CartPage() {
                                                     event.currentTarget.style.display =
                                                         "none";
 
+
                                                     const parent =
-                                                        event
-                                                            .currentTarget
+                                                        event.currentTarget
                                                             .parentElement;
+
 
                                                     if (
                                                         parent
@@ -550,16 +579,20 @@ function CartPage() {
                                                             "justify-center",
                                                         );
 
+
                                                         const icon =
                                                             document.createElement(
                                                                 "div",
                                                             );
 
+
                                                         icon.innerHTML =
                                                             "🛒";
 
+
                                                         icon.className =
                                                             "text-2xl";
+
 
                                                         parent.appendChild(
                                                             icon,
@@ -625,10 +658,6 @@ function CartPage() {
                                             </h2>
 
 
-                                            {/* ========================= */}
-                                            {/* PRICE PER UNIT */}
-                                            {/* ========================= */}
-
                                             <div
                                                 className="
                                                     mt-1
@@ -639,69 +668,44 @@ function CartPage() {
                                                 "
                                             >
 
-                                                {hasDiscount ? (
-
-                                                    <>
-
-                                                        <span
-                                                            className="
-                                                                text-sm
-                                                                text-gray-400
-                                                                line-through
-                                                            "
-                                                        >
-                                                            {formatPrice(
-                                                                productPrice,
-                                                            )}{" "}
-                                                            ₽
-                                                        </span>
-
-
-                                                        <span
-                                                            className="
-                                                                text-sm
-                                                                font-semibold
-                                                                text-green-600
-                                                            "
-                                                        >
-                                                            {formatPrice(
-                                                                discountedUnitPrice,
-                                                            )}{" "}
-                                                            ₽ / шт.
-                                                        </span>
-
-
-                                                        <span
-                                                            className="
-                                                                rounded-md
-                                                                bg-green-100
-                                                                px-1.5
-                                                                py-0.5
-                                                                text-xs
-                                                                font-semibold
-                                                                text-green-700
-                                                            "
-                                                        >
-                                                            -{discountPercent}%
-                                                        </span>
-
-                                                    </>
-
-                                                ) : (
+                                                {itemHasDiscount && (
 
                                                     <span
                                                         className="
                                                             text-sm
-                                                            text-gray-500
+                                                            text-gray-400
+                                                            line-through
                                                         "
                                                     >
                                                         {formatPrice(
-                                                            productPrice,
+                                                            String(
+                                                                itemTotalBeforeDiscount,
+                                                            ),
                                                         )}{" "}
-                                                        ₽ / шт.
+                                                        ₽
                                                     </span>
 
                                                 )}
+
+
+                                                <span
+                                                    className={`
+                                                        text-sm
+                                                        ${
+                                                            itemHasDiscount
+                                                                ? "font-semibold text-green-600"
+                                                                : "text-gray-500"
+                                                        }
+                                                    `}
+                                                >
+                                                    {formatPrice(
+                                                        String(
+                                                            itemTotalAfterDiscount /
+                                                                item.quantity,
+                                                        ),
+                                                    )}{" "}
+                                                    ₽ / шт.
+                                                </span>
 
                                             </div>
 
@@ -828,12 +832,12 @@ function CartPage() {
                                                 <div
                                                     className="
                                                         flex
-                                                        flex-col
-                                                        items-end
+                                                        items-center
+                                                        gap-3
                                                     "
                                                 >
 
-                                                    {hasDiscount && (
+                                                    {itemHasDiscount && (
 
                                                         <span
                                                             className="
@@ -843,7 +847,9 @@ function CartPage() {
                                                             "
                                                         >
                                                             {formatPrice(
-                                                                originalSubtotal,
+                                                                String(
+                                                                    itemTotalBeforeDiscount,
+                                                                ),
                                                             )}{" "}
                                                             ₽
                                                         </span>
@@ -852,18 +858,16 @@ function CartPage() {
 
 
                                                     <span
-                                                        className={`
+                                                        className="
                                                             text-lg
                                                             font-bold
-                                                            ${
-                                                                hasDiscount
-                                                                    ? "text-green-600"
-                                                                    : "text-gray-900"
-                                                            }
-                                                        `}
+                                                            text-gray-900
+                                                        "
                                                     >
                                                         {formatPrice(
-                                                            currentSubtotal,
+                                                            String(
+                                                                itemTotalAfterDiscount,
+                                                            ),
                                                         )}{" "}
                                                         ₽
                                                     </span>
@@ -1592,9 +1596,12 @@ function CartPage() {
                         "
                     >
 
+                        {/* TOTAL BEFORE / AFTER DISCOUNT */}
+
                         <div
                             className="
                                 flex
+                                items-center
                                 justify-between
                                 text-gray-600
                             "
@@ -1605,17 +1612,56 @@ function CartPage() {
                             </span>
 
 
-                            <span>
-                                {formatPrice(
-                                    cart.total_price,
-                                )}{" "}
-                                ₽
-                            </span>
+                            <div
+                                className="
+                                    flex
+                                    items-center
+                                    gap-3
+                                "
+                            >
+
+                                {hasDiscount && (
+
+                                    <span
+                                        className="
+                                            text-sm
+                                            text-gray-400
+                                            line-through
+                                        "
+                                    >
+                                        {formatPrice(
+                                            String(
+                                                totalBeforeDiscount,
+                                            ),
+                                        )}{" "}
+                                        ₽
+                                    </span>
+
+                                )}
+
+
+                                <span
+                                    className="
+                                        font-medium
+                                        text-gray-900
+                                    "
+                                >
+                                    {formatPrice(
+                                        String(
+                                            totalAfterDiscount,
+                                        ),
+                                    )}{" "}
+                                    ₽
+                                </span>
+
+                            </div>
 
                         </div>
 
 
-                        {cart.coupon && (
+                        {/* DISCOUNT */}
+
+                        {hasDiscount && cart.coupon && (
 
                             <div
                                 className="
@@ -1626,20 +1672,32 @@ function CartPage() {
                             >
 
                                 <span>
-                                    Скидка
+                                    Скидка (
+                                    {
+                                        cart
+                                            .coupon
+                                            .value
+                                    }
+                                    {
+                                        cart
+                                            .coupon
+                                            .discount_type ===
+                                        "percent"
+                                            ? "%"
+                                            : " ₽"
+                                    }
+                                    )
                                 </span>
 
 
                                 <span>
-
-                                    {cart.coupon.discount_type ===
-                                    "percent"
-                                        ? `-${cart.coupon.value}%`
-                                        : `-${formatPrice(
-                                              cart.coupon.value,
-                                          )} ₽`
-                                    }
-
+                                    -{" "}
+                                    {formatPrice(
+                                        String(
+                                            discountAmount,
+                                        ),
+                                    )}{" "}
+                                    ₽
                                 </span>
 
                             </div>
@@ -1656,11 +1714,14 @@ function CartPage() {
                         />
 
 
+                        {/* FINAL TOTAL */}
+
                         <div
                             className="
                                 flex
                                 items-center
                                 justify-between
+                                gap-3
                             "
                         >
 
@@ -1674,18 +1735,50 @@ function CartPage() {
                             </span>
 
 
-                            <span
+                            <div
                                 className="
-                                    text-2xl
-                                    font-bold
-                                    text-[#FFA500]
+                                    flex
+                                    items-center
+                                    gap-3
                                 "
                             >
-                                {formatPrice(
-                                    cart.total_price,
-                                )}{" "}
-                                ₽
-                            </span>
+
+                                {hasDiscount && (
+
+                                    <span
+                                        className="
+                                            text-base
+                                            text-gray-400
+                                            line-through
+                                        "
+                                    >
+                                        {formatPrice(
+                                            String(
+                                                totalBeforeDiscount,
+                                            ),
+                                        )}{" "}
+                                        ₽
+                                    </span>
+
+                                )}
+
+
+                                <span
+                                    className="
+                                        text-2xl
+                                        font-bold
+                                        text-[#FFA500]
+                                    "
+                                >
+                                    {formatPrice(
+                                        String(
+                                            totalAfterDiscount,
+                                        ),
+                                    )}{" "}
+                                    ₽
+                                </span>
+
+                            </div>
 
                         </div>
 
@@ -1759,6 +1852,7 @@ function CartPage() {
             </div>
 
         </div>
+
     );
 }
 

@@ -3,7 +3,9 @@ from typing import Annotated
 from fastapi import Depends
 
 from app.db.session import SessionDep
-from app.modules.products.dependencies import ProductServiceDep
+from app.modules.products.dependencies import (
+    ProductRepositoryDep,
+)
 from app.services.cache.dependencies import CacheServiceDep, RedisDep
 
 from .repositories import ReviewRepository
@@ -21,12 +23,17 @@ ReviewRepositoryDep = Annotated[
 
 
 async def get_review_service(
-        repository: ReviewRepositoryDep,
-        product_service: ProductServiceDep,
-        redis: RedisDep,
-        cache_service: CacheServiceDep
+    repository: ReviewRepositoryDep,
+    product_repository: ProductRepositoryDep,
+    redis: RedisDep,
+    cache_service: CacheServiceDep
 ) -> ReviewService:
-    return ReviewService(repository, product_service, redis, cache_service)
+    return ReviewService(
+        repository=repository,
+        product_repository=product_repository,
+        redis=redis,
+        cache_service=cache_service
+    )
 
 
 ReviewServiceDep = Annotated[

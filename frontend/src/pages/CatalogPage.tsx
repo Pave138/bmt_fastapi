@@ -14,22 +14,30 @@ function CatalogPage() {
 
     const [
         searchParams,
+        setSearchParams,
     ] = useSearchParams();
 
 
-    const categoryParam =
-        searchParams.get("category");
+    /*
+     * =========================
+     * URL PARAMETERS
+     * =========================
+     */
+
+    const categorySlug =
+        searchParams.get("category")
+        ?? undefined;
 
     const search =
         searchParams.get("search")
         ?? undefined;
 
 
-    const selectedCategory =
-        categoryParam
-            ? Number(categoryParam)
-            : null;
-
+    /*
+     * =========================
+     * PRODUCTS
+     * =========================
+     */
 
     const {
         data: products = [],
@@ -37,15 +45,20 @@ function CatalogPage() {
         isError,
         error,
     } = useProducts(
-        selectedCategory,
+        categorySlug,
         search,
     );
 
 
+    /*
+     * =========================
+     * ERROR
+     * =========================
+     */
+
     if (isError) {
 
         console.error(error);
-
 
         return (
             <div
@@ -56,6 +69,7 @@ function CatalogPage() {
                     justify-center
                 "
             >
+
                 <p
                     className="
                         text-red-500
@@ -63,10 +77,36 @@ function CatalogPage() {
                 >
                     Не удалось загрузить товары
                 </p>
+
             </div>
         );
     }
 
+
+    /*
+     * =========================
+     * CLEAR CATEGORY
+     * =========================
+     */
+
+    function clearCategory() {
+
+        const params =
+            new URLSearchParams(
+                searchParams,
+            );
+
+        params.delete("category");
+
+        setSearchParams(params);
+    }
+
+
+    /*
+     * =========================
+     * RENDER
+     * =========================
+     */
 
     return (
         <main
@@ -96,11 +136,72 @@ function CatalogPage() {
                     "
                 >
 
+                    {categorySlug && (
+
+                        <div
+                            className="
+                                flex
+                                items-center
+                                justify-between
+                                gap-4
+                            "
+                        >
+
+                            <div>
+
+                                <p
+                                    className="
+                                        text-sm
+                                        text-gray-500
+                                    "
+                                >
+                                    Категория
+                                </p>
+
+                                <p
+                                    className="
+                                        mt-1
+                                        text-lg
+                                        font-semibold
+                                        text-gray-900
+                                    "
+                                >
+                                    {categorySlug}
+                                </p>
+
+                            </div>
+
+
+                            <button
+                                type="button"
+                                onClick={clearCategory}
+                                className="
+                                    rounded-lg
+                                    border
+                                    border-gray-200
+                                    bg-white
+                                    px-3
+                                    py-2
+                                    text-sm
+                                    text-gray-600
+                                    transition
+                                    hover:border-gray-300
+                                    hover:bg-gray-50
+                                    hover:text-gray-900
+                                "
+                            >
+                                Сбросить
+                            </button>
+
+                        </div>
+
+                    )}
+
                 </div>
 
 
                 {/* ==========================================
-                    PRODUCTS
+                    TOOLBAR
                     ========================================== */}
 
                 <CatalogToolbar
@@ -109,6 +210,10 @@ function CatalogPage() {
                     }
                 />
 
+
+                {/* ==========================================
+                    PRODUCTS
+                    ========================================== */}
 
                 {loadingProducts ? (
 
@@ -120,6 +225,7 @@ function CatalogPage() {
                             justify-center
                         "
                     >
+
                         <p
                             className="
                                 text-gray-500
@@ -127,6 +233,7 @@ function CatalogPage() {
                         >
                             Загрузка товаров...
                         </p>
+
                     </div>
 
                 ) : (

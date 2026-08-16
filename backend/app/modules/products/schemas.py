@@ -15,7 +15,6 @@ from app.core.constants import (
 from app.core.exceptions import ValidationException
 from app.modules.product_images.schemas import ProductImageResponse
 from app.modules.product_specifications.schemas import SpecResponse
-from app.modules.reviews.schemas import ReviewResponse
 
 PriceDecimal = Annotated[
     Decimal,
@@ -104,7 +103,6 @@ class ProductListResponse(ProductFieldsResponse):
 class ProductResponse(ProductFieldsResponse):
     specifications: list[SpecResponse] = Field(default_factory=list)
     images: list[ProductImageResponse]
-    reviews: list[ReviewResponse] = Field(default_factory=list)
 
 
 products_list_adapter = TypeAdapter(

@@ -11,14 +11,18 @@ from .models import Product
 
 class ProductRepository:
 
-    def __init__(self, session: AsyncSession):
+    def __init__(
+        self,
+        session: AsyncSession,
+    ):
         self.session = session
 
     @staticmethod
     def _build_products_with_stats_query(
-        category_id: int | None,
-        search: str | None,
+        category_slug: str | None = None,
+        search: str | None = None,
     ) -> Select:
+
         main_image = aliased(ProductImage)
 
         query = (
@@ -26,10 +30,15 @@ class ProductRepository:
                 Product,
                 main_image,
                 func.coalesce(
-                    func.round(func.avg(Review.rating), 1),
+                    func.round(
+                        func.avg(Review.rating),
+                        1,
+                    ),
                     0,
                 ).label("avg_rating"),
-                func.count(Review.id).label("reviews_count"),
+                func.count(
+                    Review.id
+                ).label("reviews_count"),
             )
             .outerjoin(
                 main_image,
@@ -44,15 +53,25 @@ class ProductRepository:
             )
         )
 
-        if category_id is not None:
-            category_tree = CategoryRepository.descendants_cte(category_id)
+        if category_slug is not None:
+            category_tree = (
+                CategoryRepository.descendants_cte(
+                    category_slug
+                )
+            )
 
             query = query.where(
-                Product.category_id.in_(select(category_tree.c.id))
+                Product.category_id.in_(
+                    select(category_tree.c.id)
+                )
             )
 
         if search:
-            query = query.where(Product.name.ilike(f"%{search}%"))
+            query = query.where(
+                Product.name.ilike(
+                    f"%{search}%"
+                )
+            )
 
         return query.group_by(
             Product.id,
@@ -61,13 +80,24 @@ class ProductRepository:
 
     async def get_all(
         self,
-        category_id: int | None,
+        category_slug: str | None,
         search: str | None,
         limit: int,
-        offset: int
-    ) -> list[tuple[Product, ProductImage | None, float, int]]:
+        offset: int,
+    ) -> list[
+        tuple[
+            Product,
+            ProductImage | None,
+            float,
+            int,
+        ]
+    ]:
+
         result = await self.session.execute(
-            self._build_products_with_stats_query(category_id, search)
+            self._build_products_with_stats_query(
+                category_slug=category_slug,
+                search=search,
+            )
             .offset(offset)
             .limit(limit)
         )
@@ -75,44 +105,56 @@ class ProductRepository:
         return result.all()
 
     async def get_by_id(
-            self,
-            product_id: int
+        self,
+        product_id: int,
     ) -> Product | None:
+
         result = await self.session.execute(
             select(Product)
             .where(
                 Product.id == product_id
             )
         )
+
         return result.scalar_one_or_none()
 
     async def get_by_slug(
         self,
-        product_slug: str
+        product_slug: str,
     ) -> Product | None:
+
         result = await self.session.execute(
             select(Product)
             .where(
                 Product.slug == product_slug
             )
         )
+
         return result.scalar_one_or_none()
 
-    async def get_by_id_with_all(
+    async def get_by_slug_with_all(
         self,
-        product_id: int
-    ) -> tuple[Product| None, float, int]:
+        product_slug: str,
+    ) -> tuple[
+        Product | None,
+        float,
+        int,
+    ]:
+
         product_result = await self.session.execute(
             select(Product)
             .options(
                 selectinload(Product.images),
-                selectinload(Product.reviews),
-                selectinload(Product.specifications)
+                selectinload(Product.specifications),
             )
-            .where(Product.id == product_id)
+            .where(
+                Product.slug == product_slug
+            )
         )
 
-        product = product_result.scalar_one_or_none()
+        product = (
+            product_result.scalar_one_or_none()
+        )
 
         if product is None:
             return None, 0.0, 0
@@ -121,39 +163,63 @@ class ProductRepository:
             select(
                 func.coalesce(
                     func.round(
-                        func.avg(Review.rating),
-                        1
+                        func.avg(
+                            Review.rating
+                        ),
+                        1,
                     ),
-                    0
-                ).label('avg_rating'),
-                func.count(Review.id).label('reviews_count')
+                    0,
+                ).label("avg_rating"),
+                func.count(
+                    Review.id
+                ).label("reviews_count"),
             )
+            .select_from(Review)
             .where(
-                Review.product_id == product_id
+                Review.product_id == product.id
             )
         )
 
-        avg_rating, reviews_count = stats_result.one()
+        avg_rating, reviews_count = (
+            stats_result.one()
+        )
 
         return (
             product,
             float(avg_rating),
-            reviews_count
+            int(reviews_count),
         )
 
-    async def get_all_by_category_id(
-        self, category_id: int, limit: int, offset: int
-    ) -> list[tuple[Product, ProductImage | None, float, int]]:
+    async def get_all_by_category_slug(
+        self,
+        category_slug: str,
+        limit: int,
+        offset: int,
+    ) -> list[
+        tuple[
+            Product,
+            ProductImage | None,
+            float,
+            int,
+        ]
+    ]:
+
         result = await self.session.execute(
-            self._build_products_with_stats_query()
-            .where(Product.category_id == category_id)
+            self._build_products_with_stats_query(
+                category_slug=category_slug,
+                search=None,
+            )
             .offset(offset)
             .limit(limit)
         )
 
         return result.all()
 
-    async def create(self, data: dict) -> Product:
+    async def create(
+        self,
+        data: dict,
+    ) -> Product:
+
         product = Product(**data)
 
         self.session.add(product)
@@ -162,19 +228,41 @@ class ProductRepository:
 
         return product
 
-    async def delete(self, product: Product) -> None:
+    async def delete(
+        self,
+        product: Product,
+    ) -> None:
+
         await self.session.delete(product)
 
-    async def exists_by_id(self, product_id: int) -> bool:
-        result = await self.session.execute(
-            select(Product).where(Product.id == product_id)
-        )
-        return result.scalar_one_or_none() is not None
+    async def exists_by_id(
+        self,
+        product_id: int,
+    ) -> bool:
 
-    async def get_by_id_for_update(self, product_id: int) -> Product | None:
         result = await self.session.execute(
             select(Product)
-            .where(Product.id == product_id)
+            .where(
+                Product.id == product_id
+            )
+        )
+
+        return (
+            result.scalar_one_or_none()
+            is not None
+        )
+
+    async def get_by_id_for_update(
+        self,
+        product_id: int,
+    ) -> Product | None:
+
+        result = await self.session.execute(
+            select(Product)
+            .where(
+                Product.id == product_id
+            )
             .with_for_update()
         )
+
         return result.scalar_one_or_none()

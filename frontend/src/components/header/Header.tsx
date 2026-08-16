@@ -38,14 +38,14 @@ function Header() {
      */
 
     function handleCategorySelect(
-        categoryId: number | null,
+        categorySlug: string | null,
     ) {
 
         /*
          * Каталог находится на "/"
          */
 
-        if (categoryId === null) {
+        if (categorySlug === null) {
 
             navigate("/");
 
@@ -54,16 +54,16 @@ function Header() {
 
 
         /*
-         * Передаём выбранную
-         * категорию через query parameter.
+         * Передаём slug категории
+         * через query parameter.
          *
          * Например:
          *
-         * /?category=1
+         * /?category=velosipedy
          */
 
         navigate(
-            `/?category=${categoryId}`,
+            `/?category=${encodeURIComponent(categorySlug)}`,
         );
     }
 
@@ -163,7 +163,7 @@ function Header() {
                         xl:flex
                     "
                 >
-                    
+
                     <Link
                         to="/promotions"
                         className="

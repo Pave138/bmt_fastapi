@@ -20,18 +20,18 @@ async def get_categories(
 
 
 @router.get(
-    '/{category_id}/products',
+    '/{category_slug}/products',
     response_model=list[ProductListResponse],
     summary='Получить список товаров категории'
 )
 async def get_category_products(
-    category_id: int,
+    category_slug: str,
     service: CategoryServiceDep,
     limit: int = LIMIT_PRODUCTS,
     offset: int = OFFSET_PRODUCTS
 ) -> list[ProductListResponse]:
-    return await service.get_category_products_by_id(
-        category_id=category_id,
+    return await service.get_category_products_by_slug(
+        category_slug=category_slug,
         limit=limit,
         offset=offset
     )

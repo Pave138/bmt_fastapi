@@ -9,7 +9,7 @@ import type {
  * Получить список товаров
  */
 export async function getProducts(
-    categoryId?: number,
+    categorySlug?: string,
     search?: string,
 ): Promise<Product[]> {
 
@@ -17,7 +17,7 @@ export async function getProducts(
         "/products",
         {
             params: {
-                category_id: categoryId,
+                category_slug: categorySlug,
                 search,
             },
         },
@@ -28,14 +28,14 @@ export async function getProducts(
 
 
 /*
- * Получить товар по ID
+ * Получить товар по slug
  */
-export async function getProductById(
-    productId: number,
+export async function getProductBySlug(
+    productSlug: string,
 ): Promise<Product> {
 
     const response = await api.get<Product>(
-        `/products/${productId}`,
+        `/products/${productSlug}`,
     );
 
     return response.data;
