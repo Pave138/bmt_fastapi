@@ -256,12 +256,14 @@ class CartService:
             )
         if coupon.is_expired:
             raise ValidationException(
-                f'Срок действия купон истек: {coupon.expires_at}'
+                f'Срок действия купона истек: {coupon.expires_at}'
             )
         if not coupon.is_available:
             raise ValidationException(
                 'Купон недоступен'
             )
+
+        coupon.used_count += 1
 
         cart.coupon = coupon
 
@@ -272,6 +274,10 @@ class CartService:
         user_id: UUID
     ) -> None:
         cart = await self.repository.get_by_user_id(user_id)
+
+        if cart.coupon.used_count > 0:
+            cart.coupon.used_count -= 1
+
         cart.coupon = None
 
         await self.repository.session.commit()
