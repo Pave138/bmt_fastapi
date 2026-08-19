@@ -6,6 +6,7 @@ from .endpoints import (
     auth_router,
     cart_router,
     category_router,
+    favorite_router,
     order_router,
     product_image_router,
     product_review_router,
@@ -39,6 +40,12 @@ main_router.include_router(
     category_router,
     prefix='/categories',
     tags=['Категории']
+)
+
+main_router.include_router(
+    favorite_router,
+    prefix='/favorites',
+    tags=['Избранное']
 )
 
 main_router.include_router(
