@@ -11,3 +11,4 @@ from app.modules.payments.models import Payment  # noqa
 from app.modules.order_items.models import OrderItem  # noqa
 from app.modules.coupons.models import Coupon  # noqa
 from app.modules.product_specifications.models import ProductSpecification  # noqa
+from app.modules.favorites.models import Favorite  # noqa
