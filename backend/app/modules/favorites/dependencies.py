@@ -6,6 +6,7 @@ from app.db.session import SessionDep
 from app.modules.favorites.repositories import FavoriteRepository
 from app.modules.favorites.services import FavoriteService
 from app.modules.products.dependencies import ProductRepositoryDep
+from app.services.minio import MinioServiceDep
 
 
 def get_favorite_repository(session: SessionDep) -> FavoriteRepository:
@@ -20,9 +21,14 @@ FavoriteRepositoryDep = Annotated[
 
 def get_favorite_service(
     repository: FavoriteRepositoryDep,
-    product_repository: ProductRepositoryDep
+    product_repository: ProductRepositoryDep,
+    minio_service: MinioServiceDep
 ) -> FavoriteService:
-    return FavoriteService(repository, product_repository)
+    return FavoriteService(
+        repository=repository,
+        product_repository=product_repository,
+        minio_service=minio_service
+    )
 
 
 FavoriteServiceDep = Annotated[

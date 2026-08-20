@@ -5,6 +5,7 @@ import {
 
 import {
     Heart,
+    LogOut,
     Package,
     ShoppingCart,
     User,
@@ -12,11 +13,12 @@ import {
 
 import Logo from "../Logo";
 import Search from "./Search";
-import CartButton from "./CartButton";
 import CatalogMenu from "../catalog/CatalogMenu";
 
 import { useAuth } from "../../hooks/useAuth";
 import { useCategories } from "../../hooks/useCategories";
+import { useCart } from "../../hooks/useCart";
+import { useFavorites } from "../../hooks/useFavorites";
 
 
 function Header() {
@@ -27,21 +29,60 @@ function Header() {
         logout,
     } = useAuth();
 
+
     const {
         categories,
     } = useCategories();
 
-    const navigate = useNavigate();
 
+    const {
+        cart,
+    } = useCart();
+
+
+    const {
+        total: favoritesCount,
+    } = useFavorites();
+
+
+    const navigate =
+        useNavigate();
+
+
+    /*
+     * =========================
+     * CART COUNT
+     * =========================
+     */
+
+    const cartItemsCount =
+        cart?.items?.reduce(
+            (
+                total,
+                item,
+            ) =>
+                total + item.quantity,
+            0,
+        ) ?? 0;
+
+
+    /*
+     * =========================
+     * CATEGORY NAVIGATION
+     * =========================
+     */
 
     function handleCategorySelect(
         categorySlug: string | null,
     ) {
 
         if (categorySlug === null) {
+
             navigate("/");
+
             return;
         }
+
 
         navigate(
             `/?category=${categorySlug}`,
@@ -79,7 +120,9 @@ function Header() {
                 "
             >
 
-                {/* LOGO */}
+                {/* =================================
+                    LOGO
+                    ================================= */}
 
                 <Link
                     to="/"
@@ -93,7 +136,9 @@ function Header() {
                 </Link>
 
 
-                {/* CATALOG */}
+                {/* =================================
+                    CATALOG
+                    ================================= */}
 
                 <div
                     className="
@@ -104,14 +149,20 @@ function Header() {
                 >
 
                     <CatalogMenu
-                        categories={categories}
-                        onSelect={handleCategorySelect}
+                        categories={
+                            categories
+                        }
+                        onSelect={
+                            handleCategorySelect
+                        }
                     />
 
                 </div>
 
 
-                {/* SEARCH */}
+                {/* =================================
+                    SEARCH
+                    ================================= */}
 
                 <div
                     className="
@@ -125,7 +176,9 @@ function Header() {
                 </div>
 
 
-                {/* ACTIONS */}
+                {/* =================================
+                    ACTIONS
+                    ================================= */}
 
                 <div
                     className="
@@ -136,46 +189,149 @@ function Header() {
                     "
                 >
 
-                    {/* ACCOUNT */}
+                    {/* =================================
+                        ACCOUNT
+                        ================================= */}
 
                     {isAuthenticated && user ? (
 
-                        <Link
-                            to="/profile"
+                        <div
                             className="
-                                hidden
-                                min-w-[80px]
-                                flex-col
-                                items-center
-                                justify-center
-                                rounded-xl
-                                px-3
-                                py-2
-                                text-gray-700
-                                transition
-                                hover:bg-gray-100
-                                sm:flex
+                                group
+                                relative
                             "
                         >
 
-                            <User
-                                size={22}
-                                strokeWidth={1.8}
-                            />
-
-                            <span
+                            <Link
+                                to="/profile"
                                 className="
-                                    mt-1
-                                    max-w-[90px]
-                                    truncate
-                                    text-xs
-                                    font-medium
+                                    flex
+                                    min-w-[100px]
+                                    flex-col
+                                    items-center
+                                    justify-center
+                                    rounded-xl
+                                    px-3
+                                    py-2
+                                    text-gray-700
+                                    transition
+                                    hover:bg-gray-100
+                                    hover:text-orange-500
                                 "
                             >
-                                {user.username}
-                            </span>
 
-                        </Link>
+                                <User
+                                    size={22}
+                                    strokeWidth={1.8}
+                                />
+
+                                <span
+                                    className="
+                                        mt-1
+                                        max-w-[90px]
+                                        truncate
+                                        text-xs
+                                        font-medium
+                                    "
+                                >
+                                    {user.username}
+                                </span>
+
+                            </Link>
+
+
+                            {/* =================================
+                                USER DROPDOWN
+                                ================================= */}
+
+                            <div
+                                className="
+                                    invisible
+                                    absolute
+                                    left-1/2
+                                    top-full
+                                    z-50
+                                    mt-2
+                                    w-52
+                                    -translate-x-1/2
+                                    rounded-xl
+                                    border
+                                    border-gray-200
+                                    bg-white
+                                    p-2
+                                    opacity-0
+                                    shadow-lg
+                                    transition-all
+                                    duration-150
+                                    group-hover:visible
+                                    group-hover:opacity-100
+                                "
+                            >
+
+                                {/* PROFILE */}
+
+                                <Link
+                                    to="/profile"
+                                    className="
+                                        flex
+                                        items-center
+                                        rounded-lg
+                                        px-3
+                                        py-2.5
+                                        text-sm
+                                        font-medium
+                                        text-gray-700
+                                        transition
+                                        hover:bg-gray-100
+                                        hover:text-orange-500
+                                    "
+                                >
+
+                                    <User
+                                        size={18}
+                                        strokeWidth={1.8}
+                                        className="mr-3"
+                                    />
+
+                                    Профиль
+
+                                </Link>
+
+
+                                {/* LOGOUT */}
+
+                                <button
+                                    type="button"
+                                    onClick={logout}
+                                    className="
+                                        flex
+                                        w-full
+                                        items-center
+                                        rounded-lg
+                                        px-3
+                                        py-2.5
+                                        text-sm
+                                        font-medium
+                                        text-gray-700
+                                        transition
+                                        hover:bg-red-50
+                                        hover:text-red-500
+                                    "
+                                >
+
+                                    <LogOut
+                                        size={18}
+                                        strokeWidth={1.8}
+                                        className="mr-3"
+                                    />
+
+                                    Выйти
+
+                                </button>
+
+                            </div>
+
+                        </div>
 
                     ) : (
 
@@ -183,7 +339,7 @@ function Header() {
                             to="/login"
                             className="
                                 flex
-                                min-w-[70px]
+                                min-w-[100px]
                                 flex-col
                                 items-center
                                 justify-center
@@ -193,6 +349,7 @@ function Header() {
                                 text-gray-700
                                 transition
                                 hover:bg-gray-100
+                                hover:text-orange-500
                             "
                         >
 
@@ -216,15 +373,18 @@ function Header() {
                     )}
 
 
-                    {/* ORDERS */}
+                    {/* =================================
+                        ORDERS
+                        ================================= */}
 
                     {isAuthenticated && (
 
                         <Link
                             to="/orders"
                             className="
+                                relative
                                 hidden
-                                min-w-[70px]
+                                min-w-[100px]
                                 flex-col
                                 items-center
                                 justify-center
@@ -234,6 +394,7 @@ function Header() {
                                 text-gray-700
                                 transition
                                 hover:bg-gray-100
+                                hover:text-orange-500
                                 xl:flex
                             "
                         >
@@ -258,15 +419,18 @@ function Header() {
                     )}
 
 
-                    {/* FAVORITES */}
+                    {/* =================================
+                        FAVORITES
+                        ================================= */}
 
                     {isAuthenticated && (
 
                         <Link
                             to="/favorites"
                             className="
+                                relative
                                 hidden
-                                min-w-[70px]
+                                min-w-[100px]
                                 flex-col
                                 items-center
                                 justify-center
@@ -276,14 +440,57 @@ function Header() {
                                 text-gray-700
                                 transition
                                 hover:bg-gray-100
+                                hover:text-orange-500
                                 sm:flex
                             "
                         >
 
-                            <Heart
-                                size={22}
-                                strokeWidth={1.8}
-                            />
+                            <div
+                                className="
+                                    relative
+                                "
+                            >
+
+                                <Heart
+                                    size={22}
+                                    strokeWidth={1.8}
+                                />
+
+
+                                {/* =================================
+                                    FAVORITES COUNTER
+                                    ================================= */}
+
+                                {favoritesCount > 0 && (
+
+                                    <span
+                                        className="
+                                            absolute
+                                            -right-2
+                                            -top-2
+                                            flex
+                                            min-h-4
+                                            min-w-4
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            bg-orange-500
+                                            px-1
+                                            text-[10px]
+                                            font-semibold
+                                            leading-none
+                                            text-white
+                                        "
+                                    >
+                                        {favoritesCount > 99
+                                            ? "99+"
+                                            : favoritesCount}
+                                    </span>
+
+                                )}
+
+                            </div>
+
 
                             <span
                                 className="
@@ -300,20 +507,128 @@ function Header() {
                     )}
 
 
-                    {/* CART */}
+                    {/* =================================
+                        CART / REGISTRATION
+                        ================================= */}
 
-                    <div
-                        className="
-                            flex
-                            min-w-[70px]
-                            items-center
-                            justify-center
-                        "
-                    >
+                    {isAuthenticated ? (
 
-                        <CartButton />
+                        <Link
+                            to="/cart"
+                            className="
+                                relative
+                                flex
+                                min-w-[100px]
+                                flex-col
+                                items-center
+                                justify-center
+                                rounded-xl
+                                px-3
+                                py-2
+                                text-gray-700
+                                transition
+                                hover:bg-gray-100
+                                hover:text-orange-500
+                            "
+                        >
 
-                    </div>
+                            <div
+                                className="
+                                    relative
+                                "
+                            >
+
+                                <ShoppingCart
+                                    size={22}
+                                    strokeWidth={1.8}
+                                />
+
+
+                                {/* =================================
+                                    CART COUNTER
+                                    ================================= */}
+
+                                {cartItemsCount > 0 && (
+
+                                    <span
+                                        className="
+                                            absolute
+                                            -right-2
+                                            -top-2
+                                            flex
+                                            min-h-4
+                                            min-w-4
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            bg-orange-500
+                                            px-1
+                                            text-[10px]
+                                            font-semibold
+                                            leading-none
+                                            text-white
+                                        "
+                                    >
+                                        {cartItemsCount > 99
+                                            ? "99+"
+                                            : cartItemsCount}
+                                    </span>
+
+                                )}
+
+                            </div>
+
+
+                            <span
+                                className="
+                                    mt-1
+                                    text-xs
+                                    font-medium
+                                "
+                            >
+                                Корзина
+                            </span>
+
+                        </Link>
+
+                    ) : (
+
+                        <Link
+                            to="/register"
+                            className="
+                                flex
+                                min-w-[100px]
+                                flex-col
+                                items-center
+                                justify-center
+                                rounded-xl
+                                px-3
+                                py-2
+                                text-gray-700
+                                transition
+                                hover:bg-gray-100
+                                hover:text-orange-500
+                            "
+                        >
+
+                            <User
+                                size={22}
+                                strokeWidth={1.8}
+                            />
+
+                            <span
+                                className="
+                                    mt-1
+                                    text-xs
+                                    font-medium
+                                "
+                            >
+                                Регистрация
+                            </span>
+
+                        </Link>
+
+                    )}
 
                 </div>
 
@@ -346,6 +661,10 @@ function Header() {
                     "
                 >
 
+                    {/* =================================
+                        ALL PRODUCTS
+                        ================================= */}
+
                     <Link
                         to="/"
                         className="
@@ -361,6 +680,10 @@ function Header() {
                     </Link>
 
 
+                    {/* =================================
+                        PROMOTIONS
+                        ================================= */}
+
                     <Link
                         to="/promotions"
                         className="
@@ -375,6 +698,10 @@ function Header() {
                         Акции
                     </Link>
 
+
+                    {/* =================================
+                        FAVORITES
+                        ================================= */}
 
                     {isAuthenticated && (
 
@@ -395,6 +722,10 @@ function Header() {
                     )}
 
 
+                    {/* =================================
+                        ORDERS
+                        ================================= */}
+
                     {isAuthenticated && (
 
                         <Link
@@ -414,6 +745,10 @@ function Header() {
                     )}
 
 
+                    {/* =================================
+                        CONTACTS
+                        ================================= */}
+
                     <Link
                         to="/contacts"
                         className="
@@ -427,27 +762,6 @@ function Header() {
                     >
                         Контакты
                     </Link>
-
-
-                    {isAuthenticated && (
-
-                        <button
-                            type="button"
-                            onClick={logout}
-                            className="
-                                ml-auto
-                                whitespace-nowrap
-                                text-sm
-                                font-medium
-                                text-gray-500
-                                transition
-                                hover:text-red-500
-                            "
-                        >
-                            Выйти
-                        </button>
-
-                    )}
 
                 </div>
 

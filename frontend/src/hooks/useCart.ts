@@ -14,144 +14,335 @@ import {
     updateCartItem,
 } from "../api/cart";
 
-export const CART_QUERY_KEY = ["cart"];
+import type {
+    AddToCart,
+    CartResponse,
+    UpdateCartItem,
+} from "../api/cart";
+
+
+export const CART_QUERY_KEY = [
+    "cart",
+];
+
+
+/*
+ * =========================================================
+ * USE CART
+ * =========================================================
+ */
 
 export function useCart() {
-    const queryClient = useQueryClient();
+
+    const queryClient =
+        useQueryClient();
+
 
     /*
-     * Получение корзины
+     * =====================================================
+     * GET CART
+     * =====================================================
      */
-    const cartQuery = useQuery({
-        queryKey: CART_QUERY_KEY,
-        queryFn: getCart,
-    });
+
+    const cartQuery =
+        useQuery<CartResponse>({
+            queryKey:
+                CART_QUERY_KEY,
+
+            queryFn:
+                getCart,
+
+            /*
+             * Не нужно повторно создавать query
+             * при каждом рендере.
+             */
+            staleTime: 0,
+        });
+
 
     /*
-     * Добавление товара
+     * =====================================================
+     * ADD TO CART
+     * =====================================================
      */
-    const addMutation = useMutation({
-        mutationFn: addToCart,
 
-        onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: CART_QUERY_KEY,
-            });
-        },
-    });
+    const addMutation =
+        useMutation({
+            mutationFn:
+                (
+                    data: AddToCart,
+                ) =>
+                    addToCart(data),
 
-    /*
-     * Изменение количества
-     */
-    const updateMutation = useMutation({
-        mutationFn: ({
-            productId,
-            quantity,
-        }: {
-            productId: number;
-            quantity: number;
-        }) =>
-            updateCartItem(
-                productId,
-                {
-                    quantity,
+            onSuccess:
+                async () => {
+
+                    /*
+                     * Немедленно запрашиваем
+                     * актуальную корзину.
+                     *
+                     * В отличие от простого invalidateQueries,
+                     * refetchQueries гарантирует, что Header
+                     * получит новые данные сразу.
+                     */
+
+                    await queryClient.refetchQueries({
+                        queryKey:
+                            CART_QUERY_KEY,
+                    });
                 },
-            ),
+        });
 
-        onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: CART_QUERY_KEY,
-            });
-        },
-    });
 
     /*
-     * Удаление товара
+     * =====================================================
+     * UPDATE CART ITEM
+     * =====================================================
      */
-    const removeMutation = useMutation({
-        mutationFn: removeCartItem,
 
-        onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: CART_QUERY_KEY,
-            });
-        },
-    });
+    const updateMutation =
+        useMutation({
+            mutationFn:
+                ({
+                    productId,
+                    data,
+                }: {
+                    productId: number;
+                    data: UpdateCartItem;
+                }) =>
+                    updateCartItem(
+                        productId,
+                        data,
+                    ),
+
+            onSuccess:
+                async () => {
+
+                    await queryClient.refetchQueries({
+                        queryKey:
+                            CART_QUERY_KEY,
+                    });
+                },
+        });
+
 
     /*
-     * Очистка корзины
+     * =====================================================
+     * REMOVE CART ITEM
+     * =====================================================
      */
-    const clearMutation = useMutation({
-        mutationFn: clearCart,
 
-        onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: CART_QUERY_KEY,
-            });
-        },
-    });
+    const removeMutation =
+        useMutation({
+            mutationFn:
+                removeCartItem,
+
+            onSuccess:
+                async () => {
+
+                    await queryClient.refetchQueries({
+                        queryKey:
+                            CART_QUERY_KEY,
+                    });
+                },
+        });
+
 
     /*
-     * Применение купона
+     * =====================================================
+     * CLEAR CART
+     * =====================================================
      */
-    const couponMutation = useMutation({
-        mutationFn: applyCoupon,
 
-        onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: CART_QUERY_KEY,
-            });
-        },
-    });
+    const clearMutation =
+        useMutation({
+            mutationFn:
+                clearCart,
+
+            onSuccess:
+                async () => {
+
+                    /*
+                     * Можно сразу установить пустую корзину,
+                     * чтобы интерфейс обновился мгновенно.
+                     */
+
+                    queryClient.setQueryData(
+                        CART_QUERY_KEY,
+                        (
+                            current: CartResponse | undefined,
+                        ) => {
+
+                            if (!current) {
+                                return current;
+                            }
+
+                            return {
+                                ...current,
+                                items: [],
+                            };
+                        },
+                    );
+
+
+                    /*
+                     * Затем синхронизируемся
+                     * с backend.
+                     */
+
+                    await queryClient.refetchQueries({
+                        queryKey:
+                            CART_QUERY_KEY,
+                    });
+                },
+        });
+
 
     /*
-     * Удаление купона
+     * =====================================================
+     * APPLY COUPON
+     * =====================================================
      */
-    const removeCouponMutation = useMutation({
-        mutationFn: removeCoupon,
 
-        onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: CART_QUERY_KEY,
-            });
-        },
-    });
+    const couponMutation =
+        useMutation({
+            mutationFn:
+                applyCoupon,
+
+            onSuccess:
+                async () => {
+
+                    await queryClient.refetchQueries({
+                        queryKey:
+                            CART_QUERY_KEY,
+                    });
+                },
+        });
+
+
+    /*
+     * =====================================================
+     * REMOVE COUPON
+     * =====================================================
+     */
+
+    const removeCouponMutation =
+        useMutation({
+            mutationFn:
+                removeCoupon,
+
+            onSuccess:
+                async () => {
+
+                    await queryClient.refetchQueries({
+                        queryKey:
+                            CART_QUERY_KEY,
+                    });
+                },
+        });
+
+
+    /*
+     * =====================================================
+     * RETURN
+     * =====================================================
+     */
 
     return {
-        // Query
-        cart: cartQuery.data,
-        isLoading: cartQuery.isLoading,
-        isError: cartQuery.isError,
-        error: cartQuery.error,
 
-        // Add
-        addToCart: addMutation.mutate,
-        addToCartAsync: addMutation.mutateAsync,
-        isAdding: addMutation.isPending,
+        /*
+         * Cart
+         */
+        cart:
+            cartQuery.data,
 
-        // Update
-        updateItem: updateMutation.mutate,
-        updateItemAsync: updateMutation.mutateAsync,
-        isUpdating: updateMutation.isPending,
+        isLoading:
+            cartQuery.isLoading,
 
-        // Remove
-        removeItem: removeMutation.mutate,
-        removeItemAsync: removeMutation.mutateAsync,
-        isRemoving: removeMutation.isPending,
+        isFetching:
+            cartQuery.isFetching,
 
-        // Clear
-        clearCart: clearMutation.mutate,
-        clearCartAsync: clearMutation.mutateAsync,
-        isClearing: clearMutation.isPending,
+        isError:
+            cartQuery.isError,
 
-        // Coupon
-        applyCoupon: couponMutation.mutate,
-        applyCouponAsync: couponMutation.mutateAsync,
-        isApplyingCoupon: couponMutation.isPending,
+        error:
+            cartQuery.error,
 
-        removeCoupon: removeCouponMutation.mutate,
+
+        /*
+         * Add
+         */
+        addToCart:
+            addMutation.mutate,
+
+        addToCartAsync:
+            addMutation.mutateAsync,
+
+        isAdding:
+            addMutation.isPending,
+
+
+        /*
+         * Update
+         */
+        updateItem:
+            updateMutation.mutate,
+
+        updateItemAsync:
+            updateMutation.mutateAsync,
+
+        isUpdating:
+            updateMutation.isPending,
+
+
+        /*
+         * Remove
+         */
+        removeItem:
+            removeMutation.mutate,
+
+        removeItemAsync:
+            removeMutation.mutateAsync,
+
+        isRemoving:
+            removeMutation.isPending,
+
+
+        /*
+         * Clear
+         */
+        clearCart:
+            clearMutation.mutate,
+
+        clearCartAsync:
+            clearMutation.mutateAsync,
+
+        isClearing:
+            clearMutation.isPending,
+
+
+        /*
+         * Coupon
+         */
+        applyCoupon:
+            couponMutation.mutate,
+
+        applyCouponAsync:
+            couponMutation.mutateAsync,
+
+        isApplyingCoupon:
+            couponMutation.isPending,
+
+
+        /*
+         * Remove coupon
+         */
+        removeCoupon:
+            removeCouponMutation.mutate,
+
         removeCouponAsync:
             removeCouponMutation.mutateAsync,
+
         isRemovingCoupon:
             removeCouponMutation.isPending,
     };

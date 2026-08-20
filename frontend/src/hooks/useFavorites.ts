@@ -11,10 +11,6 @@ import {
 } from "../api/favorites";
 
 import {
-    getProductBySlug,
-} from "../api/products";
-
-import {
     CURRENT_USER_QUERY_KEY,
 } from "./useAuth";
 
@@ -33,8 +29,15 @@ export function useFavorites(
         useQueryClient();
 
 
+    /*
+     * =========================
+     * FAVORITES QUERY
+     * =========================
+     */
+
     const favoritesQuery =
         useQuery({
+
             queryKey: [
                 ...FAVORITES_QUERY_KEY,
                 offset,
@@ -53,8 +56,16 @@ export function useFavorites(
                         "access_token",
                     ),
                 ),
+
+            staleTime: 0,
         });
 
+
+    /*
+     * =========================
+     * ADD FAVORITE
+     * =========================
+     */
 
     const addMutation =
         useMutation({
@@ -72,11 +83,13 @@ export function useFavorites(
                         FAVORITES_QUERY_KEY,
                 });
 
+
                 queryClient.invalidateQueries({
                     queryKey: [
                         "products",
                     ],
                 });
+
 
                 queryClient.invalidateQueries({
                     queryKey: [
@@ -84,9 +97,17 @@ export function useFavorites(
                         productSlug,
                     ],
                 });
+
             },
+
         });
 
+
+    /*
+     * =========================
+     * REMOVE FAVORITE
+     * =========================
+     */
 
     const removeMutation =
         useMutation({
@@ -104,11 +125,13 @@ export function useFavorites(
                         FAVORITES_QUERY_KEY,
                 });
 
+
                 queryClient.invalidateQueries({
                     queryKey: [
                         "products",
                     ],
                 });
+
 
                 queryClient.invalidateQueries({
                     queryKey: [
@@ -116,9 +139,17 @@ export function useFavorites(
                         productSlug,
                     ],
                 });
+
             },
+
         });
 
+
+    /*
+     * =========================
+     * TOGGLE
+     * =========================
+     */
 
     function toggleFavorite(
         productSlug: string,
@@ -133,29 +164,54 @@ export function useFavorites(
 
         }
 
+
         return addMutation.mutateAsync(
             productSlug,
         );
+
     }
 
 
+    /*
+     * =========================
+     * RETURN
+     * =========================
+     */
+
     return {
+
+        /*
+         * Массив избранных товаров
+         */
         favorites:
             favoritesQuery.data?.items ?? [],
 
+
+        /*
+         * Общее количество избранных.
+         *
+         * Именно это значение нужно
+         * использовать в Header.
+         */
         total:
             favoritesQuery.data?.total ?? 0,
+
 
         isLoading:
             favoritesQuery.isLoading,
 
+
         isError:
             favoritesQuery.isError,
 
+
         toggleFavorite,
+
 
         isMutating:
             addMutation.isPending ||
             removeMutation.isPending,
+
     };
+
 }

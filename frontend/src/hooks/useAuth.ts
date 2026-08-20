@@ -32,14 +32,8 @@ export function useAuth() {
      * =========================
      * CURRENT USER
      * =========================
-     *
-     * Не сохраняем token в переменную
-     * на уровне render и не используем
-     * его как источник React-состояния.
-     *
-     * Проверяем localStorage непосредственно
-     * при выполнении query.
      */
+
     const {
         data: user,
         isLoading,
@@ -67,6 +61,7 @@ export function useAuth() {
      * LOGIN
      * =========================
      */
+
     const loginMutation =
         useMutation({
             mutationFn:
@@ -80,6 +75,9 @@ export function useAuth() {
             onSuccess:
                 async (data) => {
 
+                    /*
+                     * Сохраняем access token
+                     */
                     localStorage.setItem(
                         ACCESS_TOKEN_KEY,
                         data.access_token,
@@ -87,18 +85,52 @@ export function useAuth() {
 
 
                     /*
-                     * После установки токена
-                     * заново запрашиваем текущего
-                     * пользователя.
+                     * Получаем текущего
+                     * авторизованного пользователя.
                      */
-                    await queryClient
-                        .fetchQuery({
-                            queryKey:
-                                CURRENT_USER_QUERY_KEY,
+                    await queryClient.fetchQuery({
+                        queryKey:
+                            CURRENT_USER_QUERY_KEY,
 
-                            queryFn:
-                                getCurrentUser,
-                        });
+                        queryFn:
+                            getCurrentUser,
+                    });
+
+
+                    /*
+                     * =========================
+                     * PRODUCTS
+                     * =========================
+                     *
+                     * is_favorite зависит
+                     * от авторизованного
+                     * пользователя.
+                     *
+                     * Поэтому после входа
+                     * товары нужно получить
+                     * заново.
+                     */
+                    await queryClient.invalidateQueries({
+                        queryKey: [
+                            "products",
+                        ],
+                    });
+
+
+                    /*
+                     * =========================
+                     * FAVORITES
+                     * =========================
+                     *
+                     * Если страница избранного
+                     * уже была открыта/закеширована,
+                     * она тоже должна обновиться.
+                     */
+                    await queryClient.invalidateQueries({
+                        queryKey: [
+                            "favorites",
+                        ],
+                    });
                 },
         });
 
@@ -108,16 +140,16 @@ export function useAuth() {
      * LOGIN HANDLER
      * =========================
      */
+
     async function login(
         username: string,
         password: string,
     ) {
 
-        await loginMutation
-            .mutateAsync({
-                username,
-                password,
-            });
+        await loginMutation.mutateAsync({
+            username,
+            password,
+        });
     }
 
 
@@ -126,22 +158,54 @@ export function useAuth() {
      * LOGOUT
      * =========================
      */
+
     function logout() {
 
+        /*
+         * Удаляем access token
+         */
         localStorage.removeItem(
             ACCESS_TOKEN_KEY,
         );
 
 
+        /*
+         * Сбрасываем текущего пользователя
+         */
         queryClient.setQueryData(
             CURRENT_USER_QUERY_KEY,
             null,
         );
 
 
+        /*
+         * Удаляем query текущего пользователя
+         */
         queryClient.removeQueries({
             queryKey:
                 CURRENT_USER_QUERY_KEY,
+        });
+
+
+        /*
+         * После выхода is_favorite
+         * должен пересчитаться.
+         */
+        queryClient.invalidateQueries({
+            queryKey: [
+                "products",
+            ],
+        });
+
+
+        /*
+         * Избранное больше недоступно
+         * для текущего пользователя.
+         */
+        queryClient.removeQueries({
+            queryKey: [
+                "favorites",
+            ],
         });
     }
 

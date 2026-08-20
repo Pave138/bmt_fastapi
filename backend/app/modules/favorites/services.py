@@ -14,6 +14,7 @@ from app.modules.products.schemas import (
     ProductDB,
     ProductListResponse,
 )
+from app.services.minio import MinioService
 
 
 class FavoriteService:
@@ -21,10 +22,12 @@ class FavoriteService:
     def __init__(
         self,
         repository: FavoriteRepository,
-        product_repository: ProductRepository
+        product_repository: ProductRepository,
+        minio_service: MinioService
     ):
         self.repository = repository
         self.product_repository = product_repository
+        self.minio_service = minio_service
         
     def build_image_response(
             self,
@@ -62,9 +65,10 @@ class FavoriteService:
                     self.build_image_response(main_image)
                     if main_image
                     else None
-                )
+                ),
+                is_favorite=is_favorite
             )
-            for product, main_image, avg_rating, reviews_count in products
+            for product, main_image, avg_rating, reviews_count, is_favorite in products
         ]
 
         total = await self.repository.count_by_user_id(user_id)
