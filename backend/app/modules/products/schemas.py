@@ -93,6 +93,7 @@ class ProductDB(ProductFields):
 class ProductFieldsResponse(ProductDB):
     avg_rating: float
     reviews_count: int
+    is_favorite: bool = False
 
 
 class ProductListResponse(ProductFieldsResponse):

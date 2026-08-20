@@ -23,6 +23,7 @@ from app.modules.product_images.schemas import (
 from app.modules.product_specifications.schemas import (
     spec_list_adapter_response,
 )
+from app.modules.users.models import User
 from app.services.base_service import BaseService
 from app.services.cache.keys import (
     get_category_products_key,
@@ -64,7 +65,7 @@ class ProductService(BaseService):
         self.redis = redis
         self.cache_service = cache_service
 
-    def _build_image_response(
+    def build_image_response(
             self,
             image: ProductImage
     ) -> ProductImageResponse:
@@ -93,6 +94,7 @@ class ProductService(BaseService):
         self,
         category_slug: str | None,
         search: str | None,
+        user: User | None,
         limit: int,
         offset: int
     ) -> list[ProductListResponse]:
@@ -104,7 +106,8 @@ class ProductService(BaseService):
             offset
         )
 
-        cached_products = await self.redis.get(cache_key)
+        # cached_products = await self.redis.get(cache_key)
+        cached_products = None
 
         if cached_products is not None:
             try:
@@ -130,6 +133,7 @@ class ProductService(BaseService):
         products = await self.repository.get_all(
             category_slug=category_slug,
             search=search,
+            user=user,
             limit=limit,
             offset=offset
         )
@@ -142,12 +146,13 @@ class ProductService(BaseService):
                 avg_rating=float(avg_rating),
                 reviews_count=int(reviews_count),
                 main_image=(
-                    self._build_image_response(main_image)
+                    self.build_image_response(main_image)
                     if main_image
                     else None
-                )
+                ),
+                is_favorite=is_favorite
             )
-            for product, main_image, avg_rating, reviews_count in products
+            for product, main_image, avg_rating, reviews_count, is_favorite in products
         ]
 
         await self.redis.set(
@@ -214,13 +219,13 @@ class ProductService(BaseService):
             )
 
     async def get_by_slug(
-            self,
-            product_slug: str
+        self,
+        product_slug: str,
+        user: User | None
     ) -> ProductResponse:
         cache_key = await get_product_key(self.redis, product_slug)
-        cached_product = await self.redis.get(
-            cache_key
-        )
+        # cached_product = await self.redis.get(cache_key)
+        cached_product = None
         if cached_product:
             try:
                 logger.info(
@@ -242,10 +247,11 @@ class ProductService(BaseService):
                 )
 
         row = await self.repository.get_by_slug_with_all(
-            product_slug
+            product_slug=product_slug,
+            user=user
         )
 
-        product, avg_rating, reviews_count = row
+        product, avg_rating, reviews_count, is_favorite = row
 
         if product is None:
             logger.warning(
@@ -257,7 +263,7 @@ class ProductService(BaseService):
             )
 
         images = [
-            self._build_image_response(image)
+            self.build_image_response(image)
             for image in product.images
         ]
 
@@ -271,7 +277,8 @@ class ProductService(BaseService):
             ),
             avg_rating=float(avg_rating),
             reviews_count=reviews_count,
-            images=images
+            images=images,
+            is_favorite=is_favorite
         )
 
         await self.redis.set(

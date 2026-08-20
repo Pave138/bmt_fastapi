@@ -1,7 +1,11 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.modules.product_images.models import ProductImage
+from app.modules.products.models import Product
+from app.modules.products.repositories import ProductRepository
 
 from .models import Favorite
 
@@ -18,7 +22,7 @@ class FavoriteRepository:
         self,
         user_id: UUID,
         product_id: int
-    ) -> Favorite:
+    ) -> None:
 
         favorite = Favorite(
             user_id=user_id,
@@ -28,13 +32,11 @@ class FavoriteRepository:
         self.session.add(favorite)
         await self.session.flush()
 
-        return favorite
-
-    async def exists(
+    async def get(
         self,
         user_id: UUID,
         product_id: int
-    ) -> bool:
+    ) -> Favorite | None:
         result = await self.session.execute(
             select(Favorite)
             .where(
@@ -42,8 +44,49 @@ class FavoriteRepository:
                 Favorite.product_id == product_id
             )
         )
+        return result.scalar_one_or_none()
 
-        return (
-            result.scalar_one_or_none()
-            is not None
+    async def get_all(
+        self,
+        user_id: UUID,
+        offset: int,
+        limit: int
+    ) -> list[
+        tuple[
+            Product,
+            ProductImage | None,
+            float,
+            int
+        ]
+    ]:
+        result = await self.session.execute(
+            ProductRepository.build_products_with_stats_query()
+            .join(
+                Favorite,
+                Favorite.product_id == Product.id
+            )
+            .where(
+                Favorite.user_id == user_id
+            )
+            .offset(offset)
+            .limit(limit)
         )
+
+        return result.all()
+
+    async def count_by_user_id(
+        self,
+        user_id: UUID
+    ) -> int:
+        result = await self.session.execute(
+            select(func.count(Favorite.product_id))
+            .where(Favorite.user_id == user_id)
+        )
+        return result.scalar_one()
+
+    async def delete(
+        self,
+        favorite: Favorite
+    ) -> None:
+        await self.session.delete(favorite)
+        await self.session.flush()

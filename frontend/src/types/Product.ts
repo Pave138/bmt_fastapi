@@ -30,4 +30,5 @@ export interface Product {
     images: ProductImage[];
 
     specifications: ProductSpecification[];
+    is_favorite: boolean;
 }

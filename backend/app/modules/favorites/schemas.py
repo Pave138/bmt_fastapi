@@ -1,16 +1,17 @@
-from uuid import UUID
-
 from pydantic import BaseModel, ConfigDict
 
-
-class FavoriteFields(BaseModel):
-    user_id: UUID
-    product_id: int
-    
-
-class FavoriteCreate(FavoriteFields):
-    pass
+from app.modules.products.schemas import (
+    ProductFieldsResponse,
+    ProductListResponse,
+)
 
 
-class FavoriteResponse(FavoriteFields):
+class FavoriteResponse(BaseModel):
+    product: ProductFieldsResponse
+
     model_config = ConfigDict(from_attributes=True)
+
+
+class FavoriteListResponse(BaseModel):
+    items: list[ProductListResponse]
+    total: int

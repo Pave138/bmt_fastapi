@@ -15,6 +15,11 @@ import {
 } from "react";
 
 import {
+    useMutation,
+    useQueryClient,
+} from "@tanstack/react-query";
+
+import {
     formatPrice,
 } from "../../utils/formatPrice";
 
@@ -25,6 +30,15 @@ import type {
 import {
     useCart,
 } from "../../context/CartContext";
+
+import {
+    useAuth,
+} from "../../hooks/useAuth";
+
+import {
+    addFavorite,
+    removeFavorite,
+} from "../../api/favorites";
 
 
 interface Props {
@@ -47,6 +61,27 @@ function ProductCard({
         addToCart,
         updateQuantity,
     } = useCart();
+
+
+    /*
+     * =========================
+     * AUTH
+     * =========================
+     */
+
+    const {
+        isAuthenticated,
+    } = useAuth();
+
+
+    /*
+     * =========================
+     * QUERY CLIENT
+     * =========================
+     */
+
+    const queryClient =
+        useQueryClient();
 
 
     /*
@@ -96,6 +131,123 @@ function ProductCard({
 
     /*
      * =========================
+     * FAVORITE
+     * =========================
+     */
+
+    const isFavorite =
+        product.is_favorite ?? false;
+
+
+    /*
+     * =========================
+     * ADD FAVORITE
+     * =========================
+     */
+
+    const addFavoriteMutation =
+        useMutation({
+            mutationFn: () =>
+                addFavorite(
+                    product.slug
+                ),
+
+            onSuccess: () => {
+
+                queryClient.invalidateQueries({
+                    queryKey: [
+                        "products",
+                    ],
+                });
+
+                queryClient.invalidateQueries({
+                    queryKey: [
+                        "product",
+                        product.slug,
+                    ],
+                });
+
+                queryClient.invalidateQueries({
+                    queryKey: [
+                        "favorites",
+                    ],
+                });
+            },
+        });
+
+
+    /*
+     * =========================
+     * DELETE FAVORITE
+     * =========================
+     */
+
+    const removeFavoriteMutation =
+        useMutation({
+            mutationFn: () =>
+                removeFavorite(
+                    product.slug
+                ),
+
+            onSuccess: () => {
+
+                queryClient.invalidateQueries({
+                    queryKey: [
+                        "products",
+                    ],
+                });
+
+                queryClient.invalidateQueries({
+                    queryKey: [
+                        "product",
+                        product.slug,
+                    ],
+                });
+
+                queryClient.invalidateQueries({
+                    queryKey: [
+                        "favorites",
+                    ],
+                });
+            },
+        });
+
+
+    const favoriteLoading =
+        addFavoriteMutation.isPending ||
+        removeFavoriteMutation.isPending;
+
+
+    /*
+     * =========================
+     * TOGGLE FAVORITE
+     * =========================
+     */
+
+    const handleToggleFavorite =
+        () => {
+
+            if (!isAuthenticated) {
+                return;
+            }
+
+            if (favoriteLoading) {
+                return;
+            }
+
+            if (isFavorite) {
+
+                removeFavoriteMutation.mutate();
+
+                return;
+            }
+
+            addFavoriteMutation.mutate();
+        };
+
+
+    /*
+     * =========================
      * STOCK STATUS
      * =========================
      */
@@ -115,7 +267,6 @@ function ProductCard({
                     dotClass:
                         "bg-red-500",
                 };
-
             }
 
 
@@ -131,7 +282,6 @@ function ProductCard({
                     dotClass:
                         "bg-red-500",
                 };
-
             }
 
 
@@ -147,7 +297,6 @@ function ProductCard({
                     dotClass:
                         "bg-yellow-500",
                 };
-
             }
 
 
@@ -180,14 +329,14 @@ function ProductCard({
     const discount =
         hasDiscount
             ? Math.round(
-                  (
-                      1 -
-                      Number(product.price) /
-                          Number(
-                              product.old_price
-                          )
-                  ) * 100
-              )
+                (
+                    1 -
+                    Number(product.price) /
+                    Number(
+                        product.old_price
+                    )
+                ) * 100
+            )
             : null;
 
 
@@ -208,7 +357,6 @@ function ProductCard({
                 product.id,
                 1
             );
-
         };
 
 
@@ -229,7 +377,6 @@ function ProductCard({
                 product.id,
                 quantity + 1
             );
-
         };
 
 
@@ -250,7 +397,6 @@ function ProductCard({
                 product.id,
                 quantity - 1
             );
-
         };
 
 
@@ -314,7 +460,14 @@ function ProductCard({
 
                 <button
                     type="button"
-                    className="
+                    onClick={
+                        handleToggleFavorite
+                    }
+                    disabled={
+                        !isAuthenticated ||
+                        favoriteLoading
+                    }
+                    className={`
                         absolute
                         right-3
                         top-3
@@ -326,14 +479,44 @@ function ProductCard({
                         transition-all
                         duration-200
                         hover:scale-110
-                        hover:bg-red-50
-                        hover:text-red-500
-                    "
-                    aria-label="Добавить в избранное"
+                        disabled:cursor-not-allowed
+                        disabled:opacity-60
+
+                        ${
+                            isFavorite
+                                ? `
+                                    bg-red-50
+                                    text-red-500
+                                    hover:bg-red-100
+                                `
+                                : `
+                                    text-gray-500
+                                    hover:bg-red-50
+                                    hover:text-red-500
+                                `
+                        }
+                    `}
+                    aria-label={
+                        isFavorite
+                            ? "Удалить из избранного"
+                            : "Добавить в избранное"
+                    }
+                    title={
+                        !isAuthenticated
+                            ? "Войдите, чтобы добавить товар в избранное"
+                            : isFavorite
+                                ? "Удалить из избранного"
+                                : "Добавить в избранное"
+                    }
                 >
 
                     <Heart
                         size={18}
+                        className={
+                            isFavorite
+                                ? "fill-current"
+                                : ""
+                        }
                     />
 
                 </button>
@@ -363,7 +546,9 @@ function ProductCard({
 
                             <img
                                 src={
-                                    product.main_image.image_url
+                                    product
+                                        .main_image
+                                        .image_url
                                 }
                                 alt={
                                     product.name
@@ -710,9 +895,7 @@ function ProductCard({
             </div>
 
         </div>
-
     );
-
 }
 
 

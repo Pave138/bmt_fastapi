@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Query
 
 from app.core.constants import LIMIT_PRODUCTS, OFFSET_PRODUCTS
+from app.modules.auth.dependencies import OptionalUserDep
 from app.modules.products.dependencies import ProductServiceDep
 from app.modules.products.schemas import ProductListResponse, ProductResponse
 
@@ -14,20 +15,18 @@ router = APIRouter()
 )
 async def get_products(
     service: ProductServiceDep,
+    user: OptionalUserDep,
     category_slug: str | None = Query(
-        None,
-        description='Товары определенной категории'
+        None, description="Товары определенной категории"
     ),
-    search: str | None = Query(
-        None, 
-        description='Поиск по названию товара'
-    ),
+    search: str | None = Query(None, description="Поиск по названию товара"),
     limit: int = LIMIT_PRODUCTS,
-    offset: int = OFFSET_PRODUCTS
+    offset: int = OFFSET_PRODUCTS,
 ) -> list[ProductListResponse]:
     return await service.get_all(
         category_slug=category_slug,
         search=search,
+        user=user,
         limit=limit,
         offset=offset
     )
@@ -39,7 +38,11 @@ async def get_products(
     response_model=ProductResponse
 )
 async def get_by_id(
-    service: ProductServiceDep,
-    product_slug: str
+    product_slug: str,
+    user: OptionalUserDep,
+    service: ProductServiceDep
 ) -> ProductResponse:
-    return await service.get_by_slug(product_slug)
+    return await service.get_by_slug(
+        product_slug=product_slug,
+        user=user
+    )

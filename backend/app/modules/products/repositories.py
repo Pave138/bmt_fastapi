@@ -1,10 +1,14 @@
-from sqlalchemy import Select, and_, func, select
+from uuid import UUID
+
+from sqlalchemy import Select, and_, exists, false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
 from app.modules.categories.repositories import CategoryRepository
+from app.modules.favorites.models import Favorite
 from app.modules.product_images.models import ProductImage
 from app.modules.reviews.models import Review
+from app.modules.users.models import User
 
 from .models import Product
 
@@ -18,9 +22,10 @@ class ProductRepository:
         self.session = session
 
     @staticmethod
-    def _build_products_with_stats_query(
+    def build_products_with_stats_query(
         category_slug: str | None = None,
         search: str | None = None,
+        user_id: UUID | None = None
     ) -> Select:
 
         main_image = aliased(ProductImage)
@@ -35,10 +40,10 @@ class ProductRepository:
                         1,
                     ),
                     0,
-                ).label("avg_rating"),
+                ).label('avg_rating'),
                 func.count(
                     Review.id
-                ).label("reviews_count"),
+                ).label('reviews_count'),
             )
             .outerjoin(
                 main_image,
@@ -73,6 +78,19 @@ class ProductRepository:
                 )
             )
 
+        if user_id is not None:
+            is_favorite = exists().where(
+                and_(
+                    Favorite.user_id == user_id,
+                    Favorite.product_id == Product.id,
+                )
+            )
+
+            query = query.add_columns(is_favorite.label("is_favorite"))
+
+        else:
+            query = query.add_columns(false().label("is_favorite"))
+
         return query.group_by(
             Product.id,
             main_image.id,
@@ -82,21 +100,28 @@ class ProductRepository:
         self,
         category_slug: str | None,
         search: str | None,
+        user: User | None,
         limit: int,
-        offset: int,
+        offset: int
     ) -> list[
         tuple[
             Product,
             ProductImage | None,
             float,
             int,
+            bool
         ]
     ]:
 
         result = await self.session.execute(
-            self._build_products_with_stats_query(
+            self.build_products_with_stats_query(
                 category_slug=category_slug,
                 search=search,
+                user_id=(
+                    user.id
+                    if user
+                    else None
+                )
             )
             .offset(offset)
             .limit(limit)
@@ -135,59 +160,70 @@ class ProductRepository:
     async def get_by_slug_with_all(
         self,
         product_slug: str,
+        user: User | None,
     ) -> tuple[
         Product | None,
         float,
         int,
+        bool,
     ]:
-
         product_result = await self.session.execute(
             select(Product)
             .options(
                 selectinload(Product.images),
                 selectinload(Product.specifications),
             )
-            .where(
-                Product.slug == product_slug
-            )
+            .where(Product.slug == product_slug)
         )
 
-        product = (
-            product_result.scalar_one_or_none()
-        )
+        product = product_result.scalar_one_or_none()
 
         if product is None:
-            return None, 0.0, 0
+            return (
+                None,
+                0.0,
+                0,
+                False,
+            )
 
         stats_result = await self.session.execute(
             select(
                 func.coalesce(
                     func.round(
-                        func.avg(
-                            Review.rating
-                        ),
+                        func.avg(Review.rating),
                         1,
                     ),
                     0,
                 ).label("avg_rating"),
-                func.count(
-                    Review.id
-                ).label("reviews_count"),
+                func.count(Review.id).label("reviews_count"),
             )
             .select_from(Review)
-            .where(
-                Review.product_id == product.id
-            )
+            .where(Review.product_id == product.id)
         )
 
-        avg_rating, reviews_count = (
-            stats_result.one()
-        )
+        avg_rating, reviews_count = stats_result.one()
+
+        is_favorite = False
+
+        if user is not None:
+            favorite_result = await self.session.execute(
+                select(
+                    exists().where(
+                        and_(
+                            Favorite.user_id == user.id,
+                            Favorite.product_id == product.id,
+                        )
+                    )
+                )
+            )
+
+            is_favorite = favorite_result.scalar_one()
 
         return (
             product,
             float(avg_rating),
             int(reviews_count),
+            is_favorite,
         )
 
     async def get_all_by_category_slug(

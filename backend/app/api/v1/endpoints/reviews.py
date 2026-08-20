@@ -56,7 +56,7 @@ async def get_product_reviews(
     product_slug: str,
     user: OptionalUserDep,
     service: ReviewServiceDep,
-    limit: int = Query(default=20, ge=1, le=100),
+    limit: int = Query(default=20, ge=10, le=100),
     offset: int = Query(default=0, ge=0)
 ) -> ReviewListResponse:
     return await service.get_by_product_slug(
